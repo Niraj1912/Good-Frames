@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Photo access. Android 13+ uses READ_MEDIA_IMAGES. Android 14+ adds
+         READ_MEDIA_VISUAL_USER_SELECTED, for when the user shares only some
+         photos. Android 11-12 uses READ_EXTERNAL_STORAGE, which the
+         photo_manager plugin already declares. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <application
         android:label="SwipeSort"
         android:name="${applicationName}"

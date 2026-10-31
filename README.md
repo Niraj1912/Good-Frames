@@ -9,7 +9,8 @@ Everything runs on the device. No server, no uploads, no paid services.
 
 ## Status
 
-Phase 0: project setup. See the roadmap below.
+Phase 1: read-only viewer. You can browse albums and step through photos.
+Nothing can be changed or deleted yet. See the roadmap below.
 
 ## Supported platforms
 
@@ -25,12 +26,43 @@ and Visual Studio's "Desktop development with C++" for Windows builds.
 
 ```bash
 flutter pub get
-flutter run -d windows        # fastest for day-to-day work
-flutter run -d emulator-5554  # Android emulator
-flutter test                  # automated tests
+dart run tool/make_test_photos.dart   # makes E:\test-photos (once)
+flutter run -d windows                # fastest for day-to-day work
+flutter run -d emulator-5554          # Android emulator
+flutter test                          # automated tests
 ```
 
 While `flutter run` is running, press `r` to hot reload and `q` to quit.
+
+The Windows build reads `E:\test-photos`. To use another folder, add
+`--dart-define=PHOTO_ROOT=D:\other\folder` to `flutter run`.
+
+### Test photos
+
+`tool/make_test_photos.dart` makes a folder of deliberately awkward files:
+portrait and landscape photos, a 24-megapixel photo, one stored sideways with
+an EXIF rotation tag, the same file name in two folders, a folder name with a
+space, a corrupt file, an empty file, a HEIC file, and files that aren't
+photos at all. It only ever deletes a folder it made itself.
+
+To put them on the emulator:
+
+```bash
+adb push E:\test-photos /sdcard/Pictures/SwipeSortTest
+adb shell content call --uri content://media --method scan_volume --arg external_primary
+```
+
+The second command makes Android index the new files, so they show up in the
+gallery.
+
+### Platform differences
+
+- HEIC photos: Android shows them; the Windows build skips them, because
+  Windows can't decode HEIC.
+- File size isn't shown on Android yet.
+- `android/gradle.properties` turns off Kotlin incremental compilation. The
+  project is on drive E: and Flutter's package cache is on C:, and the
+  incremental compiler can't handle paths across drives.
 
 ## Project structure
 
@@ -42,7 +74,8 @@ lib/
 ├── state/        App logic the screens listen to (current photo, undo, progress)
 ├── screens/      Full pages: album picker, swipe, review, done
 └── widgets/      Reusable pieces: swipe card, action buttons, progress bar
-test/             Automated tests
+test/             Automated tests (test/fakes/ holds FakePhotoRepository)
+tool/             Developer scripts, such as the test-photo generator
 android/          Android project (permissions live in AndroidManifest.xml)
 windows/          Windows project
 ```
@@ -57,7 +90,7 @@ interface, which has one implementation per environment:
 ## Roadmap
 
 - [x] Phase 0: setup
-- [ ] Phase 1: read-only viewer (permissions, albums, next/previous)
+- [x] Phase 1: read-only viewer (permissions, albums, next/previous)
 - [ ] Phase 2: keep/delete decisions saved in SQLite, resume, undo
 - [ ] Phase 3: swipe gestures and animations
 - [ ] Phase 4: review screen and batch delete to the Android trash
