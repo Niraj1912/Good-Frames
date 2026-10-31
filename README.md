@@ -9,8 +9,12 @@ Everything runs on the device. No server, no uploads, no paid services.
 
 ## Status
 
-Phase 1: read-only viewer. You can browse albums and step through photos.
-Nothing can be changed or deleted yet. See the roadmap below.
+Phase 2: decisions. Open an album and mark each photo Keep or Delete, with
+undo and a progress bar. Decisions are saved as you go, so you can close the
+app and pick up where you stopped. Nothing is deleted yet. See the roadmap
+below.
+
+On Windows: `←` Delete, `→` Keep, `Z` (or `Ctrl+Z`, `Backspace`) Undo.
 
 ## Supported platforms
 
@@ -55,6 +59,20 @@ adb shell content call --uri content://media --method scan_volume --arg external
 The second command makes Android index the new files, so they show up in the
 gallery.
 
+### Where decisions are saved
+
+In a SQLite database, `decisions.db`, with one row per decided photo:
+
+- Windows: `%APPDATA%\com.photoswipe\photo_swipe\decisions.db`
+- Android: the app's private storage, removed when the app is uninstalled
+
+The Start over button in an album forgets that album's decisions. It never
+touches the photos.
+
+On Windows, SQLite comes from the `sqlite3` package's build hook, which
+downloads a prebuilt `sqlite3.dll` and checks it against a SHA-256 hash
+stored in the package.
+
 ### Platform differences
 
 - HEIC photos: Android shows them; the Windows build skips them, because
@@ -69,7 +87,7 @@ gallery.
 ```
 lib/
 ├── main.dart     App entry point
-├── models/       Plain data classes: Photo, Session, Decision
+├── models/       Plain data classes: Photo, Album, Decision
 ├── data/         Where photos and decisions come from (repositories, SQLite)
 ├── state/        App logic the screens listen to (current photo, undo, progress)
 ├── screens/      Full pages: album picker, swipe, review, done
@@ -91,7 +109,7 @@ interface, which has one implementation per environment:
 
 - [x] Phase 0: setup
 - [x] Phase 1: read-only viewer (permissions, albums, next/previous)
-- [ ] Phase 2: keep/delete decisions saved in SQLite, resume, undo
+- [x] Phase 2: keep/delete decisions saved in SQLite, resume, undo
 - [ ] Phase 3: swipe gestures and animations
 - [ ] Phase 4: review screen and batch delete to the Android trash
 - [ ] Phase 5: edge cases, tests, hardening

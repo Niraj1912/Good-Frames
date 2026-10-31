@@ -1,17 +1,28 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/main.dart';
 
 import 'fakes/fake_photo_repository.dart';
+import 'support/test_store.dart';
 
 void main() {
   Future<void> startApp(
     WidgetTester tester,
     FakePhotoRepository repository,
   ) async {
-    await tester.pumpWidget(PhotoSwipeApp(repository: repository));
+    final store = await openTestStore();
+    addTearDown(store.close);
+    await tester.pumpWidget(
+      PhotoSwipeApp(repository: repository, store: store),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openCamera(WidgetTester tester) async {
+    await startApp(tester, FakePhotoRepository(photoCounts: {'Camera': 3}));
+    await tester.tap(find.text('Camera'));
     await tester.pumpAndSettle();
   }
 
@@ -77,31 +88,58 @@ void main() {
     expect(find.text('No photos found in the fake gallery.'), findsOneWidget);
   });
 
-  testWidgets('steps through photos with the buttons and arrow keys', (
-    tester,
-  ) async {
-    await startApp(tester, FakePhotoRepository(photoCounts: {'Camera': 3}));
-    await tester.tap(find.text('Camera'));
-    await tester.pumpAndSettle();
+  testWidgets('sorts with the buttons and keys, and can undo', (tester) async {
+    await openCamera(tester);
 
-    expect(find.text('1 / 3'), findsOneWidget);
+    expect(find.text('0 / 3 sorted'), findsOneWidget);
     expect(find.text('IMG_1.jpg'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Next'));
-    await tester.pump();
-    expect(find.text('2 / 3'), findsOneWidget);
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-    await tester.pump();
-    expect(find.text('3 / 3'), findsOneWidget);
-
-    // Already on the last photo, so going further does nothing.
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-    await tester.pump();
-    expect(find.text('3 / 3'), findsOneWidget);
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 3 sorted'), findsOneWidget);
+    expect(find.text('IMG_2.jpg'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
-    await tester.pump();
-    expect(find.text('2 / 3'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Keep 1  ·  Delete 1'), findsOneWidget);
+    expect(find.text('IMG_3.jpg'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 3 sorted'), findsOneWidget);
+    expect(find.text('IMG_2.jpg'), findsOneWidget);
+  });
+
+  testWidgets('shows a summary once every photo is sorted', (tester) async {
+    await openCamera(tester);
+
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('All sorted!'), findsOneWidget);
+    expect(find.text('2 to keep, 1 to delete.'), findsOneWidget);
+    expect(find.text('Nothing has been deleted yet.'), findsOneWidget);
+  });
+
+  testWidgets('asks before starting over', (tester) async {
+    await openCamera(tester);
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Start over'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 3 sorted'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Start over'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Start over'));
+    await tester.pumpAndSettle();
+    expect(find.text('0 / 3 sorted'), findsOneWidget);
   });
 }

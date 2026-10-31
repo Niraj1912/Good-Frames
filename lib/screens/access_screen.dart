@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/screens/album_picker_screen.dart';
 
 /// The first screen. Asks for photo access, explains if the user refuses,
 /// and shows the albums once access is granted.
 class AccessScreen extends StatefulWidget {
-  const AccessScreen({super.key, required this.repository});
+  const AccessScreen({
+    super.key,
+    required this.repository,
+    required this.store,
+  });
 
   final PhotoRepository repository;
+  final DecisionStore store;
 
   @override
   State<AccessScreen> createState() => _AccessScreenState();
@@ -60,6 +66,7 @@ class _AccessScreenState extends State<AccessScreen>
       ),
       final status => AlbumPickerScreen(
         repository: widget.repository,
+        store: widget.store,
         limitedAccess: status == AccessStatus.limited,
       ),
     };

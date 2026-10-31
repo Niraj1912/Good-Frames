@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/screens/viewer_screen.dart';
+import 'package:photo_swipe/screens/sort_screen.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
 /// Lists the albums so the user can pick which one to sort.
@@ -9,10 +10,12 @@ class AlbumPickerScreen extends StatefulWidget {
   const AlbumPickerScreen({
     super.key,
     required this.repository,
+    required this.store,
     this.limitedAccess = false,
   });
 
   final PhotoRepository repository;
+  final DecisionStore store;
 
   /// True when the user shared only some photos (Android 14+).
   final bool limitedAccess;
@@ -39,8 +42,11 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
   void _open(Album album) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            ViewerScreen(repository: widget.repository, album: album),
+        builder: (_) => SortScreen(
+          repository: widget.repository,
+          store: widget.store,
+          album: album,
+        ),
       ),
     );
   }
