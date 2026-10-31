@@ -45,6 +45,17 @@ void main() {
     expect(controller.deleteCount, 1);
   });
 
+  test('lists the photos waiting after the current one', () async {
+    final controller = await openCamera();
+    expect(controller.upcoming(5).map((photo) => photo.name), [
+      'IMG_2.jpg',
+      'IMG_3.jpg',
+    ]);
+
+    await controller.decide(Decision.keep);
+    expect(controller.upcoming(5).map((photo) => photo.name), ['IMG_3.jpg']);
+  });
+
   test('undo brings back the photos in reverse order', () async {
     final controller = await openCamera();
     await controller.decide(Decision.keep);

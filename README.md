@@ -9,12 +9,17 @@ Everything runs on the device. No server, no uploads, no paid services.
 
 ## Status
 
-Phase 2: decisions. Open an album and mark each photo Keep or Delete, with
-undo and a progress bar. Decisions are saved as you go, so you can close the
-app and pick up where you stopped. Nothing is deleted yet. See the roadmap
-below.
+Phase 3: swiping. Open an album and swipe each photo: right to keep, left to
+delete. The card tilts as you drag, a KEEP or DELETE stamp fades in, and the
+phone gives a small vibration when letting go would count. A short drag
+springs back; a quick flick counts even if it's short. Buttons and keys
+animate the card the same way. Undo and a progress bar are always there.
 
-On Windows: `←` Delete, `→` Keep, `Z` (or `Ctrl+Z`, `Backspace`) Undo.
+Decisions are saved as you go, so you can close the app and pick up where you
+stopped. Nothing is deleted yet. See the roadmap below.
+
+On Windows: drag with the mouse, or `←` Delete, `→` Keep, `Z` (or `Ctrl+Z`,
+`Backspace`) Undo.
 
 ## Supported platforms
 
@@ -91,7 +96,7 @@ lib/
 ├── data/         Where photos and decisions come from (repositories, SQLite)
 ├── state/        App logic the screens listen to (current photo, undo, progress)
 ├── screens/      Full pages: album picker, swipe, review, done
-└── widgets/      Reusable pieces: swipe card, action buttons, progress bar
+└── widgets/      Reusable pieces: swipe card, photo card, buttons, progress bar
 test/             Automated tests (test/fakes/ holds FakePhotoRepository)
 tool/             Developer scripts, such as the test-photo generator
 android/          Android project (permissions live in AndroidManifest.xml)
@@ -110,7 +115,7 @@ interface, which has one implementation per environment:
 - [x] Phase 0: setup
 - [x] Phase 1: read-only viewer (permissions, albums, next/previous)
 - [x] Phase 2: keep/delete decisions saved in SQLite, resume, undo
-- [ ] Phase 3: swipe gestures and animations
+- [x] Phase 3: swipe gestures and animations
 - [ ] Phase 4: review screen and batch delete to the Android trash
 - [ ] Phase 5: edge cases, tests, hardening
 - [ ] Phase 6: release APK

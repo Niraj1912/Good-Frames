@@ -51,6 +51,18 @@ class SortController extends ChangeNotifier {
         .firstOrNull;
   }
 
+  /// Up to [count] photos waiting after [current], in order. Used to draw the
+  /// card behind and to load images before the user reaches them.
+  List<Photo> upcoming(int count) {
+    final currentId = current?.id;
+    return _photos
+        .where(
+          (photo) => photo.id != currentId && !_decisions.containsKey(photo.id),
+        )
+        .take(count)
+        .toList();
+  }
+
   /// Loads the album's photos and any decisions saved earlier.
   Future<void> load() async {
     try {

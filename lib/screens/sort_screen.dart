@@ -8,9 +8,10 @@ import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
-import 'package:photo_swipe/widgets/photo_frame.dart';
+import 'package:photo_swipe/widgets/photo_card.dart';
 import 'package:photo_swipe/widgets/photo_info.dart';
 import 'package:photo_swipe/widgets/sort_progress.dart';
+import 'package:photo_swipe/widgets/swipe_card.dart';
 
 /// Shows an album's photos one at a time so the user can mark each one to
 /// keep or delete. Decisions are only recorded here; nothing is deleted.
@@ -37,28 +38,62 @@ class _SortScreenState extends State<SortScreen> {
     album: widget.album,
   )..load();
 
+  // Lets the buttons and keys swipe the card, so they animate like a drag.
+  final _cardKey = GlobalKey<SwipeCardState>();
+  final _dragProgress = ValueNotifier(0.0);
+
   @override
   void dispose() {
     _controller.dispose();
+    _dragProgress.dispose();
     super.dispose();
   }
 
-  void _keep() => _run(() => _controller.decide(Decision.keep));
-  void _delete() => _run(() => _controller.decide(Decision.delete));
+  void _keep() => _cardKey.currentState?.swipe(SwipeDirection.right);
+  void _delete() => _cardKey.currentState?.swipe(SwipeDirection.left);
   void _undo() => _run(_controller.undo);
 
-  // Runs a controller action and tells the user if saving failed.
-  Future<void> _run(Future<void> Function() action) async {
+  Future<void> _onSwiped(SwipeDirection direction) async {
+    final decision = direction == SwipeDirection.right
+        ? Decision.keep
+        : Decision.delete;
+    final saved = await _run(() => _controller.decide(decision));
+    // The decision was taken back, so bring the card back too.
+    if (!saved) _cardKey.currentState?.comeBack();
+  }
+
+  // Runs a controller action, tells the user if saving failed, and reports
+  // whether it worked.
+  Future<bool> _run(Future<void> Function() action) async {
     try {
       await action();
+      return true;
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Couldn't save that. Please try again.\n$error"),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Couldn't save that. Please try again.\n$error"),
+          ),
+        );
+      }
+      return false;
     }
+  }
+
+  // Starts decoding the photos after the next one, so each card is ready
+  // the moment it comes up. Errors are ignored here: a broken photo shows
+  // its placeholder when it's reached.
+  void _preload(Iterable<Photo> photos, int width) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final photo in photos) {
+        precacheImage(
+          widget.repository.imageFor(photo, width: width),
+          context,
+          onError: (_, _) {},
+        );
+      }
+    });
   }
 
   Future<void> _confirmStartOver() async {
@@ -157,6 +192,8 @@ class _SortScreenState extends State<SortScreen> {
 
   Widget _buildPhoto(BuildContext context, Photo photo) {
     // Decode at the screen's real pixel width, not the photo's full size.
+    // Every card uses the same width, so an image decoded early for the
+    // card behind is found in the cache when it moves to the front.
     final width =
         (MediaQuery.sizeOf(context).width *
                 MediaQuery.devicePixelRatioOf(context))
@@ -168,12 +205,44 @@ class _SortScreenState extends State<SortScreen> {
       TargetPlatform.linux => true,
       _ => false,
     };
+    final upcoming = _controller.upcoming(3);
+    _preload(upcoming.skip(1), width);
 
     return Column(
       children: [
         Expanded(
-          child: PhotoFrame(
-            image: widget.repository.imageFor(photo, width: width),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // The next photo waits behind, slightly smaller, and grows
+                // as the top card is dragged away.
+                if (upcoming.isNotEmpty)
+                  ValueListenableBuilder(
+                    valueListenable: _dragProgress,
+                    builder: (context, progress, child) => Transform.scale(
+                      scale: 0.94 + 0.06 * progress.abs(),
+                      child: child,
+                    ),
+                    child: PhotoCard(
+                      image: widget.repository.imageFor(
+                        upcoming.first,
+                        width: width,
+                      ),
+                    ),
+                  ),
+                SwipeCard(
+                  key: _cardKey,
+                  cardId: photo.id,
+                  dragProgress: _dragProgress,
+                  onSwiped: _onSwiped,
+                  child: PhotoCard(
+                    image: widget.repository.imageFor(photo, width: width),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         PhotoInfo(photo: photo),
