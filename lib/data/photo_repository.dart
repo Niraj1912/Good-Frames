@@ -74,6 +74,12 @@ abstract interface class PhotoRepository {
   /// Brings [photos] back from the trash. Returns the ids of those restored.
   Future<Set<String>> restoreFromTrash(List<TrashedPhoto> photos);
 
+  /// Erases [photos], which must already be in the trash, for good: nothing
+  /// can bring them back after this. Only for photos the user picked, after
+  /// the app has warned them. Returns the ids of those erased, or none if
+  /// the user cancelled.
+  Future<Set<String>> deleteForever(List<TrashedPhoto> photos);
+
   /// Frees anything kept only to show [photos], once they can no longer be
   /// restored.
   Future<void> forgetTrashed(List<TrashedPhoto> photos);

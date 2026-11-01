@@ -25,14 +25,23 @@ instead. The button at the bottom moves the rest to the trash in one go:
 - Android: the system trash. Android asks once for the whole batch, then keeps
   the photos for about 30 days before removing them for good.
 - Windows: a `_SwipeSort_Trash` folder inside the photo folder, keeping the
-  subfolders. The app asks first. Nothing is erased.
+  subfolders. The app asks first. Nothing is erased yet.
 
 Recently deleted (the trash-can button on the album list) shows everything
-SwipeSort moved to the trash. Pick photos and restore them. On Android each
-one shows how many days are left before Android removes it for good. Android
-hides trashed photos even from the app that trashed them, so SwipeSort saves a
+SwipeSort moved to the trash. Pick photos and restore them, or delete them
+forever to free the space now instead of waiting. On Android each one shows
+how many days are left before Android removes it for good. Android hides
+trashed photos even from the app that trashed them, so SwipeSort saves a
 small thumbnail of each photo just before trashing it, to have something to
-show. There's no "delete forever" button: the app never erases anything.
+show.
+
+Delete forever is the only thing in the app that can't be undone, so it's
+fenced in: it only works on photos already in the trash, only on the ones
+you tick, and only after a warning in plain words. On Android, Android then
+asks again with its own prompt showing the photos. photo_manager can't erase
+trashed photos (it looks each one up first, and Android hides trashed photos
+from lookups), so this is the app's one piece of its own Android code:
+`MainActivity.kt`, reached from Dart through a platform channel.
 
 Phase 5: hardening. Tested with big libraries, older Android versions, large
 text, and photos changing behind the app's back. See "Tested" below.
@@ -91,6 +100,10 @@ decide and `Esc` closes.
 | 200% text size on a small phone | Every screen fits (`test/accessibility_test.dart`) |
 | A marked photo deleted by another app | Dropped from the review instead of staying marked |
 | Release APK size | 18 MB for most phones (arm64) |
+| App icon and splash screen | Right on Android 11 and 17, light and dark mode |
+| Release APK permissions | Photo access only; no internet |
+| Delete forever, Android 17 emulator | Android's own prompt appears for trashed photos; Deny keeps them, Allow erases them |
+| Signed 1.0.0 release on a real Android 16 phone | Installs; signed with the release key, not debuggable |
 
 Measure performance in a profile or release build (`flutter run --profile`),
 never a debug build: debug builds are several times slower.
@@ -123,6 +136,52 @@ While `flutter run` is running, press `r` to hot reload and `q` to quit.
 
 The Windows build reads `E:\test-photos`. To use another folder, add
 `--dart-define=PHOTO_ROOT=D:\other\folder` to `flutter run`.
+
+### Building a release APK
+
+Android only installs signed apps, and only lets an update replace an
+installed app if both are signed with the same key. So the key is the app's
+identity: make it once, keep it forever, and back it up (a password manager
+or a USB stick). Lose it and phones can't update to your next version
+without uninstalling first, which wipes the app's saved decisions.
+
+1. Make the key (once). From the project folder in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File tool\make_release_key.ps1
+   ```
+
+   It asks for your name and a password, then makes two files: the key,
+   `%USERPROFILE%\keys\swipesort-release.jks` (outside the project, so it
+   can't be committed), and `android\key.properties`, which tells the build
+   where the key is and its password (git ignores it). It never replaces an
+   existing key. `-ExecutionPolicy Bypass` lets this one script run without
+   changing Windows' setting that blocks scripts in general.
+   (To do it by hand instead, see `android/key.properties.example`.)
+2. Back up the `.jks` file and the password.
+3. Build. `--split-per-abi` makes one smaller APK per processor type; most
+   phones want `app-arm64-v8a-release.apk` (18 MB):
+
+   ```bash
+   flutter build apk --release --split-per-abi
+   ```
+
+Without `android/key.properties`, release builds still work but are signed
+with Flutter's shared debug key, which is fine for testing and not for
+sharing.
+
+The release APK asks only for photo access. Unlike debug builds, which need
+internet access to talk to the laptop's debugger, it has no internet
+permission, so Android itself guarantees photos can't leave the phone.
+
+Publishing on Google Play costs a one-time US$25, so for now the APK is
+shared directly (or from a free GitHub release). Installing it means
+allowing "Install unknown apps" for whichever app opens the file.
+
+The version is `version:` in `pubspec.yaml`: `1.0.0+1` means version name
+1.0.0 (what people see) and build number 1 (what Android compares; it must go
+up with every APK you share). The app ID `com.photoswipe.photo_swipe` is
+permanent: change it and Android treats it as a different app.
 
 ### Test photos
 
@@ -213,13 +272,19 @@ interface, which has one implementation per environment:
 - [x] Phase 6: UI and animation polish (beta feedback: the look was plain,
       and must not look "vibe coded")
 - [x] Zoom to check a photo before deciding, and more meaningful colour
-- [ ] Phase 7: release: app icon, splash screen, signed release APK
+- [x] Phase 7: release: app icon, splash screen, signed release APK
+- [x] Delete forever from Recently deleted
 
 ## Safety rules
 
 - The app never deletes a photo during swiping. It only records a decision.
 - Deletion happens only after the review screen, as a move to the system trash.
-  The app never erases a file itself.
+- A photo is erased for good only from Recently deleted: one already in the
+  trash, that you ticked, after a warning (and on Android, Android's own
+  prompt too). Nothing else in the app can erase a file.
+- The Windows build only ever erases files inside its own trash folder, never
+  one still in the library, whatever its database says (there's a test that
+  tries).
 - A decision is forgotten only after its photo has really been moved, so a
   crash part-way can't lose track of a photo.
 - The Windows build refuses to move any file outside its photo folder.

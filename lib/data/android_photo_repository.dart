@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
@@ -22,6 +23,10 @@ class AndroidPhotoRepository implements PhotoRepository {
   // photo_manager's own objects, kept so they can be found again by id.
   final _albums = <String, AssetPathEntity>{};
   final _assets = <String, AssetEntity>{};
+
+  // The app's own Android code, in MainActivity.kt, for the one thing
+  // photo_manager can't do: erasing photos that are already in the trash.
+  static const _trashChannel = MethodChannel('swipesort/trash');
 
   @override
   String get sourceName => "your phone's gallery";
@@ -205,6 +210,24 @@ class AndroidPhotoRepository implements PhotoRepository {
         if (restored.contains(photo.photoId)) photo,
     ]);
     return restored;
+  }
+
+  @override
+  Future<Set<String>> deleteForever(List<TrashedPhoto> photos) async {
+    // Android asks the user itself ("Allow SwipeSort to permanently delete
+    // ...?") and answers with every id, or none if they said no.
+    final deleted = await _trashChannel.invokeListMethod<String>(
+      'deleteForever',
+      {
+        'ids': [for (final photo in photos) photo.photoId],
+      },
+    );
+    final erased = {...?deleted};
+    await forgetTrashed([
+      for (final photo in photos)
+        if (erased.contains(photo.photoId)) photo,
+    ]);
+    return erased;
   }
 
   @override

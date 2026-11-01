@@ -4,7 +4,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 
 /// The state of the Recently deleted screen: photos this app moved to the
-/// trash, and bringing them back.
+/// trash, bringing them back, and erasing them for good.
 class TrashController extends ChangeNotifier {
   TrashController({
     required this.repository,
@@ -74,6 +74,19 @@ class TrashController extends ChangeNotifier {
     ];
     _notify();
     return restored.length;
+  }
+
+  /// Erases [chosen] for good. Returns how many were erased: none if the user
+  /// cancelled. The screen asks "are you sure?" before calling this.
+  Future<int> deleteForever(List<TrashedPhoto> chosen) async {
+    final deleted = await repository.deleteForever(chosen);
+    await store.forgetTrashed(deleted);
+    _photos = [
+      for (final photo in _photos)
+        if (!deleted.contains(photo.photoId)) photo,
+    ];
+    _notify();
+    return deleted.length;
   }
 
   void _notify() {

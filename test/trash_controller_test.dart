@@ -81,6 +81,32 @@ void main() {
     expect(await store.loadTrashed(), hasLength(2));
   });
 
+  test('deleting forever erases photos and takes them off the list', () async {
+    await trashTwo();
+    final trash = await openTrash();
+    final img1 = trash.photos.firstWhere((photo) => photo.name == 'IMG_1.jpg');
+
+    expect(await trash.deleteForever([img1]), 1);
+
+    expect(repository.erased, ['Camera/1']);
+    expect(trash.photos.map((photo) => photo.name), ['IMG_3.jpg']);
+    expect((await store.loadTrashed()).single.name, 'IMG_3.jpg');
+    // Gone for good: restoring it now finds nothing.
+    expect(await trash.restore([img1]), 0);
+  });
+
+  test('if the user cancels deleting forever, nothing is erased', () async {
+    await trashTwo();
+    final trash = await openTrash();
+    repository.cancelDeleteForever = true;
+
+    expect(await trash.deleteForever(trash.photos), 0);
+
+    expect(repository.erased, isEmpty);
+    expect(trash.photos, hasLength(2));
+    expect(await store.loadTrashed(), hasLength(2));
+  });
+
   test('stops listing photos the system has removed for good', () async {
     repository.trashKeepsFor = const Duration(days: 30);
     await trashTwo();

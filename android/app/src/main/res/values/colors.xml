@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colours Android needs before Flutter starts (icon, splash screen).
+     They match lib/theme/app_theme.dart; change both together. -->
+<resources>
+    <!-- Ink blue, the app's accent. -->
+    <color name="ic_launcher_background">#2D5BA6</color>
+    <!-- Warm paper, the light theme's surface. values-night has the dark one. -->
+    <color name="splash_background">#F7F6F3</color>
+</resources>

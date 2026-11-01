@@ -46,6 +46,12 @@ class FakePhotoRepository implements PhotoRepository {
   /// Ids whose leftovers were freed by [forgetTrashed].
   final forgotten = <String>[];
 
+  /// Plays the user tapping Cancel on the system's "delete forever" prompt.
+  bool cancelDeleteForever = false;
+
+  /// Ids erased for good so far.
+  final erased = <String>[];
+
   @override
   Duration? trashKeepsFor;
 
@@ -166,6 +172,17 @@ class FakePhotoRepository implements PhotoRepository {
       restored.add(photo.id);
     }
     return restored;
+  }
+
+  @override
+  Future<Set<String>> deleteForever(List<TrashedPhoto> photos) async {
+    if (cancelDeleteForever) return {};
+    final deleted = {
+      for (final photo in photos)
+        if (_inTrash.remove(photo.photoId) != null) photo.photoId,
+    };
+    erased.addAll(deleted);
+    return deleted;
   }
 
   @override

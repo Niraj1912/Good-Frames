@@ -238,5 +238,66 @@ void main() {
         expect(await repository.restoreFromTrash(trashed), isEmpty);
       },
     );
+
+    test('deleting forever erases the file in the trash folder', () async {
+      final photo = await photoAt('Camera/IMG_0001.jpg');
+      final trashed = await repository.moveToTrash([photo]);
+
+      final deleted = await repository.deleteForever(trashed);
+
+      expect(deleted, {photo.id});
+      expect(File(trashed.single.trashPath!).existsSync(), isFalse);
+      expect(File(photo.id).existsSync(), isFalse);
+      // Everything else is untouched.
+      expect(File(inRoot('Camera/IMG_0002.JPG')).existsSync(), isTrue);
+    });
+
+    // The most important rule: whatever the database says, it never erases a
+    // photo that's still in the library, or a file outside the photo folder.
+    test(
+      'deleting forever only ever erases files in its trash folder',
+      () async {
+        final elsewhere = await Directory.systemTemp.createTemp('elsewhere_');
+        addTearDown(() => elsewhere.delete(recursive: true));
+        final outside = File(p.join(elsewhere.path, 'important.jpg'));
+        await outside.writeAsBytes([1, 2, 3]);
+        final inLibrary = inRoot('Camera/IMG_0002.JPG');
+
+        final deleted = await repository.deleteForever([
+          TrashedPhoto(
+            photoId: inLibrary,
+            name: 'IMG_0002.JPG',
+            trashedAt: DateTime(2026),
+            trashPath: inLibrary, // Points at the library, not the trash.
+          ),
+          TrashedPhoto(
+            photoId: inRoot('Camera/other.jpg'),
+            name: 'other.jpg',
+            trashedAt: DateTime(2026),
+            trashPath: outside.path,
+          ),
+          TrashedPhoto(
+            photoId: inRoot('Camera/no_path.jpg'),
+            name: 'no_path.jpg',
+            trashedAt: DateTime(2026),
+          ),
+        ]);
+
+        expect(deleted, isEmpty);
+        expect(File(inLibrary).existsSync(), isTrue);
+        expect(outside.existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'a photo already gone from the trash folder counts as deleted',
+      () async {
+        final photo = await photoAt('loose.jpg');
+        final trashed = await repository.moveToTrash([photo]);
+        await File(trashed.single.trashPath!).delete(); // The user emptied it.
+
+        expect(await repository.deleteForever(trashed), {photo.id});
+      },
+    );
   });
 }

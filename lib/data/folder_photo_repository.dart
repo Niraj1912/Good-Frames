@@ -117,7 +117,7 @@ class FolderPhotoRepository implements PhotoRepository {
   @override
   String get trashExplanation =>
       'They go to the $trashFolderName folder inside $rootPath, where you '
-      'can move them back. Nothing is erased.';
+      "can move them back. They're only erased if you choose Delete forever.";
 
   // A plain folder: nothing ever empties it but the user.
   @override
@@ -193,6 +193,28 @@ class FolderPhotoRepository implements PhotoRepository {
     }
     _lastScan = null;
     return restored;
+  }
+
+  @override
+  Future<Set<String>> deleteForever(List<TrashedPhoto> photos) async {
+    final trashFolder = p.join(rootPath, trashFolderName);
+    final deleted = <String>{};
+    for (final photo in photos) {
+      final path = photo.trashPath;
+      // Only ever erase files inside our own trash folder, never a photo
+      // still in the library, whatever the database says.
+      if (path == null || !p.isWithin(trashFolder, path)) continue;
+      try {
+        await File(path).delete();
+        deleted.add(photo.photoId);
+      } on PathNotFoundException {
+        // The user already emptied it from the folder: it's gone either way.
+        deleted.add(photo.photoId);
+      } on FileSystemException {
+        // Open in another program. Leave it in the trash.
+      }
+    }
+    return deleted;
   }
 
   // Nothing extra is kept for trashed photos here.

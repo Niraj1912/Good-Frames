@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The icon: two photo cards fanned out, like a swipe in progress. The front
+     one is a print with a little landscape (sky blue, keep green); the back
+     one is a ghost of the photo just swiped away.
+
+     An adaptive icon foreground is a 108 x 108 canvas. Launchers crop it to
+     their own shape and show roughly the middle 72, and only a circle 66
+     across (radius 33 around 54,54) is guaranteed to show, so everything
+     important stays inside that circle.
+
+     ic_launcher_monochrome.xml draws the same shapes; change both together. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Back card, tipped left. -->
+    <group
+        android:pivotX="49"
+        android:pivotY="55"
+        android:rotation="-14">
+        <path
+            android:fillAlpha="0.35"
+            android:fillColor="#FFFFFF"
+            android:pathData="M36,34 H62 A3,3 0 0 1 65,37 V73 A3,3 0 0 1 62,76 H36 A3,3 0 0 1 33,73 V37 A3,3 0 0 1 36,34 Z" />
+    </group>
+
+    <!-- Front card, tipped right: a print, its border thicker at the bottom. -->
+    <group
+        android:pivotX="60"
+        android:pivotY="52"
+        android:rotation="8">
+        <path
+            android:fillColor="#F7F6F3"
+            android:pathData="M47,31 H73 A3,3 0 0 1 76,34 V70 A3,3 0 0 1 73,73 H47 A3,3 0 0 1 44,70 V34 A3,3 0 0 1 47,31 Z" />
+        <group>
+            <!-- The photo itself, clipped to the window in the print. -->
+            <clip-path android:pathData="M48.5,34 H71.5 A1.5,1.5 0 0 1 73,35.5 V60.5 A1.5,1.5 0 0 1 71.5,62 H48.5 A1.5,1.5 0 0 1 47,60.5 V35.5 A1.5,1.5 0 0 1 48.5,34 Z" />
+            <path
+                android:fillColor="#A9C4F0"
+                android:pathData="M47,34 H73 V62 H47 Z" />
+            <path
+                android:fillColor="#F7F6F3"
+                android:pathData="M63,41 A3,3 0 1 0 69,41 A3,3 0 1 0 63,41 Z" />
+            <path
+                android:fillColor="#63B482"
+                android:pathData="M46,63 V52 Q52,45 59,51 Q64,47 74,50 V63 Z" />
+            <path
+                android:fillColor="#2D7A4C"
+                android:pathData="M46,63 V58 Q59,50 74,57 V63 Z" />
+        </group>
+    </group>
+</vector>

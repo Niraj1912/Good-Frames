@@ -198,7 +198,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('Camera/1')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Restore 1 photo'));
+    expect(find.text('1 photo chosen'), findsOneWidget);
+    await tester.tap(find.text('Restore'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Restored 1 photo.'), findsOneWidget);
@@ -207,6 +208,60 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('2 photos'), findsOneWidget); // Back in the album.
+
+    await tester.pump(const Duration(seconds: 10)); // Let messages time out.
+  });
+
+  testWidgets('deleting forever warns first, and Cancel erases nothing', (
+    tester,
+  ) async {
+    final repository = FakePhotoRepository(photoCounts: {'Camera': 2});
+    await startApp(tester, repository);
+    await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Review photos to delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move 1 photo to the trash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Move to trash'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Recently deleted'));
+    await tester.pumpAndSettle();
+
+    // Nothing chosen yet: both buttons are off.
+    final deleteForever = find.widgetWithText(FilledButton, 'Delete forever');
+    expect(tester.widget<FilledButton>(deleteForever).onPressed, isNull);
+
+    await tester.tap(find.byKey(const ValueKey('Camera/1')));
+    await tester.pumpAndSettle();
+    await tester.tap(deleteForever);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete 1 photo forever?'), findsOneWidget);
+
+    // Changing your mind is free.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository.erased, isEmpty);
+    expect(find.byKey(const ValueKey('Camera/1')), findsOneWidget);
+
+    // Meaning it erases the photo.
+    await tester.tap(deleteForever);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Delete forever'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repository.erased, ['Camera/1']);
+    expect(find.textContaining('Deleted 1 photo forever.'), findsOneWidget);
+    expect(find.textContaining('Nothing here.'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 10)); // Let messages time out.
   });
