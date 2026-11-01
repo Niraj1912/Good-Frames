@@ -5,6 +5,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/screens/photo_viewer_screen.dart';
 import 'package:photo_swipe/screens/review_screen.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
@@ -65,6 +66,27 @@ class _SortScreenState extends State<SortScreen> {
     };
     _run(_controller.undo);
   }
+
+  // Opens the photo full screen to zoom in. A decision made there swipes
+  // the card away once the viewer has closed, just like a drag would.
+  Future<void> _openViewer(Photo photo, ImageProvider preview) async {
+    final decision = await Navigator.of(context).push<Decision>(
+      MaterialPageRoute(
+        builder: (_) => PhotoViewerScreen(
+          repository: widget.repository,
+          photo: photo,
+          preview: preview,
+          heroTag: _heroTag(photo),
+        ),
+      ),
+    );
+    if (!mounted || decision == null) return;
+    _cardKey.currentState?.swipe(
+      decision == Decision.keep ? SwipeDirection.right : SwipeDirection.left,
+    );
+  }
+
+  static Object _heroTag(Photo photo) => 'photo-${photo.id}';
 
   Future<void> _onSwiped(SwipeDirection direction) async {
     _enterFrom = null; // The next photo just appears behind.
@@ -271,6 +293,8 @@ class _SortScreenState extends State<SortScreen> {
     };
     final upcoming = _controller.upcoming(3);
     _preload(upcoming.skip(1), width);
+    final image = widget.repository.imageFor(photo, width: width);
+    final sortColors = SortColors.of(context);
 
     return Column(
       children: [
@@ -280,6 +304,21 @@ class _SortScreenState extends State<SortScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
+                // A faint wash of the colour the card is heading for, so
+                // the whole screen agrees with the stamp.
+                Positioned.fill(
+                  child: ValueListenableBuilder(
+                    valueListenable: _dragProgress,
+                    builder: (context, progress, _) => DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color:
+                            (progress > 0 ? sortColors.keep : sortColors.delete)
+                                .withValues(alpha: 0.14 * progress.abs()),
+                      ),
+                    ),
+                  ),
+                ),
                 // The next photo waits behind, slightly smaller, and grows
                 // as the top card is dragged away.
                 if (upcoming.isNotEmpty)
@@ -302,8 +341,19 @@ class _SortScreenState extends State<SortScreen> {
                   dragProgress: _dragProgress,
                   enterFrom: _enterFrom,
                   onSwiped: _onSwiped,
-                  child: PhotoCard(
-                    image: widget.repository.imageFor(photo, width: width),
+                  onTap: () => _openViewer(photo, image),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      PhotoCard(image: image, heroTag: _heroTag(photo)),
+                      // Says "you can zoom"; the tap itself is handled by
+                      // the whole card, so this just shows the way.
+                      const Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: IgnorePointer(child: _ZoomHint()),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -323,7 +373,7 @@ class _SortScreenState extends State<SortScreen> {
               if (isDesktop) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '←  Delete      Z  Undo      →  Keep',
+                  '←  Delete      Z  Undo      →  Keep      Click to zoom',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -331,6 +381,25 @@ class _SortScreenState extends State<SortScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A small magnifier in the card's corner, showing the photo can be opened.
+class _ZoomHint extends StatelessWidget {
+  const _ZoomHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: BoxShape.circle,
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Icon(Icons.zoom_in, color: Colors.white, size: 20),
+      ),
     );
   }
 }
@@ -363,11 +432,7 @@ class _DoneView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.task_alt,
-              size: 40,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            Icon(Icons.task_alt, size: 40, color: colors.keep),
             const SizedBox(height: 16),
             Text('All sorted', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),

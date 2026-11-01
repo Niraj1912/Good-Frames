@@ -46,6 +46,11 @@ abstract interface class PhotoRepository {
   /// screen size instead of full size keeps memory use low.
   ImageProvider imageFor(Photo photo, {required int width});
 
+  /// The image for zooming in to check a photo: as much detail as is
+  /// sensible, up to [maxSize] pixels on the long side. Much bigger in
+  /// memory than [imageFor], so only for one photo at a time.
+  ImageProvider detailImageFor(Photo photo, {int maxSize = 4096});
+
   /// True if the system shows its own "are you sure?" prompt when photos are
   /// moved to the trash, as Android does. Otherwise the app has to ask.
   bool get confirmsTrashItself;

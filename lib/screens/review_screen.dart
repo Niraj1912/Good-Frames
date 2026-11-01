@@ -60,8 +60,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Cancel'),
             ),
+            // Red, not the accent: this is the destructive choice.
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
               child: const Text('Move to trash'),
             ),
           ],

@@ -29,14 +29,22 @@ class SortProgress extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
         children: [
-          // Glides to each new value instead of jumping.
-          TweenAnimationBuilder<double>(
-            tween: Tween(end: total == 0 ? 0 : sorted / total),
+          // Two colours, so the bar shows the keep/delete split at a glance,
+          // and glides to each new value instead of jumping.
+          TweenAnimationBuilder<Offset>(
+            tween: Tween(
+              end: total == 0
+                  ? Offset.zero
+                  : Offset(kept / total, deleted / total),
+            ),
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
-            builder: (context, value, _) => ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(value: value),
+            builder: (context, shares, _) => _SplitBar(
+              keptShare: shares.dx,
+              deletedShare: shares.dy,
+              keepColor: colors.keep,
+              deleteColor: colors.delete,
+              trackColor: theme.colorScheme.outlineVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -76,6 +84,57 @@ class SortProgress extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A thin bar: kept in green, then deleted in red, then what's left.
+class _SplitBar extends StatelessWidget {
+  const _SplitBar({
+    required this.keptShare,
+    required this.deletedShare,
+    required this.keepColor,
+    required this.deleteColor,
+    required this.trackColor,
+  });
+
+  final double keptShare;
+  final double deletedShare;
+  final Color keepColor;
+  final Color deleteColor;
+  final Color trackColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: SizedBox(
+            height: 4,
+            child: Stack(
+              children: [
+                Positioned.fill(child: ColoredBox(color: trackColor)),
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: width * keptShare,
+                  child: ColoredBox(color: keepColor),
+                ),
+                Positioned(
+                  left: width * keptShare,
+                  top: 0,
+                  bottom: 0,
+                  width: width * deletedShare,
+                  child: ColoredBox(color: deleteColor),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

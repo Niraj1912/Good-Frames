@@ -100,6 +100,17 @@ class FolderPhotoRepository implements PhotoRepository {
   ImageProvider imageFor(Photo photo, {required int width}) =>
       ResizeImage(FileImage(File(photo.id)), width: width);
 
+  // The original file, only shrunk if it's bigger than maxSize.
+  @override
+  ImageProvider detailImageFor(Photo photo, {int maxSize = 4096}) =>
+      ResizeImage(
+        FileImage(File(photo.id)),
+        width: maxSize,
+        height: maxSize,
+        policy: ResizeImagePolicy.fit,
+        allowUpscaling: false,
+      );
+
   @override
   bool get confirmsTrashItself => false;
 

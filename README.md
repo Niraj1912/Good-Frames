@@ -39,6 +39,17 @@ text, and photos changing behind the app's back. See "Tested" below.
 
 Phase 6: design. A restrained, photo-first look; see "Design" below.
 
+Checking a photo up close: tap the card (instead of swiping) and the photo
+grows into a full-screen viewer on black. Pinch to zoom, drag to look around,
+or double-tap to jump to 100% (one photo pixel per screen pixel, the honest
+way to judge sharpness); double-tap again to fit. It shows the date, file size
+and real pixel size. Keep or Delete right there, and the card flies off the
+same way a swipe would; the close button goes back without deciding.
+
+The viewer loads a bigger copy of the photo (up to 4,096 px on the long side)
+than the card uses, showing the card's copy until it's ready, and frees it as
+soon as the viewer closes, so a 50-megapixel photo never sits in memory.
+
 ## Design
 
 All of it lives in `lib/theme/app_theme.dart` (design tokens: colours, type,
@@ -47,7 +58,11 @@ shapes), so screens never pick their own colours.
 - Photo first: neutral surfaces (near-black in dark mode, warm off-white in
   light), not tinted, so photos' own colours read true.
 - Colour carries meaning: green keeps, brick red deletes (`SortColors`, a
-  theme extension). Everything else is ink on paper.
+  theme extension), and one ink-blue accent marks other actions and
+  selections. The meaning colours show up where they help: the progress bar
+  is split green and red, the counts are coloured, the Delete button is
+  tinted red, and the space behind the card washes green or red as you drag.
+  Everything else is ink on paper.
 - Quiet shapes: 12-16 px corners and hairline borders instead of shadows or
   glows. No gradients, no decorative blur, no emoji in the interface.
 - Numbers use tabular figures (so counters don't wobble) and thousands
@@ -61,7 +76,8 @@ shapes), so screens never pick their own colours.
 See the roadmap below.
 
 On Windows: drag with the mouse, or `←` Delete, `→` Keep, `Z` (or `Ctrl+Z`,
-`Backspace`) Undo.
+`Backspace`) Undo. Click the photo to zoom; in the viewer the arrows still
+decide and `Esc` closes.
 
 ## Tested
 
@@ -196,6 +212,7 @@ interface, which has one implementation per environment:
 - [x] Phase 5: edge cases, tests, hardening
 - [x] Phase 6: UI and animation polish (beta feedback: the look was plain,
       and must not look "vibe coded")
+- [x] Zoom to check a photo before deciding, and more meaningful colour
 - [ ] Phase 7: release: app icon, splash screen, signed release APK
 
 ## Safety rules

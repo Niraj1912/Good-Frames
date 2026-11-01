@@ -5,13 +5,17 @@ import 'package:photo_swipe/widgets/photo_frame.dart';
 /// A photo in a quiet frame: a neutral matte where the photo doesn't fill
 /// it, a hairline border, and no shadow to compete with the picture.
 class PhotoCard extends StatelessWidget {
-  const PhotoCard({super.key, required this.image});
+  const PhotoCard({super.key, required this.image, this.heroTag});
 
   final ImageProvider image;
+
+  /// Set on the top card only, so the photo can grow into the zoom viewer.
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final photo = PhotoFrame(image: image);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: SortColors.of(context).photoMatte,
@@ -20,7 +24,10 @@ class PhotoCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15),
-        child: PhotoFrame(image: image),
+        child: switch (heroTag) {
+          final tag? => Hero(tag: tag, child: photo),
+          null => photo,
+        },
       ),
     );
   }

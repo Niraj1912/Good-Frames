@@ -9,6 +9,7 @@ class DecisionButtons extends StatelessWidget {
     required this.onDelete,
     required this.onKeep,
     required this.onUndo,
+    this.showUndo = true,
   });
 
   final VoidCallback? onDelete;
@@ -17,11 +18,15 @@ class DecisionButtons extends StatelessWidget {
   /// Null when there's nothing to undo, which greys the button out.
   final VoidCallback? onUndo;
 
+  /// False where undo makes no sense, such as the zoomed photo viewer.
+  final bool showUndo;
+
   @override
   Widget build(BuildContext context) {
     final colors = SortColors.of(context);
+    final surface = Theme.of(context).colorScheme.surface;
     // Dark text on a light green, light text on a dark one: always readable.
-    final onKeep =
+    final onKeepColor =
         ThemeData.estimateBrightnessForColor(colors.keep) == Brightness.dark
         ? Colors.white
         : Colors.black;
@@ -29,35 +34,42 @@ class DecisionButtons extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
+          // A soft red wash rather than a solid red: deleting is the
+          // weightier choice, so it's clear but doesn't shout.
+          child: FilledButton.icon(
             onPressed: onDelete,
-            style: OutlinedButton.styleFrom(
+            style: FilledButton.styleFrom(
+              backgroundColor: Color.alphaBlend(
+                colors.delete.withValues(alpha: 0.16),
+                surface,
+              ),
               foregroundColor: colors.delete,
-              side: BorderSide(color: colors.delete, width: 1.5),
             ),
             icon: const Icon(Icons.close),
             label: const Text('Delete'),
           ),
         ),
-        const SizedBox(width: 12),
-        IconButton.outlined(
-          onPressed: onUndo,
-          style: IconButton.styleFrom(
-            minimumSize: const Size(52, 52),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+        if (showUndo) ...[
+          const SizedBox(width: 12),
+          IconButton.outlined(
+            onPressed: onUndo,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(52, 52),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
             ),
+            icon: const Icon(Icons.undo),
+            tooltip: 'Undo',
           ),
-          icon: const Icon(Icons.undo),
-          tooltip: 'Undo',
-        ),
+        ],
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
-            onPressed: this.onKeep,
+            onPressed: onKeep,
             style: FilledButton.styleFrom(
               backgroundColor: colors.keep,
-              foregroundColor: onKeep,
+              foregroundColor: onKeepColor,
             ),
             icon: const Icon(Icons.check),
             label: const Text('Keep'),

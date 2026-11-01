@@ -103,6 +103,10 @@ class FakePhotoRepository implements PhotoRepository {
   ImageProvider imageFor(Photo photo, {required int width}) =>
       MemoryImage(_onePixelPng);
 
+  @override
+  ImageProvider detailImageFor(Photo photo, {int maxSize = 4096}) =>
+      MemoryImage(_onePixelPng);
+
   // No system prompt here, so the app shows its own, which tests can tap.
   @override
   bool get confirmsTrashItself => false;

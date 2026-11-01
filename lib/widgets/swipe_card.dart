@@ -22,7 +22,11 @@ class SwipeCard extends StatefulWidget {
     required this.child,
     this.dragProgress,
     this.enterFrom,
+    this.onTap,
   });
+
+  /// Called on a tap (no drag), e.g. to open the photo for zooming.
+  final VoidCallback? onTap;
 
   /// What the card is showing. When it changes, the card resets to the
   /// middle, ready for the next photo.
@@ -231,6 +235,9 @@ class SwipeCardState extends State<SwipeCard>
         return GestureDetector(
           // Catch drags anywhere on the card, even on see-through parts.
           behavior: HitTestBehavior.opaque,
+          // A tap and a drag can't be confused: the drag only starts once
+          // the finger has moved, and the tap only fires if it didn't.
+          onTap: _leaving == null ? widget.onTap : null,
           onPanStart: _onPanStart,
           onPanUpdate: _onPanUpdate,
           onPanEnd: _onPanEnd,
@@ -300,10 +307,12 @@ class _Stamp extends StatelessWidget {
           angle: angle,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              // Paper-coloured backing (near-black in dark mode), so the
-              // label reads as crisp ink on any photo.
-              color: Theme.of(context).colorScheme.surface
-                  .withValues(alpha: 0.92),
+              // Paper tinted with the stamp's own colour (dark in dark
+              // mode), so the label reads clearly on any photo.
+              color: Color.alphaBlend(
+                color.withValues(alpha: 0.2),
+                Theme.of(context).colorScheme.surface,
+              ).withValues(alpha: 0.94),
               border: Border.all(color: color, width: 2.5),
               borderRadius: BorderRadius.circular(6),
             ),

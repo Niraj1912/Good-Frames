@@ -105,6 +105,29 @@ class AndroidPhotoRepository implements PhotoRepository {
         thumbnailSize: ThumbnailSize.square(width),
       );
 
+  // A very large thumbnail rather than the original file: Android decodes
+  // it (HEIC included), applies the rotation, and caps the size, so a
+  // 50-megapixel photo can't exhaust memory. It asks for the photo's own
+  // size: asking for more would make Android scale small photos *up*.
+  @override
+  ImageProvider detailImageFor(Photo photo, {int maxSize = 4096}) {
+    final asset = _assets[photo.id]!;
+    final width = asset.orientatedWidth;
+    final height = asset.orientatedHeight;
+    final ThumbnailSize size;
+    if (width <= 0 || height <= 0) {
+      size = const ThumbnailSize.square(2048); // Size unknown: a safe guess.
+    } else {
+      final shrink = min(1.0, maxSize / max(width, height));
+      size = ThumbnailSize((width * shrink).round(), (height * shrink).round());
+    }
+    return AssetEntityImageProvider(
+      asset,
+      isOriginal: false,
+      thumbnailSize: size,
+    );
+  }
+
   @override
   bool get confirmsTrashItself => true;
 

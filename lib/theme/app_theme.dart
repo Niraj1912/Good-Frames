@@ -4,15 +4,16 @@ import 'package:flutter/material.dart';
 ///
 /// * Photo first: surfaces are neutral (no tint), so a photo's own colours
 ///   read true and nothing competes with it.
-/// * Colour means something: green keeps, red deletes. Everything else is
-///   ink on paper.
+/// * Colour means something: green keeps, red deletes, and one ink-blue
+///   accent marks other actions and selections. Everything else is ink on
+///   paper.
 /// * Quiet shapes: modest corners and thin borders instead of shadows.
 abstract final class AppTheme {
   static final light = _build(
     const ColorScheme(
       brightness: Brightness.light,
-      primary: Color(0xFF1B1B1A), // Ink
-      onPrimary: Color(0xFFF7F6F3),
+      primary: Color(0xFF2D5BA6), // Ink blue, the one accent
+      onPrimary: Color(0xFFFFFFFF),
       secondary: Color(0xFF5E5D59),
       onSecondary: Color(0xFFF7F6F3),
       error: Color(0xFFB3372B), // Brick red, the delete colour
@@ -36,8 +37,8 @@ abstract final class AppTheme {
   static final dark = _build(
     const ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFFEDECE8),
-      onPrimary: Color(0xFF131313),
+      primary: Color(0xFF8FB2EE),
+      onPrimary: Color(0xFF0E1A2E),
       secondary: Color(0xFFA6A49F),
       onSecondary: Color(0xFF131313),
       error: Color(0xFFE2705F),
@@ -119,7 +120,7 @@ abstract final class AppTheme {
       ),
       listTileTheme: ListTileThemeData(iconColor: colors.onSurfaceVariant),
       progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: colors.onSurface,
+        color: colors.primary,
         linearTrackColor: colors.outlineVariant,
         linearMinHeight: 3,
       ),
