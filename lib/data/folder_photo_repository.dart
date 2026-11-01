@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/painting.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:photo_swipe/widgets/formatting.dart';
 
 /// Reads photos from a folder on disk. The Windows build uses it, so most of
 /// the app can be developed and tested on a laptop.
@@ -27,13 +30,24 @@ class FolderPhotoRepository implements PhotoRepository {
     '.bmp',
   };
 
-  /// Where deleted photos will go (Phase 4). Never shown as photos.
+  /// Where trashed photos go. Never shown as photos.
   static const trashFolderName = '_SwipeSort_Trash';
 
   static const _allPhotosId = '*all*';
 
+  // The last scan, reused when an album is opened right after the album list
+  // loaded. Thrown away whenever this class moves files.
+  _Scan? _lastScan;
+  int _skippedHeic = 0;
+
   @override
   String get sourceName => rootPath;
+
+  @override
+  String? get notice => _skippedHeic == 0
+      ? null
+      : 'Skipped ${photoCount(_skippedHeic)} in HEIC format: Windows can\'t '
+            'display HEIC. (Android can.)';
 
   // Desktop apps can read the user's files without asking.
   @override
@@ -45,9 +59,10 @@ class FolderPhotoRepository implements PhotoRepository {
   @override
   Future<void> changeSelectedPhotos() async {}
 
+  // Always scans afresh, so the Reload button picks up new files.
   @override
   Future<List<Album>> albums() async {
-    final byFolder = await _scan();
+    final byFolder = (_lastScan = await _scan()).byFolder;
     if (byFolder.isEmpty) return [];
 
     final total = byFolder.values.fold(0, (sum, photos) => sum + photos.length);
@@ -64,57 +79,182 @@ class FolderPhotoRepository implements PhotoRepository {
   }
 
   @override
-  Future<List<Photo>> photosIn(Album album) async {
-    final byFolder = await _scan();
+  // One page: the folder was already scanned for the album list.
+  Stream<List<Photo>> photosIn(Album album) async* {
+    final byFolder = (_lastScan ??= await _scan()).byFolder;
     final photos = album.id == _allPhotosId
         ? byFolder.values.expand((photos) => photos).toList()
-        : byFolder[album.id] ?? [];
-    return photos..sort((a, b) => b.date.compareTo(a.date));
+        : [...?byFolder[album.id]];
+    yield photos..sort((a, b) => b.date.compareTo(a.date));
   }
 
   @override
   ImageProvider imageFor(Photo photo, {required int width}) =>
       ResizeImage(FileImage(File(photo.id)), width: width);
 
-  /// Finds every photo under [rootPath], grouped by the folder it's in.
-  /// Rescans on every call: simple, and fast enough for a test folder.
-  Future<Map<String, List<Photo>>> _scan() async {
-    final root = Directory(rootPath);
-    if (!await root.exists()) return {};
+  @override
+  bool get confirmsTrashItself => false;
 
-    final byFolder = <String, List<Photo>>{};
-    final entries = root
-        .list(recursive: true, followLinks: false)
-        // Skip folders we aren't allowed to read instead of crashing.
-        .handleError((_) {}, test: (error) => error is FileSystemException);
-    await for (final entry in entries) {
-      if (entry is! File || !_isPhoto(entry.path)) continue;
-      final stat = await entry.stat();
-      final folder = p.dirname(entry.path);
-      (byFolder[folder] ??= []).add(
-        Photo(
-          // The full path is unique even when two folders hold the same
-          // file name, like Camera/IMG_0001.jpg and Screenshots/IMG_0001.jpg.
-          id: entry.path,
-          name: p.basename(entry.path),
-          date: stat.modified,
-          sizeBytes: stat.size,
-        ),
-      );
+  @override
+  String get trashExplanation =>
+      'They go to the $trashFolderName folder inside $rootPath, where you '
+      'can move them back. Nothing is erased.';
+
+  // A plain folder: nothing ever empties it but the user.
+  @override
+  Duration? get trashKeepsFor => null;
+
+  @override
+  Future<List<TrashedPhoto>> moveToTrash(
+    List<Photo> photos, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    final moved = <TrashedPhoto>[];
+    for (final (index, photo) in photos.indexed) {
+      if (await _moveOneToTrash(photo) case final trashed?) moved.add(trashed);
+      onProgress?.call(index + 1, photos.length);
     }
-    return byFolder;
+    _lastScan = null; // Files moved, so the last scan is out of date.
+    return moved;
   }
 
-  bool _isPhoto(String path) {
-    final name = p.basename(path);
-    if (name.startsWith('.')) return false;
-    final folders = p.split(p.relative(path, from: rootPath));
-    if (folders.contains(trashFolderName)) return false;
-    return supportedExtensions.contains(p.extension(name).toLowerCase());
+  Future<TrashedPhoto?> _moveOneToTrash(Photo photo) async {
+    // A photo id is a path, so check it really is inside our folder before
+    // touching it. Code that moves files must never trust a path blindly.
+    if (!p.isWithin(rootPath, photo.id)) return null;
+
+    // Keep the folders inside the trash, so Camera/IMG_0001.jpg and
+    // Screenshots/IMG_0001.jpg can't collide there.
+    final relative = p.relative(photo.id, from: rootPath);
+    final target = await _unusedPath(
+      p.join(rootPath, trashFolderName, relative),
+    );
+    try {
+      await Directory(p.dirname(target)).create(recursive: true);
+      // Same drive, so this is an instant rename, not a copy.
+      await File(photo.id).rename(target);
+    } on FileSystemException {
+      // Open in another program, read-only, or already gone: leave it, and
+      // it stays marked so the user can try again.
+      return null;
+    }
+    return TrashedPhoto(
+      photoId: photo.id,
+      name: photo.name,
+      trashedAt: DateTime.now(),
+      // The file itself is still viewable in the trash folder.
+      thumbnailPath: target,
+      trashPath: target,
+      sizeBytes: photo.sizeBytes,
+    );
+  }
+
+  @override
+  Future<Set<String>> restoreFromTrash(List<TrashedPhoto> photos) async {
+    final trashFolder = p.join(rootPath, trashFolderName);
+    final restored = <String>{};
+    for (final photo in photos) {
+      final from = photo.trashPath;
+      // The same rule as trashing: only move files from where we put them,
+      // back to somewhere inside our folder.
+      if (from == null ||
+          !p.isWithin(trashFolder, from) ||
+          !p.isWithin(rootPath, photo.photoId)) {
+        continue;
+      }
+      // Something new may have taken the old name since; don't overwrite it.
+      final target = await _unusedPath(photo.photoId);
+      try {
+        await Directory(p.dirname(target)).create(recursive: true);
+        await File(from).rename(target);
+        restored.add(photo.photoId);
+      } on FileSystemException {
+        // The user emptied the trash folder themselves, or the file is open.
+      }
+    }
+    _lastScan = null;
+    return restored;
+  }
+
+  // Nothing extra is kept for trashed photos here.
+  @override
+  Future<void> forgetTrashed(List<TrashedPhoto> photos) async {}
+
+  // [path] itself, or "name (2).jpg", "name (3).jpg"... if that name is
+  // already taken. Moving a file must never overwrite another.
+  Future<String> _unusedPath(String path) async {
+    if (!await File(path).exists()) return path;
+    final base = p.withoutExtension(path);
+    final extension = p.extension(path);
+    for (var n = 2; ; n++) {
+      final candidate = '$base ($n)$extension';
+      if (!await File(candidate).exists()) return candidate;
+    }
+  }
+
+  /// Scans [rootPath] on a background isolate (a separate worker). Listing
+  /// 10,000 files takes a moment; doing it on the main isolate would freeze
+  /// the screen while it runs.
+  Future<_Scan> _scan() async {
+    final rootPath = this.rootPath; // Send the string, not the whole object.
+    final scan = await Isolate.run(() => _scanFolder(rootPath));
+    _skippedHeic = scan.skippedHeic;
+    return scan;
   }
 
   String _albumName(String folder) {
     final relative = p.relative(folder, from: rootPath);
     return relative == '.' ? p.basename(rootPath) : relative;
   }
+}
+
+typedef _Scan = ({Map<String, List<Photo>> byFolder, int skippedHeic});
+
+/// Finds every photo under [rootPath], grouped by the folder it's in, and
+/// counts the HEIC files it had to skip. Runs on a background isolate, so
+/// plain synchronous file calls are fine here, and much faster than
+/// thousands of separate awaits.
+_Scan _scanFolder(String rootPath) {
+  final byFolder = <String, List<Photo>>{};
+  var skippedHeic = 0;
+  final root = Directory(rootPath);
+  if (!root.existsSync()) return (byFolder: byFolder, skippedHeic: 0);
+
+  final folders = [root];
+  while (folders.isNotEmpty) {
+    final folder = folders.removeLast();
+    final List<FileSystemEntity> entries;
+    try {
+      entries = folder.listSync(followLinks: false);
+    } on FileSystemException {
+      continue; // A folder we aren't allowed to read: skip it, don't crash.
+    }
+    for (final entry in entries) {
+      final name = p.basename(entry.path);
+      if (name.startsWith('.')) continue;
+      if (entry is Directory) {
+        if (name != FolderPhotoRepository.trashFolderName) folders.add(entry);
+        continue;
+      }
+      if (entry is! File) continue;
+
+      final extension = p.extension(name).toLowerCase();
+      if (extension == '.heic' || extension == '.heif') skippedHeic++;
+      if (!FolderPhotoRepository.supportedExtensions.contains(extension)) {
+        continue;
+      }
+      final stat = entry.statSync();
+      (byFolder[folder.path] ??= []).add(
+        Photo(
+          // The full path is unique even when two folders hold the same
+          // file name, like Camera/IMG_0001.jpg and Screenshots/IMG_0001.jpg.
+          id: entry.path,
+          name: name,
+          date: stat.modified,
+          sizeBytes: stat.size,
+        ),
+      );
+    }
+  }
+  return (byFolder: byFolder, skippedHeic: skippedHeic);
 }

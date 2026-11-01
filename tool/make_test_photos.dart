@@ -1,11 +1,12 @@
 // Makes a folder of deliberately awkward test photos, so the app can be
 // developed without ever touching a real photo library.
 //
-//   dart run tool/make_test_photos.dart [folder]
+//   dart run tool/make_test_photos.dart [folder] [--many N]
 //
-// The default folder is E:\test-photos. The script only deletes a folder it
-// made itself (one holding a .swipesort-test-photos marker file), so it can
-// never wipe someone's real photos by mistake.
+// The default folder is E:\test-photos. --many adds a Bulk folder of N small
+// photos, for checking speed with a big library. The script only deletes a
+// folder it made itself (one holding a .swipesort-test-photos marker file),
+// so it can never wipe someone's real photos by mistake.
 
 import 'dart:io';
 import 'dart:math';
@@ -16,7 +17,16 @@ import 'package:path/path.dart' as p;
 const _marker = '.swipesort-test-photos';
 
 Future<void> main(List<String> args) async {
-  final root = Directory(args.isNotEmpty ? args.first : r'E:\test-photos');
+  var folder = r'E:\test-photos';
+  var many = 0;
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == '--many') {
+      many = int.parse(args[++i]);
+    } else {
+      folder = args[i];
+    }
+  }
+  final root = Directory(folder);
 
   if (await root.exists()) {
     final madeByUs = await File(p.join(root.path, _marker)).exists();
@@ -99,6 +109,15 @@ Future<void> main(List<String> args) async {
     'loose.jpg',
     _drawPhoto(1600, 1200, 'Loose photo', random),
   );
+
+  // Lots of small photos, for checking speed with a big library.
+  for (var i = 1; i <= many; i++) {
+    await _writeJpg(
+      root,
+      'Bulk/BULK_${i.toString().padLeft(5, '0')}.jpg',
+      _drawPhoto(320, 240, 'Bulk $i', random),
+    );
+  }
 
   final files = await root.list(recursive: true).where((e) => e is File).length;
   stdout.writeln('Made $files files in ${root.path}');

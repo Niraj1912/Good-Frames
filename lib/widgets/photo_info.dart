@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/widgets/formatting.dart';
 
 /// File name, date and size, shown under the photo.
 class PhotoInfo extends StatelessWidget {
@@ -11,8 +12,8 @@ class PhotoInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final details = [
-      _formatDate(photo.date),
-      if (photo.sizeBytes != null) _formatSize(photo.sizeBytes!),
+      formatDate(photo.date),
+      if (photo.sizeBytes != null) formatSize(photo.sizeBytes!),
     ].join('  ·  ');
 
     return Padding(
@@ -31,16 +32,4 @@ class PhotoInfo extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatDate(DateTime date) {
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${date.year}-${two(date.month)}-${two(date.day)} '
-      '${two(date.hour)}:${two(date.minute)}';
-}
-
-String _formatSize(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).round()} KB';
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }

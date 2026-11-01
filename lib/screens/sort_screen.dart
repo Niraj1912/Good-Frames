@@ -5,6 +5,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/screens/review_screen.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
@@ -70,11 +71,13 @@ class _SortScreenState extends State<SortScreen> {
       return true;
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Couldn't save that. Please try again.\n$error"),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text("Couldn't save that. Please try again.\n$error"),
+            ),
+          );
       }
       return false;
     }
@@ -94,6 +97,14 @@ class _SortScreenState extends State<SortScreen> {
         );
       }
     });
+  }
+
+  void _openReview() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ReviewScreen(controller: _controller),
+      ),
+    );
   }
 
   Future<void> _confirmStartOver() async {
@@ -126,10 +137,34 @@ class _SortScreenState extends State<SortScreen> {
       appBar: AppBar(
         title: Text(widget.album.name),
         actions: [
-          IconButton(
-            onPressed: _confirmStartOver,
-            icon: const Icon(Icons.restart_alt),
-            tooltip: 'Start over',
+          // Review what's marked so far, without sorting the whole album.
+          // Both buttons wait until every page has loaded, so they always
+          // act on the whole album.
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) {
+              final count = _controller.deleteCount;
+              final ready = _controller.isFullyLoaded;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: count > 0 && ready ? _openReview : null,
+                    icon: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text('$count'),
+                      child: const Icon(Icons.delete_sweep_outlined),
+                    ),
+                    tooltip: 'Review photos to delete',
+                  ),
+                  IconButton(
+                    onPressed: ready ? _confirmStartOver : null,
+                    icon: const Icon(Icons.restart_alt),
+                    tooltip: 'Start over',
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -164,7 +199,7 @@ class _SortScreenState extends State<SortScreen> {
     if (controller.loadError case final error?) {
       return MessageView('Could not load photos.\n$error');
     }
-    if (controller.total == 0) {
+    if (controller.isFullyLoaded && controller.total == 0) {
       return const MessageView('This album is empty.');
     }
 
@@ -177,14 +212,29 @@ class _SortScreenState extends State<SortScreen> {
           kept: controller.keepCount,
           deleted: controller.deleteCount,
         ),
+        if (!controller.isFullyLoaded)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Loading ${controller.loadedCount} of ${controller.total} '
+              'photos…',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
         Expanded(
-          child: photo == null
-              ? _DoneView(
-                  kept: controller.keepCount,
-                  deleted: controller.deleteCount,
-                  onUndo: controller.canUndo ? _undo : null,
-                )
-              : _buildPhoto(context, photo),
+          child: switch (photo) {
+            final photo? => _buildPhoto(context, photo),
+            // Sorted everything loaded so far; more pages are on the way.
+            null when !controller.isFullyLoaded => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            null => _DoneView(
+              kept: controller.keepCount,
+              deleted: controller.deleteCount,
+              onReview: _openReview,
+              onUndo: controller.canUndo ? _undo : null,
+            ),
+          },
         ),
       ],
     );
@@ -274,18 +324,21 @@ class _DoneView extends StatelessWidget {
   const _DoneView({
     required this.kept,
     required this.deleted,
+    required this.onReview,
     required this.onUndo,
   });
 
   final int kept;
   final int deleted;
+  final VoidCallback onReview;
   final VoidCallback? onUndo;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Scrollable, so it still fits on a small phone with large text.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -299,12 +352,20 @@ class _DoneView extends StatelessWidget {
             Text('All sorted!', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text('$kept to keep, $deleted to delete.'),
-            const SizedBox(height: 4),
-            Text(
-              'Nothing has been deleted yet.',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 24),
+            if (deleted > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Nothing is deleted until you review them.',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: onReview,
+                icon: const Icon(Icons.delete_sweep_outlined),
+                label: Text('Review $deleted to delete'),
+              ),
+            ],
+            const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onUndo,
               icon: const Icon(Icons.undo),

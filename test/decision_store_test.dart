@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/models/decision.dart';
+import 'package:photo_swipe/models/trashed_photo.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/test_store.dart';
@@ -40,6 +41,17 @@ void main() {
     expect(records.last.decision, Decision.delete);
   });
 
+  test('update changes a decision without moving it in the order', () async {
+    await store.record('a', Decision.delete);
+    await store.record('b', Decision.keep);
+
+    await store.update('a', Decision.keep);
+
+    final records = await store.loadAll();
+    expect(records.map((record) => record.photoId), ['a', 'b']);
+    expect(records.first.decision, Decision.keep);
+  });
+
   test('can forget one decision or several', () async {
     for (final id in ['a', 'b', 'c', 'd']) {
       await store.record(id, Decision.keep);
@@ -63,5 +75,80 @@ void main() {
     final second = await DecisionStore.open(databaseFactoryFfiNoIsolate, path);
     addTearDown(second.close);
     expect((await second.loadAll()).single.photoId, 'a');
+  });
+
+  group('trash list', () {
+    TrashedPhoto trashed(String id, int day) => TrashedPhoto(
+      photoId: id,
+      name: '$id.jpg',
+      trashedAt: DateTime(2026, 11, day),
+      thumbnailPath: 'thumbs/$id.jpg',
+      sizeBytes: 1000,
+    );
+
+    test('remembers trashed photos and forgets their decisions', () async {
+      await store.record('a', Decision.delete);
+      await store.record('b', Decision.keep);
+
+      await store.recordTrashed([trashed('a', 1)]);
+
+      expect((await store.loadAll()).map((record) => record.photoId), ['b']);
+      final list = await store.loadTrashed();
+      expect(list.single.photoId, 'a');
+      expect(list.single.thumbnailPath, 'thumbs/a.jpg');
+      expect(list.single.trashedAt, DateTime(2026, 11, 1));
+    });
+
+    test('lists the newest first and can forget some', () async {
+      await store.recordTrashed([trashed('a', 1), trashed('b', 3)]);
+      await store.recordTrashed([trashed('c', 2)]);
+
+      expect((await store.loadTrashed()).map((photo) => photo.photoId), [
+        'b',
+        'c',
+        'a',
+      ]);
+
+      await store.forgetTrashed(['b', 'a']);
+      expect((await store.loadTrashed()).single.photoId, 'c');
+    });
+  });
+
+  test('upgrades a version 1 database without losing decisions', () async {
+    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    addTearDown(() => folder.delete(recursive: true));
+    final path = p.join(folder.path, 'decisions.db');
+
+    // A database exactly as the Phase 2 app left it: decisions only.
+    final old = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, version) async {
+          await db.execute('''
+            CREATE TABLE decisions (
+              photo_id TEXT PRIMARY KEY,
+              decision TEXT NOT NULL,
+              decided_at INTEGER NOT NULL
+            )
+          ''');
+          await db.insert('decisions', {
+            'photo_id': 'a',
+            'decision': 'keep',
+            'decided_at': 1,
+          });
+        },
+      ),
+    );
+    await old.close();
+
+    final upgraded = await DecisionStore.open(
+      databaseFactoryFfiNoIsolate,
+      path,
+    );
+    addTearDown(upgraded.close);
+
+    expect((await upgraded.loadAll()).single.photoId, 'a');
+    expect(await upgraded.loadTrashed(), isEmpty); // The new table exists.
   });
 }

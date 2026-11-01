@@ -136,7 +136,99 @@ void main() {
 
     expect(find.text('All sorted!'), findsOneWidget);
     expect(find.text('2 to keep, 1 to delete.'), findsOneWidget);
-    expect(find.text('Nothing has been deleted yet.'), findsOneWidget);
+    expect(find.text('Nothing is deleted until you review them.'), findsOne);
+    expect(find.text('Review 1 to delete'), findsOneWidget);
+  });
+
+  testWidgets('reviews the marked photos, rescues one, trashes the rest', (
+    tester,
+  ) async {
+    final repository = FakePhotoRepository(photoCounts: {'Camera': 3});
+    await startApp(tester, repository);
+    await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+    for (final button in ['Delete', 'Delete', 'Keep']) {
+      await tester.tap(find.text(button));
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.text('Review 2 to delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Move 2 photos to the trash'), findsOneWidget);
+
+    // Changed my mind about IMG_1.
+    await tester.tap(find.byKey(const ValueKey('Camera/1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Move 1 photo to the trash'), findsOneWidget);
+
+    await tester.tap(find.text('Move 1 photo to the trash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Move to trash'));
+    await tester.pumpAndSettle();
+
+    expect(repository.trashed, ['Camera/2']);
+    expect(find.textContaining('Moved 1 photo to the trash.'), findsOneWidget);
+    // Back on the sort screen, with the trashed photo gone.
+    expect(find.text('2 / 2 sorted'), findsOneWidget);
+
+    // Let the message time out so the test ends cleanly.
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('a trashed photo can be restored from Recently deleted', (
+    tester,
+  ) async {
+    final repository = FakePhotoRepository(photoCounts: {'Camera': 2});
+    await startApp(tester, repository);
+    await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Review photos to delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move 1 photo to the trash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Move to trash'));
+    await tester.pumpAndSettle();
+    await tester.pageBack(); // To the album list.
+    await tester.pumpAndSettle();
+    expect(find.text('1 photo'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Recently deleted'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('Camera/1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restore 1 photo'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Restored 1 photo.'), findsOneWidget);
+    expect(find.textContaining('Nothing here.'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('2 photos'), findsOneWidget); // Back in the album.
+
+    await tester.pump(const Duration(seconds: 10)); // Let messages time out.
+  });
+
+  testWidgets('cancelling the confirmation deletes nothing', (tester) async {
+    final repository = FakePhotoRepository(photoCounts: {'Camera': 2});
+    await startApp(tester, repository);
+    await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    // Review halfway through, from the button in the top bar.
+    await tester.tap(find.byTooltip('Review photos to delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move 1 photo to the trash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(repository.trashed, isEmpty);
+    expect(find.text('Move 1 photo to the trash'), findsOneWidget);
   });
 
   testWidgets('keys still work after clicking a button that disappears', (

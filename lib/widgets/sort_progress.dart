@@ -24,8 +24,12 @@ class SortProgress extends StatelessWidget {
         children: [
           LinearProgressIndicator(value: total == 0 ? 0 : sorted / total),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // A Wrap, not a Row: with large text on a small phone the counts
+          // move onto a second line instead of running off the screen.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 16,
+            runSpacing: 4,
             children: [
               Text(
                 '$sorted / $total sorted',

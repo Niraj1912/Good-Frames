@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_swipe/data/folder_photo_repository.dart';
+import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/trashed_photo.dart';
 
 void main() {
   late Directory root;
@@ -34,7 +36,9 @@ void main() {
 
   Future<List<String>> allPhotoNames() async {
     final all = (await repository.albums()).first;
-    return (await repository.photosIn(all)).map((photo) => photo.name).toList();
+    return (await repository.photosIn(all).first)
+        .map((photo) => photo.name)
+        .toList();
   }
 
   test('makes one album per folder, after "All photos"', () async {
@@ -65,7 +69,7 @@ void main() {
 
   test('keeps same-named photos in different folders apart', () async {
     final all = (await repository.albums()).first;
-    final photos = await repository.photosIn(all);
+    final photos = await repository.photosIn(all).first;
     final ids = photos
         .where((photo) => photo.name == 'IMG_0001.jpg')
         .map((photo) => photo.id)
@@ -83,9 +87,26 @@ void main() {
     final camera = (await repository.albums()).firstWhere(
       (album) => album.name == 'Camera',
     );
-    final photos = await repository.photosIn(camera);
+    final photos = await repository.photosIn(camera).first;
 
     expect(photos.map((photo) => photo.name), ['IMG_0002.JPG', 'IMG_0001.jpg']);
+  });
+
+  test('says how many HEIC files it had to skip', () async {
+    expect(repository.notice, isNull); // Nothing scanned yet.
+
+    await repository.albums();
+
+    expect(repository.notice, contains('1 photo in HEIC format'));
+  });
+
+  test('sees files added since the last scan when reloaded', () async {
+    await repository.albums();
+    await File(p.join(root.path, 'Camera', 'new.jpg')).writeAsBytes([1]);
+
+    final albums = await repository.albums();
+
+    expect(albums.first.photoCount, 6);
   });
 
   test('finds nothing when the folder does not exist', () async {
@@ -94,5 +115,128 @@ void main() {
     );
 
     expect(await missing.albums(), isEmpty);
+  });
+
+  group('moveToTrash', () {
+    String inRoot(String path) => p.joinAll([root.path, ...path.split('/')]);
+
+    Future<Photo> photoAt(String path) async {
+      final all = await repository
+          .photosIn((await repository.albums()).first)
+          .first;
+      return all.firstWhere((photo) => photo.id == inRoot(path));
+    }
+
+    test('moves photos into the trash folder, keeping their folders', () async {
+      final camera = await photoAt('Camera/IMG_0001.jpg');
+      final screenshot = await photoAt('Screenshots/IMG_0001.jpg');
+
+      final moved = await repository.moveToTrash([camera, screenshot]);
+
+      expect(moved.map((photo) => photo.photoId), [camera.id, screenshot.id]);
+      expect(
+        moved.first.trashPath,
+        inRoot('_SwipeSort_Trash/Camera/IMG_0001.jpg'),
+      );
+      expect(File(camera.id).existsSync(), isFalse);
+      expect(
+        File(inRoot('_SwipeSort_Trash/Camera/IMG_0001.jpg')).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(inRoot('_SwipeSort_Trash/Screenshots/IMG_0001.jpg')).existsSync(),
+        isTrue,
+      );
+      expect(await allPhotoNames(), isNot(contains('IMG_0001.jpg')));
+    });
+
+    test('never overwrites a photo already in the trash', () async {
+      final earlier = File(inRoot('_SwipeSort_Trash/Camera/IMG_0001.jpg'));
+      await earlier.parent.create(recursive: true);
+      await earlier.writeAsString('deleted last week');
+
+      await repository.moveToTrash([await photoAt('Camera/IMG_0001.jpg')]);
+
+      expect(await earlier.readAsString(), 'deleted last week');
+      expect(
+        File(inRoot('_SwipeSort_Trash/Camera/IMG_0001 (2).jpg')).existsSync(),
+        isTrue,
+      );
+    });
+
+    test('refuses to move a file outside its folder', () async {
+      final elsewhere = await Directory.systemTemp.createTemp('elsewhere_');
+      addTearDown(() => elsewhere.delete(recursive: true));
+      final outside = File(p.join(elsewhere.path, 'important.jpg'));
+      await outside.writeAsBytes([1, 2, 3]);
+
+      final moved = await repository.moveToTrash([
+        Photo(id: outside.path, name: 'important.jpg', date: DateTime(2026)),
+      ]);
+
+      expect(moved, isEmpty);
+      expect(outside.existsSync(), isTrue);
+    });
+
+    test('reports a photo that has already gone as not moved', () async {
+      final photo = await photoAt('loose.jpg');
+      await File(photo.id).delete();
+
+      expect(await repository.moveToTrash([photo]), isEmpty);
+    });
+
+    test('restoring puts a photo back where it was', () async {
+      final photo = await photoAt('Camera/IMG_0001.jpg');
+      final trashed = await repository.moveToTrash([photo]);
+
+      final restored = await repository.restoreFromTrash(trashed);
+
+      expect(restored, {photo.id});
+      expect(File(photo.id).existsSync(), isTrue);
+      expect(File(trashed.single.trashPath!).existsSync(), isFalse);
+      expect(await allPhotoNames(), contains('IMG_0001.jpg'));
+    });
+
+    test('restoring never overwrites a new file with the old name', () async {
+      final photo = await photoAt('Camera/IMG_0001.jpg');
+      final trashed = await repository.moveToTrash([photo]);
+      await File(photo.id).writeAsString('a newer photo');
+
+      await repository.restoreFromTrash(trashed);
+
+      expect(await File(photo.id).readAsString(), 'a newer photo');
+      expect(File(inRoot('Camera/IMG_0001 (2).jpg')).existsSync(), isTrue);
+    });
+
+    test('restoring only takes files from its own trash folder', () async {
+      final elsewhere = await Directory.systemTemp.createTemp('elsewhere_');
+      addTearDown(() => elsewhere.delete(recursive: true));
+      final outside = File(p.join(elsewhere.path, 'important.jpg'));
+      await outside.writeAsBytes([1, 2, 3]);
+
+      final restored = await repository.restoreFromTrash([
+        TrashedPhoto(
+          photoId: inRoot('Camera/stolen.jpg'),
+          name: 'stolen.jpg',
+          trashedAt: DateTime(2026),
+          trashPath: outside.path,
+        ),
+      ]);
+
+      expect(restored, isEmpty);
+      expect(outside.existsSync(), isTrue);
+    });
+
+    test(
+      'a photo already removed from the trash folder is not restored',
+      () async {
+        final trashed = await repository.moveToTrash([
+          await photoAt('loose.jpg'),
+        ]);
+        await File(trashed.single.trashPath!).delete(); // The user emptied it.
+
+        expect(await repository.restoreFromTrash(trashed), isEmpty);
+      },
+    );
   });
 }

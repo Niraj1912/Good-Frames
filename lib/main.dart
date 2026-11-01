@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'dart:io' show Directory, Platform;
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -23,12 +23,16 @@ Future<void> main() async {
   // this call.
   WidgetsFlutterBinding.ensureInitialized();
 
+  final appFolder = await getApplicationSupportDirectory();
+
   // The only place that decides where photos and decisions live. Everything
   // else just uses the PhotoRepository and DecisionStore it's given.
   final PhotoRepository repository;
   final sqflite.DatabaseFactory databaseFactory;
   if (Platform.isAndroid) {
-    repository = AndroidPhotoRepository();
+    repository = AndroidPhotoRepository(
+      thumbnailFolder: Directory(p.join(appFolder.path, 'trash_thumbnails')),
+    );
     databaseFactory = sqflite.databaseFactorySqflitePlugin;
   } else {
     repository = FolderPhotoRepository(rootPath: _photoRoot);
@@ -37,7 +41,6 @@ Future<void> main() async {
     databaseFactory = sqflite_ffi.databaseFactoryFfi;
   }
 
-  final appFolder = await getApplicationSupportDirectory();
   final store = await DecisionStore.open(
     databaseFactory,
     p.join(appFolder.path, 'decisions.db'),

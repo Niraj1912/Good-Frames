@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
+import 'package:photo_swipe/screens/recently_deleted_screen.dart';
 import 'package:photo_swipe/screens/sort_screen.dart';
+import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
 /// Lists the albums so the user can pick which one to sort.
@@ -39,8 +41,8 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
     if (mounted) _reload();
   }
 
-  void _open(Album album) {
-    Navigator.of(context).push(
+  Future<void> _open(Album album) async {
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SortScreen(
           repository: widget.repository,
@@ -49,6 +51,21 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
         ),
       ),
     );
+    // Photos may have been moved to the trash, so the counts are stale.
+    if (mounted) _reload();
+  }
+
+  Future<void> _openRecentlyDeleted() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RecentlyDeletedScreen(
+          repository: widget.repository,
+          store: widget.store,
+        ),
+      ),
+    );
+    // Restored photos are back in their albums.
+    if (mounted) _reload();
   }
 
   @override
@@ -57,6 +74,11 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
       appBar: AppBar(
         title: const Text('Choose an album'),
         actions: [
+          IconButton(
+            onPressed: _openRecentlyDeleted,
+            icon: const Icon(Icons.restore_from_trash_outlined),
+            tooltip: 'Recently deleted',
+          ),
           IconButton(
             onPressed: _reload,
             icon: const Icon(Icons.refresh),
@@ -97,18 +119,23 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
                     'No photos found in ${widget.repository.sourceName}.',
                   );
                 }
-                return ListView.builder(
-                  itemCount: albums.length,
-                  itemBuilder: (context, index) {
-                    final album = albums[index];
-                    return ListTile(
-                      leading: const Icon(Icons.photo_library_outlined),
-                      title: Text(album.name),
-                      subtitle: Text(_photoCount(album.photoCount)),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _open(album),
-                    );
-                  },
+                final notice = widget.repository.notice;
+                return ListView(
+                  children: [
+                    if (notice != null)
+                      ListTile(
+                        leading: const Icon(Icons.info_outline),
+                        subtitle: Text(notice),
+                      ),
+                    for (final album in albums)
+                      ListTile(
+                        leading: const Icon(Icons.photo_library_outlined),
+                        title: Text(album.name),
+                        subtitle: Text(photoCount(album.photoCount)),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _open(album),
+                      ),
+                  ],
                 );
               },
             ),
@@ -118,5 +145,3 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
     );
   }
 }
-
-String _photoCount(int count) => count == 1 ? '1 photo' : '$count photos';
