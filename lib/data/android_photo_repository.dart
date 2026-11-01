@@ -8,6 +8,7 @@ import 'package:photo_swipe/data/android_media.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 
 /// Reads the phone's whole gallery through Android's MediaStore, using the
 /// photo_manager plugin. The trash goes through the app's own Android code
@@ -29,6 +30,26 @@ class AndroidPhotoRepository with AndroidTrash implements PhotoRepository {
       mediaLocation: false,
     ),
   );
+
+  // The orders to ask Android for. Without one, Android returns photos in
+  // the order they joined its database, which is roughly oldest first.
+  // Photos copied in together share the same second, so the id breaks
+  // ties: paging needs an order that never changes between pages, or a
+  // photo could be skipped or repeated.
+  static final _newestFirst = _byDateAdded(newestFirst: true);
+  static final _oldestFirst = _byDateAdded(newestFirst: false);
+
+  static CustomFilter _byDateAdded({required bool newestFirst}) =>
+      CustomFilter.sql(
+        where: '',
+        orderBy: [
+          OrderByItem.named(
+            column: CustomColumns.base.createDate,
+            isAsc: !newestFirst,
+          ),
+          OrderByItem.named(column: CustomColumns.base.id, isAsc: !newestFirst),
+        ],
+      );
 
   @override
   String get sourceName => "your phone's gallery";
@@ -62,7 +83,10 @@ class AndroidPhotoRepository with AndroidTrash implements PhotoRepository {
 
   @override
   Future<List<Album>> albums() async {
-    final paths = await PhotoManager.getAssetPathList(type: RequestType.image);
+    final paths = await PhotoManager.getAssetPathList(
+      type: RequestType.image,
+      filterOption: _newestFirst,
+    );
     final albums = <Album>[];
     for (final path in paths) {
       final count = await path.assetCountAsync;
@@ -86,8 +110,18 @@ class AndroidPhotoRepository with AndroidTrash implements PhotoRepository {
   // in pages: a small first one, so sorting can start almost at once, then
   // bigger ones in the background.
   @override
-  Stream<List<Photo>> photosIn(Album album) async* {
-    final path = _albums[album.id]!;
+  Stream<List<Photo>> photosIn(
+    Album album, {
+    PhotoOrder order = PhotoOrder.newestFirst,
+  }) async* {
+    // Android does the ordering, so each page arrives already in order. The
+    // albums were listed newest first.
+    final path = switch (order) {
+      PhotoOrder.newestFirst => _albums[album.id]!,
+      PhotoOrder.oldestFirst => _albums[album.id]!.copyWith(
+        filterOption: _oldestFirst,
+      ),
+    };
     final count = await path.assetCountAsync;
     var start = 0;
     var pageSize = 200;

@@ -9,6 +9,7 @@ import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/folder_photo_repository.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/screens/access_screen.dart';
+import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' as sqflite_ffi;
@@ -49,7 +50,18 @@ Future<void> main() async {
     p.join(appFolder.path, 'decisions.db'),
   );
 
-  runApp(PhotoSwipeApp(repository: repository, folders: folders, store: store));
+  // Loaded before the first frame, so a dark theme chosen in Settings never
+  // flashes light first.
+  final settings = await Settings.load(store);
+
+  runApp(
+    PhotoSwipeApp(
+      repository: repository,
+      folders: folders,
+      store: store,
+      settings: settings,
+    ),
+  );
 }
 
 class PhotoSwipeApp extends StatelessWidget {
@@ -57,24 +69,34 @@ class PhotoSwipeApp extends StatelessWidget {
     super.key,
     required this.repository,
     required this.store,
+    required this.settings,
     this.folders,
   });
 
   final PhotoRepository repository;
   final ChosenFoldersRepository? folders;
   final DecisionStore store;
+  final Settings settings;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SwipeSort',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      debugShowCheckedModeBanner: false,
-      home: AccessScreen(
+    // Rebuilds when a setting changes, so a new theme shows at once. The
+    // screens are built once, outside, so they keep their place.
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, home) => MaterialApp(
+        title: 'SwipeSort',
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: settings.theme,
+        debugShowCheckedModeBanner: false,
+        home: home,
+      ),
+      child: AccessScreen(
         repository: repository,
         folders: folders,
         store: store,
+        settings: settings,
       ),
     );
   }

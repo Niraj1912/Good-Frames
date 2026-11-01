@@ -10,9 +10,9 @@ class DecisionRecord {
   final Decision decision;
 }
 
-/// Saves keep/delete decisions, and the list of photos moved to the trash,
-/// in a SQLite database, so they survive the app being closed or killed.
-/// Nothing here ever touches the photos themselves.
+/// Saves keep/delete decisions, the list of photos moved to the trash, and
+/// the user's settings in a SQLite database, so they survive the app being
+/// closed or killed. Nothing here ever touches the photos themselves.
 class DecisionStore {
   DecisionStore._(this._db);
 
@@ -27,16 +27,19 @@ class DecisionStore {
     final db = await factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        // Version 1 had only decisions; version 2 added the trash table.
-        // Whenever the tables change, bump the version and add a step to
-        // onUpgrade, so people who already use the app keep their data.
-        version: 2,
+        // Version 1 had only decisions; version 2 added the trash table and
+        // version 3 the settings one. Whenever the tables change, bump the
+        // version and add a step to onUpgrade, so people who already use the
+        // app keep their data.
+        version: 3,
         onCreate: (db, version) async {
           await db.execute(_createDecisionsTable);
           await db.execute(_createTrashTable);
+          await db.execute(_createSettingsTable);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) await db.execute(_createTrashTable);
+          if (oldVersion < 3) await db.execute(_createSettingsTable);
         },
       ),
     );
@@ -144,6 +147,23 @@ class DecisionStore {
     await batch.commit(noResult: true);
   }
 
+  /// Every saved setting, by name. Settings never changed aren't saved, so
+  /// they keep following the app's defaults.
+  Future<Map<String, String>> loadSettings() async {
+    final rows = await _db.query('settings');
+    return {
+      for (final row in rows) row['key']! as String: row['value']! as String,
+    };
+  }
+
+  /// Saves [value] for the setting called [key], replacing any earlier one.
+  Future<void> saveSetting(String key, String value) async {
+    await _db.insert('settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<void> close() => _db.close();
 }
 
@@ -163,5 +183,14 @@ const _createTrashTable = '''
     thumbnail_path TEXT,
     trash_path     TEXT,
     size_bytes     INTEGER
+  )
+''';
+
+// One row per setting, such as ('order', 'oldestFirst'). Text for every
+// value, so a new setting never needs a new column.
+const _createSettingsTable = '''
+  CREATE TABLE settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
   )
 ''';

@@ -149,6 +149,70 @@ void main() {
     addTearDown(upgraded.close);
 
     expect((await upgraded.loadAll()).single.photoId, 'a');
-    expect(await upgraded.loadTrashed(), isEmpty); // The new table exists.
+    // The newer tables exist.
+    expect(await upgraded.loadTrashed(), isEmpty);
+    expect(await upgraded.loadSettings(), isEmpty);
+  });
+
+  test('upgrades a version 2 database without losing anything', () async {
+    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    addTearDown(() => folder.delete(recursive: true));
+    final path = p.join(folder.path, 'decisions.db');
+
+    // As release 1.0.0 left it: decisions and the trash, no settings.
+    final old = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 2,
+        onCreate: (db, version) async {
+          await db.execute('''
+            CREATE TABLE decisions (
+              photo_id   TEXT PRIMARY KEY,
+              decision   TEXT NOT NULL CHECK (decision IN ('keep', 'delete')),
+              decided_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE trash (
+              photo_id       TEXT PRIMARY KEY,
+              name           TEXT NOT NULL,
+              trashed_at     INTEGER NOT NULL,
+              thumbnail_path TEXT,
+              trash_path     TEXT,
+              size_bytes     INTEGER
+            )
+          ''');
+          await db.insert('decisions', {
+            'photo_id': 'a',
+            'decision': 'delete',
+            'decided_at': 1,
+          });
+          await db.insert('trash', {
+            'photo_id': 'b',
+            'name': 'IMG_2.jpg',
+            'trashed_at': 2,
+          });
+        },
+      ),
+    );
+    await old.close();
+
+    final upgraded = await DecisionStore.open(
+      databaseFactoryFfiNoIsolate,
+      path,
+    );
+    addTearDown(upgraded.close);
+
+    expect((await upgraded.loadAll()).single.decision, Decision.delete);
+    expect((await upgraded.loadTrashed()).single.name, 'IMG_2.jpg');
+    await upgraded.saveSetting('theme', 'dark');
+    expect(await upgraded.loadSettings(), {'theme': 'dark'});
+  });
+
+  test('a setting saved again replaces the old value', () async {
+    await store.saveSetting('order', 'oldestFirst');
+    await store.saveSetting('order', 'newestFirst');
+
+    expect(await store.loadSettings(), {'order': 'newestFirst'});
   });
 }

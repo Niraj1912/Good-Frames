@@ -65,7 +65,9 @@ The app's own Android code, in `android/app/src/main/kotlin/`, covers what
 photo_manager can't: `TrashRequests.kt` (trash, restore and delete-forever
 prompts, by gallery id, used in both modes) and `FolderAccess.kt` (the
 folder picker, scanning chosen folders, decoding their photos at screen
-size). Dart reaches them through platform channels (`lib/data/android_media.dart`).
+size), plus the app's version for Settings, answered in `MainActivity.kt`.
+Dart reaches them through platform channels (`lib/data/android_media.dart`
+and `lib/data/app_info.dart`).
 
 Phase 5: hardening. Tested with big libraries, older Android versions, large
 text, and photos changing behind the app's back. See "Tested" below.
@@ -82,6 +84,37 @@ same way a swipe would; the close button goes back without deciding.
 The viewer loads a bigger copy of the photo (up to 4,096 px on the long side)
 than the card uses, showing the card's copy until it's ready, and frees it as
 soon as the viewer closes, so a 50-megapixel photo never sits in memory.
+
+Settings (the gear on the album list). Kept short on purpose: every setting
+is a question the user has to answer, so only things people really disagree
+about are there.
+
+- **Swipe directions**: right keeps (the default), or the other way round.
+  The Keep and Delete buttons, the KEEP/DELETE stamps and the arrow keys all
+  follow, so the button is always on the side the card flies to.
+- **Order**: newest first (the default) or oldest first.
+- **Vibration**: the small buzz when letting go will count. On by default.
+- **Theme**: the same as the phone (the default), light, or dark. It
+  changes at once.
+- **What SwipeSort sees** (Android): all photos, the photos picked one by
+  one, or the shared folders. Tapping it opens the Folders screen, or the
+  first-launch choice with a Cancel button.
+- **About**: the version, read from Android so it always matches the
+  installed APK (`1.0.0 (1)`: the name, then the number Android compares),
+  and the open-source licences of every package the app is built from.
+  Those packages are free on the condition that their notices go with the
+  app; Flutter's built-in licence page lists them all.
+
+Settings are saved in the same database as decisions. Nothing in Settings
+can weaken a safety rule: Delete forever always warns, and Android's own
+prompts can't be turned off anyway.
+
+All-photos mode used to show photos in the order Android added them to its
+database (roughly oldest first), because the app never asked for an order;
+the album covers were the oldest photos too. Since Settings, the app always
+asks Android for newest or oldest first by date added, with the photo's id
+breaking ties: photos copied in together share the same second, and paging
+needs an order that's the same on every page, or a photo could be skipped.
 
 ## Design
 
@@ -104,7 +137,8 @@ shapes), so screens never pick their own colours.
   short drag springs back with a real spring, and an undone photo slides back
   in from the side it left on. Nothing moves just to decorate.
 - Albums are shown by their newest photo, not a generic icon.
-- Light and dark mode both follow the phone's setting.
+- Light and dark mode follow the phone's setting, unless the user picks one
+  in Settings.
 
 See the roadmap below.
 
@@ -129,6 +163,8 @@ decide and `Esc` closes.
 | Delete forever, Android 17 emulator | Android's own prompt appears for trashed photos; Deny keeps them, Allow erases them |
 | Folder mode, Android 11 and 17 emulators, no photo permission | Choose, sort, zoom (rotation right), trash, restore, delete forever; decisions carried over from all-photos mode |
 | Signed 1.0.0 release on a real Android 16 phone | Installs; signed with the release key, not debuggable |
+| Settings, Android 17 emulator | Swapped directions (buttons, stamps, colour wash), oldest and newest first, dark theme at once, version from Android, licences page, choice screen's Cancel and back gesture; all remembered after a restart |
+| Upgrading 1.0.0's database (version 2) | Decisions and Recently deleted kept on the emulator, and in `test/decision_store_test.dart` |
 
 Measure performance in a profile or release build (`flutter run --profile`),
 never a debug build: debug builds are several times slower.
@@ -233,9 +269,11 @@ gallery.
 ### Where decisions are saved
 
 In a SQLite database, `decisions.db`. Table `decisions` has one row per
-decided photo; table `trash` has one row per photo the app moved to the trash.
-The schema is versioned (now version 2, which added `trash`), and opening an
-older database upgrades it without losing anything.
+decided photo; table `trash` has one row per photo the app moved to the trash;
+table `settings` has one row per setting the user changed (name and value, as
+text). The schema is versioned (now version 3: version 2 added `trash`, and
+version 3 `settings`), and opening an older database upgrades it without
+losing anything.
 
 - Windows: `%APPDATA%\com.photoswipe\photo_swipe\decisions.db`
 - Android: the app's private storage, removed when the app is uninstalled
@@ -271,10 +309,11 @@ stored in the package.
 ```
 lib/
 ├── main.dart     App entry point
-├── models/       Plain data classes: Photo, Album, Decision
+├── models/       Plain data classes: Photo, Album, Decision, PhotoOrder, KeepSide
 ├── data/         Where photos and decisions come from (repositories, SQLite)
-├── state/        App logic the screens listen to (current photo, undo, progress)
-├── screens/      Full pages: album picker, swipe, review, done
+├── state/        App logic the screens listen to (current photo, undo,
+│                 progress, settings)
+├── screens/      Full pages: album picker, swipe, review, done, settings
 ├── theme/        Design tokens: colours, type, shapes (app_theme.dart)
 └── widgets/      Reusable pieces: swipe card, photo card, buttons, progress bar
 test/             Automated tests (test/fakes/ holds FakePhotoRepository)
@@ -306,6 +345,8 @@ interface, which has one implementation per environment:
 - [x] Phase 7: release: app icon, splash screen, signed release APK
 - [x] Delete forever from Recently deleted
 - [x] Folder mode: share chosen folders instead of every photo
+- [x] Settings: swipe directions, order, vibration, theme, what SwipeSort
+      sees, version and licences
 
 ## Safety rules
 

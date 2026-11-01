@@ -7,6 +7,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 
 /// The state of sorting one album: which photo is next, what has been
 /// decided, and undo. Screens listen to it and redraw when it changes.
@@ -18,11 +19,15 @@ class SortController extends ChangeNotifier {
     required this.repository,
     required this.store,
     required this.album,
+    this.order = PhotoOrder.newestFirst,
   });
 
   final PhotoRepository repository;
   final DecisionStore store;
   final Album album;
+
+  /// The order photos come up for sorting.
+  final PhotoOrder order;
 
   // The album's photos loaded so far, in album order, and their ids.
   List<Photo> _photos = [];
@@ -103,7 +108,7 @@ class SortController extends ChangeNotifier {
         _decisions[record.photoId] = record.decision;
         _history.add(record.photoId);
       }
-      await for (final page in repository.photosIn(album)) {
+      await for (final page in repository.photosIn(album, order: order)) {
         for (final photo in page) {
           // Skip repeats, in case the album changed while it was loading.
           if (_inAlbum.add(photo.id)) _photos.add(photo);

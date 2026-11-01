@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/main.dart';
 import 'package:photo_swipe/models/chosen_folder.dart';
+import 'package:photo_swipe/state/settings.dart';
 
 import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
@@ -29,7 +30,12 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(repository: allPhotos, folders: folders, store: store),
+      PhotoSwipeApp(
+        repository: allPhotos,
+        folders: folders,
+        store: store,
+        settings: await Settings.load(store),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -42,6 +48,8 @@ void main() {
     expect(find.text('What should SwipeSort see?'), findsOneWidget);
     expect(find.text('Choose a folder'), findsOneWidget);
     expect(find.text('All photos, or some'), findsOneWidget);
+    // Nothing to go back to on first launch.
+    expect(find.byTooltip('Cancel'), findsNothing);
   });
 
   testWidgets('choosing a folder shows only its albums, with a note', (
@@ -135,7 +143,14 @@ void main() {
     expect(allPhotos.selectionChanged, isTrue);
   });
 
-  testWidgets('from all photos, the user can switch to one folder', (
+  Future<void> openWhatSwipeSortSees(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('What SwipeSort sees'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('from all photos, Settings can switch to one folder', (
     tester,
   ) async {
     allPhotos.access = AccessStatus.granted;
@@ -143,11 +158,63 @@ void main() {
     await startApp(tester);
     expect(find.text('Camera'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Choose a folder instead'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('All photos'), findsOneWidget);
+    await tester.tap(find.text('What SwipeSort sees'));
+    await tester.pumpAndSettle();
+    // The first-launch choice again.
+    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+    await tester.tap(find.text('Choose a folder'));
     await tester.pumpAndSettle();
 
     expect(find.text('Holiday'), findsOneWidget);
     expect(find.text('Camera'), findsNothing);
+  });
+
+  testWidgets('the choice from Settings can be cancelled, or backed out of', (
+    tester,
+  ) async {
+    allPhotos.access = AccessStatus.granted;
+    await startApp(tester);
+
+    await openWhatSwipeSortSees(tester);
+    await tester.tap(find.byTooltip('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Camera'), findsOneWidget);
+
+    // Android's back gesture does the same, rather than closing the app.
+    await openWhatSwipeSortSees(tester);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Camera'), findsOneWidget);
+  });
+
+  testWidgets('with photos picked one by one, Settings says so', (
+    tester,
+  ) async {
+    allPhotos.access = AccessStatus.limited;
+    await startApp(tester);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Only photos you selected'), findsOneWidget);
+  });
+
+  testWidgets('with a folder shared, Settings names it and opens Folders', (
+    tester,
+  ) async {
+    folders.chosen.add(holiday);
+    await startApp(tester);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Only the Holiday folder'), findsOneWidget);
+    await tester.tap(find.text('What SwipeSort sees'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pictures/Holiday'), findsOneWidget);
   });
 
   testWidgets('refusing all photos explains, and offers a folder or Settings', (

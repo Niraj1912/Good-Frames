@@ -3,10 +3,10 @@ import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 
 import 'fakes/fake_photo_repository.dart';
+import 'support/broken_store.dart';
 import 'support/test_store.dart';
 
 void main() {
@@ -256,7 +256,7 @@ void main() {
   });
 
   test('a decision that fails to save is taken back', () async {
-    final controller = await openCamera(using: _BrokenStore());
+    final controller = await openCamera(using: BrokenStore());
 
     await expectLater(controller.decide(Decision.keep), throwsException);
 
@@ -264,39 +264,4 @@ void main() {
     expect(controller.sortedCount, 0);
     expect(controller.canUndo, isFalse);
   });
-}
-
-/// A store whose disk is "full": loading works, saving always fails.
-class _BrokenStore implements DecisionStore {
-  @override
-  Future<List<DecisionRecord>> loadAll() async => [];
-
-  @override
-  Future<void> record(String photoId, Decision decision) async =>
-      throw Exception('disk full');
-
-  @override
-  Future<void> update(String photoId, Decision decision) async =>
-      throw Exception('disk full');
-
-  @override
-  Future<void> remove(String photoId) async => throw Exception('disk full');
-
-  @override
-  Future<void> removeAll(Iterable<String> photoIds) async =>
-      throw Exception('disk full');
-
-  @override
-  Future<void> recordTrashed(List<TrashedPhoto> photos) async =>
-      throw Exception('disk full');
-
-  @override
-  Future<List<TrashedPhoto>> loadTrashed() async => [];
-
-  @override
-  Future<void> forgetTrashed(Iterable<String> photoIds) async =>
-      throw Exception('disk full');
-
-  @override
-  Future<void> close() async {}
 }

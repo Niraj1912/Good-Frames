@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/chosen_folder.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 
 /// How much of the photo library the user lets the app see.
@@ -42,9 +43,12 @@ abstract interface class PhotoRepository {
   /// Albums with at least one photo. The first one is "All photos".
   Future<List<Album>> albums();
 
-  /// Photos in [album], newest first, delivered in pages: a big album can be
+  /// Photos in [album] in [order], delivered in pages: a big album can be
   /// shown, and sorting can start, long before all of it has loaded.
-  Stream<List<Photo>> photosIn(Album album);
+  Stream<List<Photo>> photosIn(
+    Album album, {
+    PhotoOrder order = PhotoOrder.newestFirst,
+  });
 
   /// The image for [photo], decoded at about [width] pixels wide. Decoding at
   /// screen size instead of full size keeps memory use low.

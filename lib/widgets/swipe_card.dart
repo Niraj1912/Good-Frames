@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 
 /// Which way a card was swiped.
@@ -23,7 +24,15 @@ class SwipeCard extends StatefulWidget {
     this.dragProgress,
     this.enterFrom,
     this.onTap,
+    this.keepSide = KeepSide.right,
+    this.vibration = true,
   });
+
+  /// Which way keeps, so dragging that way shows the KEEP stamp.
+  final KeepSide keepSide;
+
+  /// Buzz softly when letting go would count, and when the card leaves.
+  final bool vibration;
 
   /// Called on a tap (no drag), e.g. to open the photo for zooming.
   final VoidCallback? onTap;
@@ -126,7 +135,7 @@ class SwipeCardState extends State<SwipeCard>
     if (past != _pastThreshold) {
       _pastThreshold = past;
       // A small tick tells the thumb "let go now and it counts".
-      if (past) HapticFeedback.selectionClick();
+      if (past && widget.vibration) HapticFeedback.selectionClick();
     }
   }
 
@@ -154,7 +163,7 @@ class SwipeCardState extends State<SwipeCard>
   // played back. Buttons and keys (no speed) use a brisk default.
   void _flyOut(SwipeDirection direction, {double speed = 0}) {
     _leaving = direction;
-    HapticFeedback.mediumImpact();
+    if (widget.vibration) HapticFeedback.mediumImpact();
     final sign = direction == SwipeDirection.right ? 1.0 : -1.0;
     // Far enough that even the tilted corner ends up off screen.
     final target = Offset(sign * _size.width * 1.4, _offset.dy);
@@ -219,6 +228,14 @@ class SwipeCardState extends State<SwipeCard>
   @override
   Widget build(BuildContext context) {
     final colors = SortColors.of(context);
+    final keep = (label: 'KEEP', color: colors.keep);
+    final delete = (label: 'DELETE', color: colors.delete);
+    // Each stamp sits on the side the card is leaving from, like a label
+    // being revealed: dragging right shows the top-left one.
+    final (right, left) = switch (widget.keepSide) {
+      KeepSide.right => (keep, delete),
+      KeepSide.left => (delete, keep),
+    };
     return LayoutBuilder(
       builder: (context, constraints) {
         _size = constraints.biggest;
@@ -255,8 +272,8 @@ class SwipeCardState extends State<SwipeCard>
                     top: 20,
                     left: 20,
                     child: _Stamp(
-                      label: 'KEEP',
-                      color: colors.keep,
+                      label: right.label,
+                      color: right.color,
                       angle: -0.12,
                       strength: progress.clamp(0.0, 1.0),
                     ),
@@ -265,8 +282,8 @@ class SwipeCardState extends State<SwipeCard>
                     top: 20,
                     right: 20,
                     child: _Stamp(
-                      label: 'DELETE',
-                      color: colors.delete,
+                      label: left.label,
+                      color: left.color,
                       angle: 0.12,
                       strength: (-progress).clamp(0.0, 1.0),
                     ),

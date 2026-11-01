@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/main.dart';
 import 'package:photo_swipe/models/chosen_folder.dart';
+import 'package:photo_swipe/state/settings.dart';
 
 import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
@@ -25,6 +26,7 @@ void main() {
       PhotoSwipeApp(
         repository: FakePhotoRepository(photoCounts: {'Camera': 2}),
         store: store,
+        settings: await Settings.load(store),
       ),
     );
     await tester.pumpAndSettle();
@@ -60,6 +62,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Recently deleted'));
     await tester.pumpAndSettle();
+
+    // Settings, and one of its choice dialogs.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Swipe directions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Left keeps, right deletes'), findsOneWidget);
   });
 
   testWidgets('the folder-or-all-photos choice fits too', (tester) async {
@@ -83,6 +94,7 @@ void main() {
         repository: FakePhotoRepository(access: AccessStatus.denied),
         folders: folders,
         store: store,
+        settings: await Settings.load(store),
       ),
     );
     await tester.pumpAndSettle();

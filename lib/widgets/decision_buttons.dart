@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 
-/// Delete on the left and Keep on the right, the same sides as the swipe
-/// directions, with Undo between them.
+/// Keep and Delete on the same sides as the swipe directions (Keep on the
+/// right unless the user swapped them), with Undo between them.
 class DecisionButtons extends StatelessWidget {
   const DecisionButtons({
     super.key,
@@ -10,7 +11,10 @@ class DecisionButtons extends StatelessWidget {
     required this.onKeep,
     required this.onUndo,
     this.showUndo = true,
+    this.keepSide = KeepSide.right,
   });
+
+  final KeepSide keepSide;
 
   final VoidCallback? onDelete;
   final VoidCallback? onKeep;
@@ -31,24 +35,41 @@ class DecisionButtons extends StatelessWidget {
         ? Colors.white
         : Colors.black;
 
+    final deleteButton = Expanded(
+      // A soft red wash rather than a solid red: deleting is the
+      // weightier choice, so it's clear but doesn't shout.
+      child: FilledButton.icon(
+        onPressed: onDelete,
+        style: FilledButton.styleFrom(
+          backgroundColor: Color.alphaBlend(
+            colors.delete.withValues(alpha: 0.16),
+            surface,
+          ),
+          foregroundColor: colors.delete,
+        ),
+        icon: const Icon(Icons.close),
+        label: const Text('Delete'),
+      ),
+    );
+    final keepButton = Expanded(
+      child: FilledButton.icon(
+        onPressed: onKeep,
+        style: FilledButton.styleFrom(
+          backgroundColor: colors.keep,
+          foregroundColor: onKeepColor,
+        ),
+        icon: const Icon(Icons.check),
+        label: const Text('Keep'),
+      ),
+    );
+    final (left, right) = switch (keepSide) {
+      KeepSide.right => (deleteButton, keepButton),
+      KeepSide.left => (keepButton, deleteButton),
+    };
+
     return Row(
       children: [
-        Expanded(
-          // A soft red wash rather than a solid red: deleting is the
-          // weightier choice, so it's clear but doesn't shout.
-          child: FilledButton.icon(
-            onPressed: onDelete,
-            style: FilledButton.styleFrom(
-              backgroundColor: Color.alphaBlend(
-                colors.delete.withValues(alpha: 0.16),
-                surface,
-              ),
-              foregroundColor: colors.delete,
-            ),
-            icon: const Icon(Icons.close),
-            label: const Text('Delete'),
-          ),
-        ),
+        left,
         if (showUndo) ...[
           const SizedBox(width: 12),
           IconButton.outlined(
@@ -64,17 +85,7 @@ class DecisionButtons extends StatelessWidget {
           ),
         ],
         const SizedBox(width: 12),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: onKeep,
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.keep,
-              foregroundColor: onKeepColor,
-            ),
-            icon: const Icon(Icons.check),
-            label: const Text('Keep'),
-          ),
-        ),
+        right,
       ],
     );
   }

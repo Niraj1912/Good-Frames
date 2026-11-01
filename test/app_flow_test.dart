@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/main.dart';
+import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/widgets/swipe_card.dart';
 
 import 'fakes/fake_photo_repository.dart';
@@ -16,7 +17,11 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(repository: repository, store: store),
+      PhotoSwipeApp(
+        repository: repository,
+        store: store,
+        settings: await Settings.load(store),
+      ),
     );
     await tester.pumpAndSettle();
   }

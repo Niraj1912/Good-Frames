@@ -3,7 +3,9 @@ import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/screens/recently_deleted_screen.dart';
+import 'package:photo_swipe/screens/settings_screen.dart';
 import 'package:photo_swipe/screens/sort_screen.dart';
+import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
@@ -14,14 +16,16 @@ class AlbumPickerScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.store,
+    required this.settings,
     this.accessNote,
     this.accessActionLabel = 'Change',
     this.onAccessAction,
-    this.onChooseFolder,
+    this.photos,
   });
 
   final PhotoRepository repository;
   final DecisionStore store;
+  final Settings settings;
 
   /// A note at the top saying SwipeSort sees only part of the library, such
   /// as only the photos or folders the user chose. Null for none.
@@ -31,9 +35,9 @@ class AlbumPickerScreen extends StatefulWidget {
   final String accessActionLabel;
   final Future<void> Function()? onAccessAction;
 
-  /// Offers to look at one folder instead of every photo. Null where that
-  /// isn't possible.
-  final Future<void> Function()? onChooseFolder;
+  /// What SwipeSort sees, shown in Settings with a way to change it. Null
+  /// where there's no choice.
+  final PhotoSource? photos;
 
   @override
   State<AlbumPickerScreen> createState() => _AlbumPickerScreenState();
@@ -61,6 +65,7 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
           repository: widget.repository,
           store: widget.store,
           album: album,
+          settings: widget.settings,
         ),
       ),
     );
@@ -81,18 +86,21 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
     if (mounted) _reload();
   }
 
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            SettingsScreen(settings: widget.settings, photos: widget.photos),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Choose an album'),
         actions: [
-          if (widget.onChooseFolder case final chooseFolder?)
-            IconButton(
-              onPressed: chooseFolder,
-              icon: const Icon(Icons.folder_open_outlined),
-              tooltip: 'Choose a folder instead',
-            ),
           IconButton(
             onPressed: _openRecentlyDeleted,
             icon: const Icon(Icons.restore_from_trash_outlined),
@@ -102,6 +110,11 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
             onPressed: _reload,
             icon: const Icon(Icons.refresh),
             tooltip: 'Reload',
+          ),
+          IconButton(
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
           ),
         ],
       ),

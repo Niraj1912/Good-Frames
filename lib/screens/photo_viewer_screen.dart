@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/decision.dart';
+import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
@@ -22,6 +23,7 @@ class PhotoViewerScreen extends StatefulWidget {
     required this.photo,
     required this.preview,
     required this.heroTag,
+    this.keepSide = KeepSide.right,
   });
 
   final PhotoRepository repository;
@@ -33,6 +35,9 @@ class PhotoViewerScreen extends StatefulWidget {
 
   /// Matches the card's, so the photo grows from the card into this screen.
   final Object heroTag;
+
+  /// Puts Keep and Delete on the same sides as on the sorting screen.
+  final KeepSide keepSide;
 
   @override
   State<PhotoViewerScreen> createState() => _PhotoViewerScreenState();
@@ -241,6 +246,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen>
                 onKeep: () => _close(Decision.keep),
                 onUndo: null,
                 showUndo: false,
+                keepSide: widget.keepSide,
               ),
             ],
           ),

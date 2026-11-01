@@ -8,6 +8,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/chosen_folder.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 
 /// Photos from folders the user picked with Android's folder picker, for
@@ -144,8 +145,15 @@ class AndroidFolderPhotoRepository
   // the gallery's: a small first one, so sorting can start almost at once,
   // then bigger ones in the background.
   @override
-  Stream<List<Photo>> photosIn(Album album) async* {
-    final photos = _albumPhotos[album.id] ?? const <FoundPhoto>[];
+  Stream<List<Photo>> photosIn(
+    Album album, {
+    PhotoOrder order = PhotoOrder.newestFirst,
+  }) async* {
+    final newestFirst = _albumPhotos[album.id] ?? const <FoundPhoto>[];
+    final photos = switch (order) {
+      PhotoOrder.newestFirst => newestFirst,
+      PhotoOrder.oldestFirst => newestFirst.reversed.toList(),
+    };
     var start = 0;
     var pageSize = 200;
     while (start < photos.length) {

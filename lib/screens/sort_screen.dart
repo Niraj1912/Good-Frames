@@ -4,9 +4,11 @@ import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/decision.dart';
+import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/screens/photo_viewer_screen.dart';
 import 'package:photo_swipe/screens/review_screen.dart';
+import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
@@ -25,11 +27,13 @@ class SortScreen extends StatefulWidget {
     required this.repository,
     required this.store,
     required this.album,
+    required this.settings,
   });
 
   final PhotoRepository repository;
   final DecisionStore store;
   final Album album;
+  final Settings settings;
 
   @override
   State<SortScreen> createState() => _SortScreenState();
@@ -40,6 +44,7 @@ class _SortScreenState extends State<SortScreen> {
     repository: widget.repository,
     store: widget.store,
     album: widget.album,
+    order: widget.settings.order,
   )..load();
 
   // Lets the buttons and keys swipe the card, so they animate like a drag.
@@ -55,13 +60,28 @@ class _SortScreenState extends State<SortScreen> {
     super.dispose();
   }
 
-  void _keep() => _cardKey.currentState?.swipe(SwipeDirection.right);
-  void _delete() => _cardKey.currentState?.swipe(SwipeDirection.left);
+  KeepSide get _keepSide => widget.settings.keepSide;
+
+  // Swipes keep one way and delete the other: right keeps, unless the user
+  // swapped them in Settings.
+  SwipeDirection _directionFor(Decision decision) =>
+      (decision == Decision.keep) == (_keepSide == KeepSide.right)
+      ? SwipeDirection.right
+      : SwipeDirection.left;
+
+  Decision _decisionFor(SwipeDirection direction) =>
+      direction == _directionFor(Decision.keep)
+      ? Decision.keep
+      : Decision.delete;
+
+  void _swipe(SwipeDirection direction) =>
+      _cardKey.currentState?.swipe(direction);
+  void _keep() => _swipe(_directionFor(Decision.keep));
+  void _delete() => _swipe(_directionFor(Decision.delete));
 
   void _undo() {
     _enterFrom = switch (_controller.lastDecision) {
-      Decision.keep => SwipeDirection.right,
-      Decision.delete => SwipeDirection.left,
+      final decision? => _directionFor(decision),
       null => null,
     };
     _run(_controller.undo);
@@ -77,23 +97,19 @@ class _SortScreenState extends State<SortScreen> {
           photo: photo,
           preview: preview,
           heroTag: _heroTag(photo),
+          keepSide: _keepSide,
         ),
       ),
     );
     if (!mounted || decision == null) return;
-    _cardKey.currentState?.swipe(
-      decision == Decision.keep ? SwipeDirection.right : SwipeDirection.left,
-    );
+    _swipe(_directionFor(decision));
   }
 
   static Object _heroTag(Photo photo) => 'photo-${photo.id}';
 
   Future<void> _onSwiped(SwipeDirection direction) async {
     _enterFrom = null; // The next photo just appears behind.
-    final decision = direction == SwipeDirection.right
-        ? Decision.keep
-        : Decision.delete;
-    final saved = await _run(() => _controller.decide(decision));
+    final saved = await _run(() => _controller.decide(_decisionFor(direction)));
     // The decision was taken back, so bring the card back too.
     if (!saved) _cardKey.currentState?.comeBack();
   }
@@ -203,12 +219,15 @@ class _SortScreenState extends State<SortScreen> {
           ),
         ],
       ),
-      // Keyboard shortcuts for the Windows build. Delete and Keep do nothing
-      // once the album is done, but Undo still works there.
+      // Keyboard shortcuts for the Windows build. The arrows swipe that way,
+      // so they follow the swipe directions. They do nothing once the album
+      // is done, but Undo still works there.
       body: CallbackShortcuts(
         bindings: {
-          const SingleActivator(LogicalKeyboardKey.arrowLeft): _delete,
-          const SingleActivator(LogicalKeyboardKey.arrowRight): _keep,
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+              _swipe(SwipeDirection.left),
+          const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+              _swipe(SwipeDirection.right),
           const SingleActivator(LogicalKeyboardKey.keyZ): _undo,
           const SingleActivator(LogicalKeyboardKey.keyZ, control: true): _undo,
           const SingleActivator(LogicalKeyboardKey.backspace): _undo,
@@ -309,14 +328,24 @@ class _SortScreenState extends State<SortScreen> {
                 Positioned.fill(
                   child: ValueListenableBuilder(
                     valueListenable: _dragProgress,
-                    builder: (context, progress, _) => DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color:
-                            (progress > 0 ? sortColors.keep : sortColors.delete)
-                                .withValues(alpha: 0.14 * progress.abs()),
-                      ),
-                    ),
+                    builder: (context, progress, _) {
+                      final heading = _decisionFor(
+                        progress > 0
+                            ? SwipeDirection.right
+                            : SwipeDirection.left,
+                      );
+                      final colour = heading == Decision.keep
+                          ? sortColors.keep
+                          : sortColors.delete;
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: colour.withValues(
+                            alpha: 0.14 * progress.abs(),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 // The next photo waits behind, slightly smaller, and grows
@@ -340,6 +369,8 @@ class _SortScreenState extends State<SortScreen> {
                   cardId: photo.id,
                   dragProgress: _dragProgress,
                   enterFrom: _enterFrom,
+                  keepSide: _keepSide,
+                  vibration: widget.settings.vibration,
                   onSwiped: _onSwiped,
                   onTap: () => _openViewer(photo, image),
                   child: Stack(
@@ -369,13 +400,16 @@ class _SortScreenState extends State<SortScreen> {
                 onDelete: _delete,
                 onKeep: _keep,
                 onUndo: _controller.canUndo ? _undo : null,
+                keepSide: _keepSide,
               ),
               if (isDesktop) ...[
                 const SizedBox(height: 8),
-                Text(
-                  '←  Delete      Z  Undo      →  Keep      Click to zoom',
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text(switch (_keepSide) {
+                  KeepSide.right =>
+                    '←  Delete      Z  Undo      →  Keep      Click to zoom',
+                  KeepSide.left =>
+                    '←  Keep      Z  Undo      →  Delete      Click to zoom',
+                }, style: theme.textTheme.bodySmall),
               ],
             ],
           ),

@@ -4,6 +4,7 @@ import 'package:flutter/painting.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 
 /// In-memory photos for tests: fast, predictable, and needs no files or
@@ -19,7 +20,9 @@ class FakePhotoRepository implements PhotoRepository {
                Photo(
                  id: '$album/$i',
                  name: 'IMG_$i.jpg',
-                 date: DateTime(2026, 1, i),
+                 // IMG_1 is the newest, so albums start with it, as real
+                 // ones start with their newest photo.
+                 date: DateTime(2026).subtract(Duration(hours: i)),
                  sizeBytes: 1000 * i,
                ),
            ],
@@ -94,8 +97,15 @@ class FakePhotoRepository implements PhotoRepository {
 
   @override
   // Copies, like a real source returns: callers must never share our list.
-  Stream<List<Photo>> photosIn(Album album) async* {
-    final photos = [..._photos[album.id]!];
+  Stream<List<Photo>> photosIn(
+    Album album, {
+    PhotoOrder order = PhotoOrder.newestFirst,
+  }) async* {
+    // Stored newest first.
+    final photos = switch (order) {
+      PhotoOrder.newestFirst => [..._photos[album.id]!],
+      PhotoOrder.oldestFirst => _photos[album.id]!.reversed.toList(),
+    };
     for (var start = 0; start < photos.length; start += pageSize) {
       yield photos.skip(start).take(pageSize).toList();
     }
@@ -171,7 +181,7 @@ class FakePhotoRepository implements PhotoRepository {
       final (album, photo) = entry;
       _photos[album]!
         ..add(photo)
-        ..sort((a, b) => a.date.compareTo(b.date));
+        ..sort((a, b) => b.date.compareTo(a.date));
       restored.add(photo.id);
     }
     return restored;

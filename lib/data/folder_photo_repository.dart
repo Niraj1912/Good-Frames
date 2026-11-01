@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 
@@ -91,12 +92,20 @@ class FolderPhotoRepository implements PhotoRepository {
 
   @override
   // One page: the folder was already scanned for the album list.
-  Stream<List<Photo>> photosIn(Album album) async* {
+  Stream<List<Photo>> photosIn(
+    Album album, {
+    PhotoOrder order = PhotoOrder.newestFirst,
+  }) async* {
     final byFolder = (_lastScan ??= await _scan()).byFolder;
     final photos = album.id == _allPhotosId
         ? byFolder.values.expand((photos) => photos).toList()
         : [...?byFolder[album.id]];
-    yield photos..sort((a, b) => b.date.compareTo(a.date));
+    yield photos..sort(
+      (a, b) => switch (order) {
+        PhotoOrder.newestFirst => b.date.compareTo(a.date),
+        PhotoOrder.oldestFirst => a.date.compareTo(b.date),
+      },
+    );
   }
 
   @override

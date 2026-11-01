@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_swipe/main.dart';
+import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/screens/photo_viewer_screen.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/sort_progress.dart';
@@ -18,6 +19,7 @@ void main() {
       PhotoSwipeApp(
         repository: FakePhotoRepository(photoCounts: {'Camera': 3}),
         store: store,
+        settings: await Settings.load(store),
       ),
     );
     await tester.pumpAndSettle();
