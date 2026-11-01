@@ -14,14 +14,26 @@ class AlbumPickerScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.store,
-    this.limitedAccess = false,
+    this.accessNote,
+    this.accessActionLabel = 'Change',
+    this.onAccessAction,
+    this.onChooseFolder,
   });
 
   final PhotoRepository repository;
   final DecisionStore store;
 
-  /// True when the user shared only some photos (Android 14+).
-  final bool limitedAccess;
+  /// A note at the top saying SwipeSort sees only part of the library, such
+  /// as only the photos or folders the user chose. Null for none.
+  final String? accessNote;
+
+  /// The note's button, and what it does. The albums reload after.
+  final String accessActionLabel;
+  final Future<void> Function()? onAccessAction;
+
+  /// Offers to look at one folder instead of every photo. Null where that
+  /// isn't possible.
+  final Future<void> Function()? onChooseFolder;
 
   @override
   State<AlbumPickerScreen> createState() => _AlbumPickerScreenState();
@@ -37,8 +49,8 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
     });
   }
 
-  Future<void> _changeSelectedPhotos() async {
-    await widget.repository.changeSelectedPhotos();
+  Future<void> _onAccessAction() async {
+    await widget.onAccessAction?.call();
     if (mounted) _reload();
   }
 
@@ -75,6 +87,12 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
       appBar: AppBar(
         title: const Text('Choose an album'),
         actions: [
+          if (widget.onChooseFolder case final chooseFolder?)
+            IconButton(
+              onPressed: chooseFolder,
+              icon: const Icon(Icons.folder_open_outlined),
+              tooltip: 'Choose a folder instead',
+            ),
           IconButton(
             onPressed: _openRecentlyDeleted,
             icon: const Icon(Icons.restore_from_trash_outlined),
@@ -89,16 +107,14 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
       ),
       body: Column(
         children: [
-          if (widget.limitedAccess)
+          if (widget.accessNote case final note?)
             MaterialBanner(
               leading: const Icon(Icons.info_outline),
-              content: const Text(
-                'SwipeSort can only see the photos you selected.',
-              ),
+              content: Text(note),
               actions: [
                 TextButton(
-                  onPressed: _changeSelectedPhotos,
-                  child: const Text('Change'),
+                  onPressed: _onAccessAction,
+                  child: Text(widget.accessActionLabel),
                 ),
               ],
             ),

@@ -54,6 +54,9 @@ class FolderPhotoRepository implements PhotoRepository {
   Future<AccessStatus> requestAccess() async => AccessStatus.granted;
 
   @override
+  Future<AccessStatus> checkAccess() async => AccessStatus.granted;
+
+  @override
   Future<void> openAccessSettings() async {}
 
   @override

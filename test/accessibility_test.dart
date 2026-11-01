@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/main.dart';
+import 'package:photo_swipe/models/chosen_folder.dart';
 
+import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
 import 'support/test_store.dart';
 
@@ -57,5 +60,39 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Recently deleted'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('the folder-or-all-photos choice fits too', (tester) async {
+    tester.view.physicalSize = const Size(360, 640) * 3;
+    tester.view.devicePixelRatio = 3;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final store = await openTestStore();
+    addTearDown(store.close);
+    final folders = FakeChosenFoldersRepository(
+      nextPick: const ChosenFolder(
+        uri: 'tree:holiday',
+        name: 'Holiday',
+        path: 'Pictures/Holiday',
+      ),
+    );
+
+    await tester.pumpWidget(
+      PhotoSwipeApp(
+        repository: FakePhotoRepository(access: AccessStatus.denied),
+        folders: folders,
+        store: store,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+
+    // The folders screen, from the album list's note.
+    await tester.tap(find.text('Choose a folder'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Folders'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pictures/Holiday'), findsOneWidget);
   });
 }

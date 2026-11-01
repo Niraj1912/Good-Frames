@@ -2,31 +2,33 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/painting.dart';
-import 'package:flutter/services.dart';
-import 'package:path/path.dart' as p;
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
+import 'package:photo_swipe/data/android_media.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
 
-/// Reads the phone's gallery through Android's MediaStore, using the
-/// photo_manager plugin.
-class AndroidPhotoRepository implements PhotoRepository {
+/// Reads the phone's whole gallery through Android's MediaStore, using the
+/// photo_manager plugin. The trash goes through the app's own Android code
+/// ([AndroidTrash]), shared with folder mode.
+class AndroidPhotoRepository with AndroidTrash implements PhotoRepository {
   AndroidPhotoRepository({required this.thumbnailFolder});
 
-  /// Where small copies of trashed photos are kept for the Recently deleted
-  /// screen.
+  @override
   final Directory thumbnailFolder;
 
   // photo_manager's own objects, kept so they can be found again by id.
   final _albums = <String, AssetPathEntity>{};
   final _assets = <String, AssetEntity>{};
 
-  // The app's own Android code, in MainActivity.kt, for the one thing
-  // photo_manager can't do: erasing photos that are already in the trash.
-  static const _trashChannel = MethodChannel('swipesort/trash');
+  static const _photosOnly = PermissionRequestOption(
+    // Photos only. Asking for videos too would need more permissions.
+    androidPermission: AndroidPermission(
+      type: RequestType.image,
+      mediaLocation: false,
+    ),
+  );
 
   @override
   String get sourceName => "your phone's gallery";
@@ -35,22 +37,20 @@ class AndroidPhotoRepository implements PhotoRepository {
   String? get notice => null;
 
   @override
-  Future<AccessStatus> requestAccess() async {
-    final state = await PhotoManager.requestPermissionExtend(
-      requestOption: const PermissionRequestOption(
-        // Photos only. Asking for videos too would need more permissions.
-        androidPermission: AndroidPermission(
-          type: RequestType.image,
-          mediaLocation: false,
-        ),
-      ),
-    );
-    return switch (state) {
-      PermissionState.authorized => AccessStatus.granted,
-      PermissionState.limited => AccessStatus.limited,
-      _ => AccessStatus.denied,
-    };
-  }
+  Future<AccessStatus> requestAccess() async => _toStatus(
+    await PhotoManager.requestPermissionExtend(requestOption: _photosOnly),
+  );
+
+  @override
+  Future<AccessStatus> checkAccess() async => _toStatus(
+    await PhotoManager.getPermissionState(requestOption: _photosOnly),
+  );
+
+  static AccessStatus _toStatus(PermissionState state) => switch (state) {
+    PermissionState.authorized => AccessStatus.granted,
+    PermissionState.limited => AccessStatus.limited,
+    _ => AccessStatus.denied,
+  };
 
   @override
   Future<void> openAccessSettings() => PhotoManager.openSetting();
@@ -133,125 +133,10 @@ class AndroidPhotoRepository implements PhotoRepository {
     );
   }
 
+  // The small copy kept for the Recently deleted screen, made by Android.
   @override
-  bool get confirmsTrashItself => true;
-
-  @override
-  String get trashExplanation =>
-      'Android keeps trashed photos for about 30 days before removing them '
-      'for good.';
-
-  @override
-  Duration? get trashKeepsFor => const Duration(days: 30);
-
-  // Uses Android's own trash (MediaStore.createTrashRequest). Android shows
-  // one prompt for the whole batch and answers with every id if the user
-  // agrees, or none if they cancel.
-  @override
-  Future<List<TrashedPhoto>> moveToTrash(
-    List<Photo> photos, {
-    void Function(int done, int total)? onProgress,
-  }) async {
-    // Save a small copy of each photo first. Once a photo is in the trash,
-    // Android hides it even from this app, so the Recently deleted screen
-    // would have nothing to show. Eight at a time: Android makes thumbnails
-    // on background threads, so asking for several at once is much faster.
-    await thumbnailFolder.create(recursive: true);
-    final thumbnails = <String, String>{};
-    for (var start = 0; start < photos.length; start += 8) {
-      final batch = photos.skip(start).take(8).toList();
-      await Future.wait([
-        for (final photo in batch)
-          _saveThumbnail(photo).then((path) {
-            if (path != null) thumbnails[photo.id] = path;
-          }),
-      ]);
-      onProgress?.call(start + batch.length, photos.length);
-    }
-
-    final assets = [for (final photo in photos) _assets[photo.id]!];
-    final moved = (await PhotoManager.editor.android.moveToTrash(assets))
-        .toSet();
-
-    final now = DateTime.now();
-    final trashed = <TrashedPhoto>[];
-    for (final photo in photos) {
-      final thumbnail = thumbnails[photo.id];
-      if (moved.contains(photo.id)) {
-        trashed.add(
-          TrashedPhoto(
-            photoId: photo.id,
-            name: photo.name,
-            trashedAt: now,
-            thumbnailPath: thumbnail,
-          ),
-        );
-      } else if (thumbnail != null) {
-        // Not trashed after all (the user cancelled), so drop the copy.
-        await File(thumbnail).delete();
-      }
-    }
-    return trashed;
-  }
-
-  @override
-  Future<Set<String>> restoreFromTrash(List<TrashedPhoto> photos) async {
-    // A trashed photo can't be looked up, but Android only needs its id and
-    // media type (1 means image) to find it again.
-    final assets = [
-      for (final photo in photos)
-        AssetEntity(id: photo.photoId, typeInt: 1, width: 0, height: 0),
-    ];
-    final restored = (await PhotoManager.editor.android.restoreFromTrash(
-      assets,
-    )).toSet();
-    await forgetTrashed([
-      for (final photo in photos)
-        if (restored.contains(photo.photoId)) photo,
-    ]);
-    return restored;
-  }
-
-  @override
-  Future<Set<String>> deleteForever(List<TrashedPhoto> photos) async {
-    // Android asks the user itself ("Allow SwipeSort to permanently delete
-    // ...?") and answers with every id, or none if they said no.
-    final deleted = await _trashChannel.invokeListMethod<String>(
-      'deleteForever',
-      {
-        'ids': [for (final photo in photos) photo.photoId],
-      },
-    );
-    final erased = {...?deleted};
-    await forgetTrashed([
-      for (final photo in photos)
-        if (erased.contains(photo.photoId)) photo,
-    ]);
-    return erased;
-  }
-
-  @override
-  Future<void> forgetTrashed(List<TrashedPhoto> photos) async {
-    for (final photo in photos) {
-      if (photo.thumbnailPath case final path?) {
-        final file = File(path);
-        if (await file.exists()) await file.delete();
-      }
-    }
-  }
-
-  // Writes a 320 px copy of [photo] and returns its path, or null if Android
-  // couldn't make one.
-  Future<String?> _saveThumbnail(Photo photo) async {
-    final bytes = await _assets[photo.id]!.thumbnailDataWithSize(
-      const ThumbnailSize.square(320),
-      quality: 80,
-    );
-    if (bytes == null) return null;
-    final file = File(p.join(thumbnailFolder.path, '${photo.id}.jpg'));
-    await file.writeAsBytes(bytes);
-    return file.path;
-  }
+  Future<List<int>?> trashThumbnail(Photo photo) => _assets[photo.id]!
+      .thumbnailDataWithSize(const ThumbnailSize.square(320), quality: 80);
 
   // Wraps photo_manager's object in ours, keeping it to find again by id.
   Photo _toPhoto(AssetEntity asset) {

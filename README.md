@@ -40,8 +40,32 @@ fenced in: it only works on photos already in the trash, only on the ones
 you tick, and only after a warning in plain words. On Android, Android then
 asks again with its own prompt showing the photos. photo_manager can't erase
 trashed photos (it looks each one up first, and Android hides trashed photos
-from lookups), so this is the app's one piece of its own Android code:
-`MainActivity.kt`, reached from Dart through a platform channel.
+from lookups), so the app does it with its own Android code (below).
+
+Folder mode: on first launch, Android users choose what SwipeSort sees:
+
+- **Choose a folder**: Android's folder picker. SwipeSort then sees that
+  folder and the folders inside it, and nothing else; each folder holding
+  photos is an album. No photo permission is involved at all: picking the
+  folder is the permission (the Storage Access Framework). Android's own
+  photo prompt can't do this: it offers every photo, or photos picked one
+  by one.
+- **All photos, or some**: Android's photo permission, as before. On
+  Android 14+ its prompt also offers "Allow limited access", for picking
+  photos one by one. The app can't open that picker directly, so the card
+  says "or some" to show the way to it.
+
+Folders can be added or removed later (Folders, on the album list), and
+either mode can switch to the other. Both identify photos by Android's
+gallery id, so decisions, the trash and Recently deleted carry over. A photo
+Android hasn't indexed yet can't be trashed, so it's left out, and the
+album list says how many.
+
+The app's own Android code, in `android/app/src/main/kotlin/`, covers what
+photo_manager can't: `TrashRequests.kt` (trash, restore and delete-forever
+prompts, by gallery id, used in both modes) and `FolderAccess.kt` (the
+folder picker, scanning chosen folders, decoding their photos at screen
+size). Dart reaches them through platform channels (`lib/data/android_media.dart`).
 
 Phase 5: hardening. Tested with big libraries, older Android versions, large
 text, and photos changing behind the app's back. See "Tested" below.
@@ -103,6 +127,7 @@ decide and `Esc` closes.
 | App icon and splash screen | Right on Android 11 and 17, light and dark mode |
 | Release APK permissions | Photo access only; no internet |
 | Delete forever, Android 17 emulator | Android's own prompt appears for trashed photos; Deny keeps them, Allow erases them |
+| Folder mode, Android 11 and 17 emulators, no photo permission | Choose, sort, zoom (rotation right), trash, restore, delete forever; decisions carried over from all-photos mode |
 | Signed 1.0.0 release on a real Android 16 phone | Installs; signed with the release key, not debuggable |
 
 Measure performance in a profile or release build (`flutter run --profile`),
@@ -226,7 +251,11 @@ stored in the package.
 
 - HEIC photos: Android shows them; the Windows build skips them, because
   Windows can't decode HEIC, and says so on the album list.
-- File size isn't shown on Android yet.
+- File size isn't shown on Android in all-photos mode (folder mode shows it).
+- Testing tip: a photo copied to an Android 11 emulator with `adb push` can
+  stay marked "pending" (half-written), which hides it from every app. Clear
+  it with `adb shell content update --uri
+  content://media/external/images/media/<id> --bind is_pending:i:0`.
 - `android/gradle.properties` turns off Kotlin incremental compilation. The
   project is on drive E: and Flutter's package cache is on C:, and the
   incremental compiler can't handle paths across drives.
@@ -250,7 +279,8 @@ lib/
 └── widgets/      Reusable pieces: swipe card, photo card, buttons, progress bar
 test/             Automated tests (test/fakes/ holds FakePhotoRepository)
 tool/             Developer scripts, such as the test-photo generator
-android/          Android project (permissions live in AndroidManifest.xml)
+android/          Android project (permissions live in AndroidManifest.xml;
+                  the app's own Kotlin code in app/src/main/kotlin/)
 windows/          Windows project
 ```
 
@@ -259,7 +289,8 @@ interface, which has one implementation per environment:
 
 - `FakePhotoRepository`: in-memory photos for automated tests
 - `FolderPhotoRepository`: reads a test folder, for the Windows build
-- `AndroidPhotoRepository`: the phone's gallery, via MediaStore
+- `AndroidPhotoRepository`: the phone's whole gallery, via MediaStore
+- `AndroidFolderPhotoRepository`: only folders the user chose (folder mode)
 
 ## Roadmap
 
@@ -274,6 +305,7 @@ interface, which has one implementation per environment:
 - [x] Zoom to check a photo before deciding, and more meaningful colour
 - [x] Phase 7: release: app icon, splash screen, signed release APK
 - [x] Delete forever from Recently deleted
+- [x] Folder mode: share chosen folders instead of every photo
 
 ## Safety rules
 
@@ -288,5 +320,7 @@ interface, which has one implementation per environment:
 - A decision is forgotten only after its photo has really been moved, so a
   crash part-way can't lose track of a photo.
 - The Windows build refuses to move any file outside its photo folder.
+- In folder mode the app can only read the folders the user picked, and
+  every trash, restore or erase still goes through Android's own prompt.
 - Develop against `test-photos/`, never a real photo library. That folder is
   git-ignored, because photos are personal data.

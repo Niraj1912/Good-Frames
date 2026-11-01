@@ -68,6 +68,9 @@ class FakePhotoRepository implements PhotoRepository {
   Future<AccessStatus> requestAccess() async => access;
 
   @override
+  Future<AccessStatus> checkAccess() async => access;
+
+  @override
   Future<void> openAccessSettings() async {
     settingsOpened = true;
   }

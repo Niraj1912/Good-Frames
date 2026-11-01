@@ -1,5 +1,6 @@
 import 'package:flutter/painting.dart';
 import 'package:photo_swipe/models/album.dart';
+import 'package:photo_swipe/models/chosen_folder.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 
@@ -28,6 +29,9 @@ abstract interface class PhotoRepository {
 
   /// Asks the user for access if needed, and reports what they allowed.
   Future<AccessStatus> requestAccess();
+
+  /// Reports the access the app has now, without asking the user anything.
+  Future<AccessStatus> checkAccess();
 
   /// Opens the system settings page where the user can change access.
   Future<void> openAccessSettings();
@@ -83,4 +87,19 @@ abstract interface class PhotoRepository {
   /// Frees anything kept only to show [photos], once they can no longer be
   /// restored.
   Future<void> forgetTrashed(List<TrashedPhoto> photos);
+}
+
+/// Photos from folders the user picks, rather than from the whole library,
+/// for people who'd rather not share every photo. Each folder that holds
+/// photos, inside the chosen ones, is an album.
+abstract interface class ChosenFoldersRepository implements PhotoRepository {
+  /// The folders shared so far, most recent first.
+  Future<List<ChosenFolder>> chosenFolders();
+
+  /// Opens the system's folder picker. Returns the folder picked, or null
+  /// if the user backed out.
+  Future<ChosenFolder?> chooseFolder();
+
+  /// Stops sharing [folder] with the app. Its photos stay where they are.
+  Future<void> forgetFolder(ChosenFolder folder);
 }

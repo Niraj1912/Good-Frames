@@ -3,6 +3,7 @@ import 'dart:io' show Directory, Platform;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:photo_swipe/data/android_folder_photo_repository.dart';
 import 'package:photo_swipe/data/android_photo_repository.dart';
 import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/folder_photo_repository.dart';
@@ -29,11 +30,12 @@ Future<void> main() async {
   // The only place that decides where photos and decisions live. Everything
   // else just uses the PhotoRepository and DecisionStore it's given.
   final PhotoRepository repository;
+  ChosenFoldersRepository? folders; // Only where the user can pick folders.
   final sqflite.DatabaseFactory databaseFactory;
   if (Platform.isAndroid) {
-    repository = AndroidPhotoRepository(
-      thumbnailFolder: Directory(p.join(appFolder.path, 'trash_thumbnails')),
-    );
+    final thumbnails = Directory(p.join(appFolder.path, 'trash_thumbnails'));
+    repository = AndroidPhotoRepository(thumbnailFolder: thumbnails);
+    folders = AndroidFolderPhotoRepository(thumbnailFolder: thumbnails);
     databaseFactory = sqflite.databaseFactorySqflitePlugin;
   } else {
     repository = FolderPhotoRepository(rootPath: _photoRoot);
@@ -47,7 +49,7 @@ Future<void> main() async {
     p.join(appFolder.path, 'decisions.db'),
   );
 
-  runApp(PhotoSwipeApp(repository: repository, store: store));
+  runApp(PhotoSwipeApp(repository: repository, folders: folders, store: store));
 }
 
 class PhotoSwipeApp extends StatelessWidget {
@@ -55,9 +57,11 @@ class PhotoSwipeApp extends StatelessWidget {
     super.key,
     required this.repository,
     required this.store,
+    this.folders,
   });
 
   final PhotoRepository repository;
+  final ChosenFoldersRepository? folders;
   final DecisionStore store;
 
   @override
@@ -67,7 +71,11 @@ class PhotoSwipeApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
-      home: AccessScreen(repository: repository, store: store),
+      home: AccessScreen(
+        repository: repository,
+        folders: folders,
+        store: store,
+      ),
     );
   }
 }
