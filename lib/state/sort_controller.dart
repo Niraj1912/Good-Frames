@@ -140,6 +140,12 @@ class SortController extends ChangeNotifier {
     }
   }
 
+  /// The decision [undo] would take back, or null if there's none.
+  Decision? get lastDecision {
+    final index = _history.lastIndexWhere(_inAlbum.contains);
+    return index == -1 ? null : _decisions[_history[index]];
+  }
+
   /// Takes back the most recent decision in this album and shows that photo
   /// again.
   Future<void> undo() async {

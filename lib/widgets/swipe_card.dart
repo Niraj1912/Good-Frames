@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:photo_swipe/theme/app_theme.dart';
 
 /// Which way a card was swiped.
 enum SwipeDirection { left, right }
@@ -19,6 +21,7 @@ class SwipeCard extends StatefulWidget {
     required this.onSwiped,
     required this.child,
     this.dragProgress,
+    this.enterFrom,
   });
 
   /// What the card is showing. When it changes, the card resets to the
@@ -32,6 +35,10 @@ class SwipeCard extends StatefulWidget {
   /// behind can react without rebuilding the whole screen.
   final ValueNotifier<double>? dragProgress;
 
+  /// When a new [cardId] arrives, slide it in from this side instead of
+  /// just appearing. Used for undo: the photo comes back the way it went.
+  final SwipeDirection? enterFrom;
+
   @override
   State<SwipeCard> createState() => SwipeCardState();
 }
@@ -43,23 +50,35 @@ class SwipeCardState extends State<SwipeCard>
   static const _thresholdShare = 0.3;
   // A flick faster than this, in pixels per second, counts even if short.
   static const _flickSpeed = 1000.0;
-  // Tilt at a full card width of drag, in radians (about 12 degrees).
-  static const _maxTilt = 0.2;
+  // Tilt at a full card width of drag, in radians (about 8 degrees).
+  static const _maxTilt = 0.14;
+  // Slightly springy: settles quickly with one small overshoot.
+  static const _spring = SpringDescription(
+    mass: 1,
+    stiffness: 500,
+    damping: 32,
+  );
 
-  late final AnimationController _animation = AnimationController(
+  // Unbounded, because the spring overshoots past its target and back.
+  late final AnimationController _animation = AnimationController.unbounded(
     vsync: this,
-    duration: const Duration(milliseconds: 220),
   )..addListener(_onAnimate);
 
   Offset _offset = Offset.zero;
   Offset _animateFrom = Offset.zero;
   Offset _animateTo = Offset.zero;
-  Curve _curve = Curves.easeOut;
   SwipeDirection? _leaving; // Set while flying off; ignores more input.
+  SwipeDirection? _pendingEntry; // Waiting for a size to slide in from.
   bool _pastThreshold = false;
   Size _size = Size.zero;
 
   double get _threshold => math.max(_size.width * _thresholdShare, 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _pendingEntry = widget.enterFrom;
+  }
 
   @override
   void didUpdateWidget(SwipeCard oldWidget) {
@@ -69,6 +88,7 @@ class SwipeCardState extends State<SwipeCard>
       _offset = Offset.zero;
       _leaving = null;
       _pastThreshold = false;
+      _pendingEntry = widget.enterFrom;
     }
   }
 
@@ -87,7 +107,7 @@ class SwipeCardState extends State<SwipeCard>
   void comeBack() {
     _leaving = null;
     _pastThreshold = false;
-    _animateOffset(to: Offset.zero, curve: Curves.easeOutBack);
+    _springBack();
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -109,10 +129,10 @@ class SwipeCardState extends State<SwipeCard>
   void _onPanEnd(DragEndDetails details) {
     if (_leaving != null) return;
 
-    final speed = details.velocity.pixelsPerSecond.dx;
+    final velocity = details.velocity.pixelsPerSecond;
     final SwipeDirection? direction;
-    if (speed.abs() > _flickSpeed) {
-      direction = speed > 0 ? SwipeDirection.right : SwipeDirection.left;
+    if (velocity.dx.abs() > _flickSpeed) {
+      direction = velocity.dx > 0 ? SwipeDirection.right : SwipeDirection.left;
     } else if (_offset.dx.abs() > _threshold) {
       direction = _offset.dx > 0 ? SwipeDirection.right : SwipeDirection.left;
     } else {
@@ -120,38 +140,71 @@ class SwipeCardState extends State<SwipeCard>
     }
 
     if (direction == null) {
-      // easeOutBack overshoots a little, so the card feels springy.
-      _animateOffset(to: Offset.zero, curve: Curves.easeOutBack);
+      _springBack(velocity: velocity);
     } else {
-      _flyOut(direction);
+      _flyOut(direction, speed: velocity.dx.abs());
     }
   }
 
-  void _flyOut(SwipeDirection direction) {
+  // Leaves at the speed of the flick, so the card feels thrown rather than
+  // played back. Buttons and keys (no speed) use a brisk default.
+  void _flyOut(SwipeDirection direction, {double speed = 0}) {
     _leaving = direction;
     HapticFeedback.mediumImpact();
     final sign = direction == SwipeDirection.right ? 1.0 : -1.0;
     // Far enough that even the tilted corner ends up off screen.
-    final target = Offset(sign * _size.width * 1.5, _offset.dy);
-    _animateOffset(to: target, curve: Curves.easeIn).then((_) {
+    final target = Offset(sign * _size.width * 1.4, _offset.dy);
+    final distance = (target.dx - _offset.dx).abs();
+    final seconds = (distance / math.max(speed, 2400)).clamp(0.12, 0.28);
+
+    _animateFrom = _offset;
+    _animateTo = target;
+    _animation.value = 0;
+    _animation
+        .animateTo(
+          1,
+          duration: Duration(milliseconds: (seconds * 1000).round()),
+          curve: Curves.easeOutCubic,
+        )
+        .then((_) {
+          if (!mounted) return;
+          widget.dragProgress?.value = 0;
+          widget.onSwiped(direction);
+        });
+  }
+
+  // A real spring, carrying on with the finger's speed: the card overshoots
+  // the middle a little and settles, like something with weight.
+  void _springBack({Offset velocity = Offset.zero}) {
+    _animateFrom = _offset;
+    _animateTo = Offset.zero;
+    final distance = _offset.distance;
+    // The spring runs from 0 to 1, so scale the finger's speed to match.
+    final startSpeed = distance == 0 ? 0.0 : -velocity.dx / distance;
+    // snapToEnd: a spring only gets "close enough", so finish exactly.
+    _animation.animateWith(
+      SpringSimulation(_spring, 0, 1, startSpeed, snapToEnd: true),
+    );
+  }
+
+  void _slideIn(SwipeDirection from) {
+    final sign = from == SwipeDirection.right ? 1.0 : -1.0;
+    _offset = Offset(sign * _size.width * 1.2, 0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      widget.dragProgress?.value = 0;
-      widget.onSwiped(direction);
+      _animateFrom = _offset;
+      _animateTo = Offset.zero;
+      _animation.value = 0;
+      _animation.animateTo(
+        1,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
     });
   }
 
-  // The returned future completes only if the animation runs to the end,
-  // not if it's stopped because a new photo arrived.
-  TickerFuture _animateOffset({required Offset to, required Curve curve}) {
-    _animateFrom = _offset;
-    _animateTo = to;
-    _curve = curve;
-    return _animation.forward(from: 0);
-  }
-
   void _onAnimate() {
-    final t = _curve.transform(_animation.value);
-    _setOffset(Offset.lerp(_animateFrom, _animateTo, t)!);
+    _setOffset(Offset.lerp(_animateFrom, _animateTo, _animation.value)!);
   }
 
   void _setOffset(Offset offset) {
@@ -161,9 +214,16 @@ class SwipeCardState extends State<SwipeCard>
 
   @override
   Widget build(BuildContext context) {
+    final colors = SortColors.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         _size = constraints.biggest;
+        // Start off screen on the first frame, then slide in, so the card
+        // never flashes in the middle first.
+        if (_pendingEntry case final from?) {
+          _pendingEntry = null;
+          _slideIn(from);
+        }
         final progress = (_offset.dx / _threshold).clamp(-1.0, 1.0);
         final tilt =
             _maxTilt * (_offset.dx / math.max(_size.width, 1)).clamp(-1.0, 1.0);
@@ -185,27 +245,23 @@ class SwipeCardState extends State<SwipeCard>
                 children: [
                   widget.child,
                   Positioned(
-                    top: 24,
-                    left: 24,
-                    child: Opacity(
-                      opacity: progress.clamp(0.0, 1.0),
-                      child: const _Stamp(
-                        label: 'KEEP',
-                        color: _keepColor,
-                        angle: -0.25,
-                      ),
+                    top: 20,
+                    left: 20,
+                    child: _Stamp(
+                      label: 'KEEP',
+                      color: colors.keep,
+                      angle: -0.12,
+                      strength: progress.clamp(0.0, 1.0),
                     ),
                   ),
                   Positioned(
-                    top: 24,
-                    right: 24,
-                    child: Opacity(
-                      opacity: (-progress).clamp(0.0, 1.0),
-                      child: const _Stamp(
-                        label: 'DELETE',
-                        color: _deleteColor,
-                        angle: 0.25,
-                      ),
+                    top: 20,
+                    right: 20,
+                    child: _Stamp(
+                      label: 'DELETE',
+                      color: colors.delete,
+                      angle: 0.12,
+                      strength: (-progress).clamp(0.0, 1.0),
                     ),
                   ),
                 ],
@@ -218,37 +274,50 @@ class SwipeCardState extends State<SwipeCard>
   }
 }
 
-const _keepColor = Color(0xFF2E7D32);
-const _deleteColor = Color(0xFFC62828);
-
-/// The KEEP / DELETE label that fades in while dragging.
+/// The KEEP / DELETE label that appears while dragging. [strength] runs
+/// from 0 (hidden) to 1 (past the threshold): it fades in and settles from
+/// slightly larger to its final size, like being pressed down.
 class _Stamp extends StatelessWidget {
-  const _Stamp({required this.label, required this.color, required this.angle});
+  const _Stamp({
+    required this.label,
+    required this.color,
+    required this.angle,
+    required this.strength,
+  });
 
   final String label;
   final Color color;
   final double angle;
+  final double strength;
 
   @override
   Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: angle,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          // A pale background keeps the label readable on any photo.
-          color: Colors.white.withValues(alpha: 0.85),
-          border: Border.all(color: color, width: 4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
+    return Opacity(
+      opacity: strength,
+      child: Transform.scale(
+        scale: 1.15 - 0.15 * strength,
+        child: Transform.rotate(
+          angle: angle,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              // Paper-coloured backing (near-black in dark mode), so the
+              // label reads as crisp ink on any photo.
+              color: Theme.of(context).colorScheme.surface
+                  .withValues(alpha: 0.92),
+              border: Border.all(color: color, width: 2.5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 3,
+                ),
+              ),
             ),
           ),
         ),

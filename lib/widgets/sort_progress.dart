@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/widgets/formatting.dart';
 
 /// How far through the album the user is: a bar, plus the counts.
 class SortProgress extends StatelessWidget {
@@ -18,11 +20,25 @@ class SortProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = SortColors.of(context);
+    final counts = theme.textTheme.labelLarge?.copyWith(
+      fontFeatures: AppTheme.tabularFigures,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
         children: [
-          LinearProgressIndicator(value: total == 0 ? 0 : sorted / total),
+          // Glides to each new value instead of jumping.
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: total == 0 ? 0 : sorted / total),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            builder: (context, value, _) => ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(value: value),
+            ),
+          ),
           const SizedBox(height: 8),
           // A Wrap, not a Row: with large text on a small phone the counts
           // move onto a second line instead of running off the screen.
@@ -32,14 +48,29 @@ class SortProgress extends StatelessWidget {
             runSpacing: 4,
             children: [
               Text(
-                '$sorted / $total sorted',
-                style: theme.textTheme.labelLarge,
+                '${formatCount(sorted)} / ${formatCount(total)} sorted',
+                style: counts,
               ),
-              Text(
-                'Keep $kept  ·  Delete $deleted',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Keep ${formatCount(kept)}',
+                      style: TextStyle(color: colors.keep),
+                    ),
+                    TextSpan(
+                      text: '  ·  ',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'Delete ${formatCount(deleted)}',
+                      style: TextStyle(color: colors.delete),
+                    ),
+                  ],
                 ),
+                style: counts,
               ),
             ],
           ),

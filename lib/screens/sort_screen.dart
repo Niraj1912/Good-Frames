@@ -7,7 +7,9 @@ import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/screens/review_screen.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
+import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
+import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 import 'package:photo_swipe/widgets/photo_card.dart';
 import 'package:photo_swipe/widgets/photo_info.dart';
@@ -42,6 +44,8 @@ class _SortScreenState extends State<SortScreen> {
   // Lets the buttons and keys swipe the card, so they animate like a drag.
   final _cardKey = GlobalKey<SwipeCardState>();
   final _dragProgress = ValueNotifier(0.0);
+  // After an undo, the side the photo comes back from: the side it left on.
+  SwipeDirection? _enterFrom;
 
   @override
   void dispose() {
@@ -52,9 +56,18 @@ class _SortScreenState extends State<SortScreen> {
 
   void _keep() => _cardKey.currentState?.swipe(SwipeDirection.right);
   void _delete() => _cardKey.currentState?.swipe(SwipeDirection.left);
-  void _undo() => _run(_controller.undo);
+
+  void _undo() {
+    _enterFrom = switch (_controller.lastDecision) {
+      Decision.keep => SwipeDirection.right,
+      Decision.delete => SwipeDirection.left,
+      null => null,
+    };
+    _run(_controller.undo);
+  }
 
   Future<void> _onSwiped(SwipeDirection direction) async {
+    _enterFrom = null; // The next photo just appears behind.
     final decision = direction == SwipeDirection.right
         ? Decision.keep
         : Decision.delete;
@@ -216,7 +229,8 @@ class _SortScreenState extends State<SortScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'Loading ${controller.loadedCount} of ${controller.total} '
+              'Loading ${formatCount(controller.loadedCount)} of '
+              '${formatCount(controller.total)} '
               'photos…',
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -286,6 +300,7 @@ class _SortScreenState extends State<SortScreen> {
                   key: _cardKey,
                   cardId: photo.id,
                   dragProgress: _dragProgress,
+                  enterFrom: _enterFrom,
                   onSwiped: _onSwiped,
                   child: PhotoCard(
                     image: widget.repository.imageFor(photo, width: width),
@@ -336,6 +351,11 @@ class _DoneView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = SortColors.of(context);
+    final number = TextStyle(
+      fontWeight: FontWeight.w700,
+      fontFeatures: AppTheme.tabularFigures,
+    );
     // Scrollable, so it still fits on a small phone with large text.
     return Center(
       child: SingleChildScrollView(
@@ -344,29 +364,47 @@ class _DoneView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.check_circle_outline,
-              size: 64,
-              color: theme.colorScheme.primary,
+              Icons.task_alt,
+              size: 40,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
-            Text('All sorted!', style: theme.textTheme.headlineSmall),
+            Text('All sorted', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text('$kept to keep, $deleted to delete.'),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: formatCount(kept),
+                    style: number.copyWith(color: colors.keep),
+                  ),
+                  const TextSpan(text: ' to keep, '),
+                  TextSpan(
+                    text: formatCount(deleted),
+                    style: number.copyWith(color: colors.delete),
+                  ),
+                  const TextSpan(text: ' to delete.'),
+                ],
+              ),
+              style: theme.textTheme.bodyLarge,
+            ),
             if (deleted > 0) ...[
               const SizedBox(height: 4),
               Text(
                 'Nothing is deleted until you review them.',
-                style: theme.textTheme.bodySmall,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: onReview,
                 icon: const Icon(Icons.delete_sweep_outlined),
-                label: Text('Review $deleted to delete'),
+                label: Text('Review ${formatCount(deleted)} to delete'),
               ),
             ],
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
+            const SizedBox(height: 8),
+            TextButton.icon(
               onPressed: onUndo,
               icon: const Icon(Icons.undo),
               label: const Text('Undo last'),

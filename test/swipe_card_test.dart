@@ -14,7 +14,11 @@ void main() {
     cardKey = GlobalKey<SwipeCardState>();
   });
 
-  Future<void> showCard(WidgetTester tester, {String cardId = 'a'}) async {
+  Future<void> showCard(
+    WidgetTester tester, {
+    String cardId = 'a',
+    SwipeDirection? enterFrom,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Center(
@@ -24,6 +28,7 @@ void main() {
             child: SwipeCard(
               key: cardKey,
               cardId: cardId,
+              enterFrom: enterFrom,
               onSwiped: swipes.add,
               child: const ColoredBox(key: _face, color: Colors.blue),
             ),
@@ -102,6 +107,18 @@ void main() {
     expect(cardCorner(tester).dx, greaterThan(400)); // Off to the right.
 
     await showCard(tester, cardId: 'b');
+    expect(cardCorner(tester), start);
+  });
+
+  testWidgets('an undone photo slides back in from its side', (tester) async {
+    await showCard(tester);
+    final start = cardCorner(tester);
+
+    // Undo after a delete: the photo comes back from the left.
+    await showCard(tester, cardId: 'b', enterFrom: SwipeDirection.left);
+    expect(cardCorner(tester).dx, lessThan(0)); // Starts off to the left.
+
+    await tester.pumpAndSettle();
     expect(cardCorner(tester), start);
   });
 }

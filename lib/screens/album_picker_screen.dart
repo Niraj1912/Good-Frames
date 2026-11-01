@@ -4,6 +4,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/screens/recently_deleted_screen.dart';
 import 'package:photo_swipe/screens/sort_screen.dart';
+import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
@@ -120,25 +121,122 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
                   );
                 }
                 final notice = widget.repository.notice;
-                return ListView(
-                  children: [
+                final width = MediaQuery.sizeOf(context).width;
+                // More columns on wider windows, so covers stay a sensible size.
+                final columns = width >= 900
+                    ? 5
+                    : width >= 600
+                    ? 3
+                    : 2;
+                final coverWidth =
+                    (width / columns * MediaQuery.devicePixelRatioOf(context))
+                        .round();
+                return CustomScrollView(
+                  slivers: [
                     if (notice != null)
-                      ListTile(
-                        leading: const Icon(Icons.info_outline),
-                        subtitle: Text(notice),
+                      SliverToBoxAdapter(
+                        child: ListTile(
+                          leading: const Icon(Icons.info_outline),
+                          subtitle: Text(notice),
+                        ),
                       ),
-                    for (final album in albums)
-                      ListTile(
-                        leading: const Icon(Icons.photo_library_outlined),
-                        title: Text(album.name),
-                        subtitle: Text(photoCount(album.photoCount)),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => _open(album),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      sliver: SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisSpacing: 20,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.78,
+                        ),
+                        itemCount: albums.length,
+                        itemBuilder: (context, index) {
+                          final album = albums[index];
+                          return _AlbumTile(
+                            album: album,
+                            cover: switch (album.cover) {
+                              final photo? => widget.repository.imageFor(
+                                photo,
+                                width: coverWidth,
+                              ),
+                              null => null,
+                            },
+                            onTap: () => _open(album),
+                          );
+                        },
                       ),
+                    ),
                   ],
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One album on the list: its newest photo, its name and how many photos.
+class _AlbumTile extends StatelessWidget {
+  const _AlbumTile({
+    required this.album,
+    required this.cover,
+    required this.onTap,
+  });
+
+  final Album album;
+  final ImageProvider? cover;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final placeholder = Center(
+      child: Icon(
+        Icons.photo_library_outlined,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: ColoredBox(
+                color: SortColors.of(context).photoMatte,
+                child: SizedBox.expand(
+                  child: switch (cover) {
+                    final image? => Image(
+                      image: image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => placeholder,
+                    ),
+                    null => placeholder,
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            album.name,
+            style: theme.textTheme.titleSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            photoCount(album.photoCount),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontFeatures: AppTheme.tabularFigures,
+            ),
+            maxLines: 1,
           ),
         ],
       ),

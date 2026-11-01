@@ -1,5 +1,17 @@
-/// "1 photo" or "5 photos".
-String photoCount(int count) => count == 1 ? '1 photo' : '$count photos';
+/// "1 photo", "5 photos", "10,020 photos".
+String photoCount(int count) =>
+    count == 1 ? '1 photo' : '${formatCount(count)} photos';
+
+/// A whole number with thousands separators: 10020 becomes "10,020".
+String formatCount(int number) {
+  final digits = number.abs().toString();
+  final out = StringBuffer(number < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
+    out.write(digits[i]);
+  }
+  return out.toString();
+}
 
 /// A file size the way people say it: "830 KB", "4.2 MB".
 String formatSize(int bytes) {

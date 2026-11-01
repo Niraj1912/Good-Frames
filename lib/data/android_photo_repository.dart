@@ -63,11 +63,14 @@ class AndroidPhotoRepository implements PhotoRepository {
       final count = await path.assetCountAsync;
       if (count == 0) continue;
       _albums[path.id] = path;
+      // The newest photo is first, so a one-photo page is the cover.
+      final first = await path.getAssetListRange(start: 0, end: 1);
       albums.add(
         Album(
           id: path.id,
           name: path.isAll ? 'All photos' : path.name,
           photoCount: count,
+          cover: first.isEmpty ? null : _toPhoto(first.single),
         ),
       );
     }
@@ -86,14 +89,7 @@ class AndroidPhotoRepository implements PhotoRepository {
     while (start < count) {
       final end = min(start + pageSize, count);
       final assets = await path.getAssetListRange(start: start, end: end);
-      yield [
-        for (final asset in assets)
-          Photo(
-            id: _remember(asset),
-            name: asset.title ?? 'Photo',
-            date: asset.createDateTime,
-          ),
-      ];
+      yield [for (final asset in assets) _toPhoto(asset)];
       start = end;
       pageSize = 1000;
     }
@@ -211,8 +207,13 @@ class AndroidPhotoRepository implements PhotoRepository {
     return file.path;
   }
 
-  String _remember(AssetEntity asset) {
+  // Wraps photo_manager's object in ours, keeping it to find again by id.
+  Photo _toPhoto(AssetEntity asset) {
     _assets[asset.id] = asset;
-    return asset.id;
+    return Photo(
+      id: asset.id,
+      name: asset.title ?? 'Photo',
+      date: asset.createDateTime,
+    );
   }
 }

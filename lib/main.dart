@@ -8,6 +8,7 @@ import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/folder_photo_repository.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/screens/access_screen.dart';
+import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' as sqflite_ffi;
 
@@ -63,11 +64,9 @@ class PhotoSwipeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SwipeSort',
-      theme: ThemeData(colorSchemeSeed: Colors.teal),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.dark,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      debugShowCheckedModeBanner: false,
       home: AccessScreen(repository: repository, store: store),
     );
   }

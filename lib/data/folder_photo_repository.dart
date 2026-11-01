@@ -67,13 +67,21 @@ class FolderPhotoRepository implements PhotoRepository {
 
     final total = byFolder.values.fold(0, (sum, photos) => sum + photos.length);
     final folders = byFolder.keys.toList()..sort();
+    Photo newest(Iterable<Photo> photos) =>
+        photos.reduce((a, b) => a.date.isAfter(b.date) ? a : b);
     return [
-      Album(id: _allPhotosId, name: 'All photos', photoCount: total),
+      Album(
+        id: _allPhotosId,
+        name: 'All photos',
+        photoCount: total,
+        cover: newest(byFolder.values.expand((photos) => photos)),
+      ),
       for (final folder in folders)
         Album(
           id: folder,
           name: _albumName(folder),
           photoCount: byFolder[folder]!.length,
+          cover: newest(byFolder[folder]!),
         ),
     ];
   }

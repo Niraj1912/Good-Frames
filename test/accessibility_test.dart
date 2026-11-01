@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Keep'));
     await tester.pumpAndSettle();
-    expect(find.text('All sorted!'), findsOneWidget);
+    expect(find.text('All sorted'), findsOneWidget);
 
     // Review screen. With text this big the button is below the fold, so
     // scroll to it first, as a user would.

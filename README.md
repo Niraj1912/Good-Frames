@@ -37,6 +37,27 @@ show. There's no "delete forever" button: the app never erases anything.
 Phase 5: hardening. Tested with big libraries, older Android versions, large
 text, and photos changing behind the app's back. See "Tested" below.
 
+Phase 6: design. A restrained, photo-first look; see "Design" below.
+
+## Design
+
+All of it lives in `lib/theme/app_theme.dart` (design tokens: colours, type,
+shapes), so screens never pick their own colours.
+
+- Photo first: neutral surfaces (near-black in dark mode, warm off-white in
+  light), not tinted, so photos' own colours read true.
+- Colour carries meaning: green keeps, brick red deletes (`SortColors`, a
+  theme extension). Everything else is ink on paper.
+- Quiet shapes: 12-16 px corners and hairline borders instead of shadows or
+  glows. No gradients, no decorative blur, no emoji in the interface.
+- Numbers use tabular figures (so counters don't wobble) and thousands
+  separators ("10,020").
+- Motion explains something: a flicked card leaves at the flick's speed, a
+  short drag springs back with a real spring, and an undone photo slides back
+  in from the side it left on. Nothing moves just to decorate.
+- Albums are shown by their newest photo, not a generic icon.
+- Light and dark mode both follow the phone's setting.
+
 See the roadmap below.
 
 On Windows: drag with the mouse, or `←` Delete, `→` Keep, `Z` (or `Ctrl+Z`,
@@ -150,6 +171,7 @@ lib/
 ├── data/         Where photos and decisions come from (repositories, SQLite)
 ├── state/        App logic the screens listen to (current photo, undo, progress)
 ├── screens/      Full pages: album picker, swipe, review, done
+├── theme/        Design tokens: colours, type, shapes (app_theme.dart)
 └── widgets/      Reusable pieces: swipe card, photo card, buttons, progress bar
 test/             Automated tests (test/fakes/ holds FakePhotoRepository)
 tool/             Developer scripts, such as the test-photo generator
@@ -172,9 +194,9 @@ interface, which has one implementation per environment:
 - [x] Phase 3: swipe gestures and animations
 - [x] Phase 4: review screen and batch delete to the Android trash
 - [x] Phase 5: edge cases, tests, hardening
-- [ ] Phase 6: UI and animation polish (beta feedback: the current look is
-      plain; this phase gives it a real visual design)
-- [ ] Phase 7: release APK
+- [x] Phase 6: UI and animation polish (beta feedback: the look was plain,
+      and must not look "vibe coded")
+- [ ] Phase 7: release: app icon, splash screen, signed release APK
 
 ## Safety rules
 

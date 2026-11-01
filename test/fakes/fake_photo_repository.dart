@@ -75,7 +75,12 @@ class FakePhotoRepository implements PhotoRepository {
   Future<List<Album>> albums() async => [
     for (final MapEntry(key: name, value: photos) in _photos.entries)
       if (photos.isNotEmpty)
-        Album(id: name, name: name, photoCount: photos.length),
+        Album(
+          id: name,
+          name: name,
+          photoCount: photos.length,
+          cover: photos.first,
+        ),
   ];
 
   @override

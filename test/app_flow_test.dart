@@ -134,7 +134,7 @@ void main() {
     await tester.tap(find.text('Keep'));
     await tester.pumpAndSettle();
 
-    expect(find.text('All sorted!'), findsOneWidget);
+    expect(find.text('All sorted'), findsOneWidget);
     expect(find.text('2 to keep, 1 to delete.'), findsOneWidget);
     expect(find.text('Nothing is deleted until you review them.'), findsOne);
     expect(find.text('Review 1 to delete'), findsOneWidget);
@@ -239,7 +239,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pumpAndSettle();
     }
-    expect(find.text('All sorted!'), findsOneWidget);
+    expect(find.text('All sorted'), findsOneWidget);
 
     // "Undo last" is replaced by the card as soon as it's clicked.
     await tester.tap(find.text('Undo last'));
