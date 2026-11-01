@@ -164,6 +164,7 @@ decide and `Esc` closes.
 | Folder mode, Android 11 and 17 emulators, no photo permission | Choose, sort, zoom (rotation right), trash, restore, delete forever; decisions carried over from all-photos mode |
 | Signed 1.0.0 release on a real Android 16 phone | Installs; signed with the release key, not debuggable |
 | Settings, Android 17 emulator | Swapped directions (buttons, stamps, colour wash), oldest and newest first, dark theme at once, version from Android, licences page, choice screen's Cancel and back gesture; all remembered after a restart |
+| Signed 1.0.1 installed over 1.0.0, Android 17 emulator | Updates in place: decisions, Recently deleted and photo access kept; Settings, folder mode and restore work in the release build |
 | Upgrading 1.0.0's database (version 2) | Decisions and Recently deleted kept on the emulator, and in `test/decision_store_test.dart` |
 
 Measure performance in a profile or release build (`flutter run --profile`),
@@ -226,6 +227,11 @@ without uninstalling first, which wipes the app's saved decisions.
    ```bash
    flutter build apk --release --split-per-abi
    ```
+
+   Or `flutter build apk --release` for one universal APK (51 MB) that runs
+   on any phone. Stick with one kind for each phone: split APKs add 1,000 ×
+   the processor's number to the build number (arm64's is 2), so after an
+   arm64 APK, a universal one counts as older and Android refuses it.
 
 Without `android/key.properties`, release builds still work but are signed
 with Flutter's shared debug key, which is fine for testing and not for

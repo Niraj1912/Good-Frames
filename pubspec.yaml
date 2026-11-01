@@ -1,7 +1,7 @@
 name: photo_swipe
 description: "Swipe through photos to keep or delete them."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.13.7
