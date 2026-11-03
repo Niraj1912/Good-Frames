@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_swipe/data/decision_store.dart';
@@ -50,6 +52,7 @@ class _SortScreenState extends State<SortScreen> {
   // Lets the buttons and keys swipe the card, so they animate like a drag.
   final _cardKey = GlobalKey<SwipeCardState>();
   final _dragProgress = ValueNotifier(0.0);
+  final _upProgress = ValueNotifier(0.0);
   // After an undo, the side the photo comes back from: the side it left on.
   SwipeDirection? _enterFrom;
 
@@ -57,6 +60,7 @@ class _SortScreenState extends State<SortScreen> {
   void dispose() {
     _controller.dispose();
     _dragProgress.dispose();
+    _upProgress.dispose();
     super.dispose();
   }
 
@@ -69,6 +73,7 @@ class _SortScreenState extends State<SortScreen> {
       ? SwipeDirection.right
       : SwipeDirection.left;
 
+  // For left and right only: up isn't a decision.
   Decision _decisionFor(SwipeDirection direction) =>
       direction == _directionFor(Decision.keep)
       ? Decision.keep
@@ -78,12 +83,15 @@ class _SortScreenState extends State<SortScreen> {
       _cardKey.currentState?.swipe(direction);
   void _keep() => _swipe(_directionFor(Decision.keep));
   void _delete() => _swipe(_directionFor(Decision.delete));
+  void _later() => _swipe(SwipeDirection.up);
 
   void _undo() {
-    _enterFrom = switch (_controller.lastDecision) {
-      final decision? => _directionFor(decision),
-      null => null,
-    };
+    _enterFrom = _controller.lastWasPutOff
+        ? SwipeDirection.up
+        : switch (_controller.lastDecision) {
+            final decision? => _directionFor(decision),
+            null => null,
+          };
     _run(_controller.undo);
   }
 
@@ -109,6 +117,15 @@ class _SortScreenState extends State<SortScreen> {
 
   Future<void> _onSwiped(SwipeDirection direction) async {
     _enterFrom = null; // The next photo just appears behind.
+    if (direction == SwipeDirection.up) {
+      // With nothing else left to sort, the same photo is next again, so
+      // bring the card straight back.
+      final onlyOneLeft =
+          _controller.isFullyLoaded && _controller.upcoming(1).isEmpty;
+      _controller.putOff();
+      if (onlyOneLeft) _cardKey.currentState?.comeBack();
+      return;
+    }
     final saved = await _run(() => _controller.decide(_decisionFor(direction)));
     // The decision was taken back, so bring the card back too.
     if (!saved) _cardKey.currentState?.comeBack();
@@ -228,6 +245,7 @@ class _SortScreenState extends State<SortScreen> {
               _swipe(SwipeDirection.left),
           const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
               _swipe(SwipeDirection.right),
+          const SingleActivator(LogicalKeyboardKey.arrowUp): _later,
           const SingleActivator(LogicalKeyboardKey.keyZ): _undo,
           const SingleActivator(LogicalKeyboardKey.keyZ, control: true): _undo,
           const SingleActivator(LogicalKeyboardKey.backspace): _undo,
@@ -265,6 +283,7 @@ class _SortScreenState extends State<SortScreen> {
           total: controller.total,
           kept: controller.keepCount,
           deleted: controller.deleteCount,
+          later: controller.laterCount,
         ),
         if (!controller.isFullyLoaded)
           Padding(
@@ -327,15 +346,21 @@ class _SortScreenState extends State<SortScreen> {
                 // ready to take its place. Hidden at rest, so a bigger photo
                 // never shows round the edges of a smaller one.
                 if (upcoming.isNotEmpty)
-                  ValueListenableBuilder(
-                    valueListenable: _dragProgress,
-                    builder: (context, progress, child) => Opacity(
-                      opacity: progress.abs(),
-                      child: Transform.scale(
-                        scale: 0.94 + 0.06 * progress.abs(),
-                        child: child,
-                      ),
-                    ),
+                  ListenableBuilder(
+                    listenable: Listenable.merge([_dragProgress, _upProgress]),
+                    builder: (context, child) {
+                      final shown = math.max(
+                        _dragProgress.value.abs(),
+                        _upProgress.value,
+                      );
+                      return Opacity(
+                        opacity: shown,
+                        child: Transform.scale(
+                          scale: 0.94 + 0.06 * shown,
+                          child: child,
+                        ),
+                      );
+                    },
                     // Still built while hidden, so its photo is decoded and
                     // ready the moment it comes to the front.
                     child: Center(
@@ -351,6 +376,7 @@ class _SortScreenState extends State<SortScreen> {
                   key: _cardKey,
                   cardId: photo.id,
                   dragProgress: _dragProgress,
+                  upProgress: _upProgress,
                   enterFrom: _enterFrom,
                   keepSide: _keepSide,
                   vibration: widget.settings.vibration,
@@ -383,17 +409,25 @@ class _SortScreenState extends State<SortScreen> {
                 onDelete: _delete,
                 onKeep: _keep,
                 onUndo: _controller.canUndo ? _undo : null,
+                onLater: _later,
                 keepSide: _keepSide,
                 dragProgress: _dragProgress,
+                upProgress: _upProgress,
               ),
               if (isDesktop) ...[
                 const SizedBox(height: 8),
-                Text(switch (_keepSide) {
-                  KeepSide.right =>
-                    '←  Delete      Z  Undo      →  Keep      Click to zoom',
-                  KeepSide.left =>
-                    '←  Keep      Z  Undo      →  Delete      Click to zoom',
-                }, style: theme.textTheme.bodySmall),
+                Text(
+                  switch (_keepSide) {
+                    KeepSide.right =>
+                      '←  Delete    ↑  Later    →  Keep    '
+                          'Z  Undo    Click to zoom',
+                    KeepSide.left =>
+                      '←  Keep    ↑  Later    →  Delete    '
+                          'Z  Undo    Click to zoom',
+                  },
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
               ],
             ],
           ),

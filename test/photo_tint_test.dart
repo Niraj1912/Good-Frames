@@ -59,12 +59,17 @@ void main() {
     expect(tint.tone, closeTo(88, 1));
   });
 
-  test('the keep and delete counts are readable on their soft washes', () {
+  test('the counts above the photo are readable on their soft washes', () {
     for (final (theme, sort) in [
       (AppTheme.light, SortColors.light),
       (AppTheme.dark, SortColors.dark),
     ]) {
-      for (final colour in [sort.keep, sort.delete]) {
+      // Keep, delete, and later (in the accent blue).
+      for (final colour in [
+        sort.keep,
+        sort.delete,
+        theme.colorScheme.primary,
+      ]) {
         // As the counts above the photo draw them.
         final wash = Color.alphaBlend(
           colour.withValues(alpha: 0.10),

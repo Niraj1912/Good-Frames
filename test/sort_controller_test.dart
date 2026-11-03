@@ -264,4 +264,106 @@ void main() {
     expect(controller.sortedCount, 0);
     expect(controller.canUndo, isFalse);
   });
+
+  group('decide later', () {
+    test('a photo put off comes back once the rest are sorted', () async {
+      final controller = await openCamera();
+
+      controller.putOff();
+      expect(controller.current?.name, 'IMG_2.jpg');
+      expect(controller.laterCount, 1);
+      expect(controller.sortedCount, 0); // Not a decision.
+      expect(controller.upcoming(5).map((photo) => photo.name), [
+        'IMG_3.jpg',
+        'IMG_1.jpg', // Last in line.
+      ]);
+
+      await controller.decide(Decision.keep);
+      await controller.decide(Decision.keep);
+      expect(controller.current?.name, 'IMG_1.jpg');
+      expect(controller.laterCount, 0); // It's back.
+      expect(controller.isDone, isFalse);
+
+      await controller.decide(Decision.delete);
+      expect(controller.isDone, isTrue);
+    });
+
+    test('they come back in the order they were put off', () async {
+      final controller = await openCamera();
+
+      controller.putOff(); // 1
+      controller.putOff(); // 2
+      await controller.decide(Decision.keep); // 3
+      expect(controller.current?.name, 'IMG_1.jpg');
+
+      controller.putOff(); // 1 again: now behind 2.
+      expect(controller.current?.name, 'IMG_2.jpg');
+      expect(controller.upcoming(5).map((photo) => photo.name), ['IMG_1.jpg']);
+    });
+
+    test('undo brings a photo put off straight back', () async {
+      final controller = await openCamera();
+      await controller.decide(Decision.keep); // 1
+
+      controller.putOff(); // 2
+      expect(controller.lastWasPutOff, isTrue);
+      expect(controller.lastDecision, isNull);
+
+      await controller.undo();
+      expect(controller.current?.name, 'IMG_2.jpg');
+      expect(controller.laterCount, 0);
+      // Then the decision before it.
+      expect(controller.lastWasPutOff, isFalse);
+      expect(controller.lastDecision, Decision.keep);
+    });
+
+    test('is not saved: the album opens with it in its usual place', () async {
+      final controller = await openCamera();
+      controller.putOff();
+
+      final reopened = await openCamera();
+      expect(reopened.current?.name, 'IMG_1.jpg');
+      expect(reopened.laterCount, 0);
+    });
+
+    test(
+      'waits for every page, so it never jumps ahead of new photos',
+      () async {
+        final repository = FakePhotoRepository(photoCounts: {'Camera': 3})
+          ..pageSize = 1;
+        final controller = SortController(
+          repository: repository,
+          store: store,
+          album: camera,
+        );
+        addTearDown(controller.dispose);
+        // Put off the only photo loaded so far, the moment it arrives.
+        var putOff = false;
+        Photo? next;
+        controller.addListener(() {
+          if (controller.loadedCount == 1 && !putOff) {
+            putOff = true;
+            controller.putOff();
+            next = controller.current;
+          }
+        });
+
+        await controller.load();
+
+        expect(putOff, isTrue);
+        expect(next, isNull); // It waited for the next page...
+        expect(controller.current?.name, 'IMG_2.jpg'); // ...which came first.
+      },
+    );
+
+    test('start over forgets photos put off too', () async {
+      final controller = await openCamera();
+      controller.putOff();
+
+      await controller.startOver();
+      expect(controller.current?.name, 'IMG_1.jpg');
+      expect(controller.laterCount, 0);
+      expect(controller.canUndo, isFalse);
+    });
+  });
 }

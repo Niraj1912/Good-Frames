@@ -4,7 +4,7 @@ import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 
 /// Keep and Delete on the same sides as the swipe directions (Keep on the
-/// right unless the user swapped them), with Undo between them.
+/// right unless the user swapped them), with Undo and Later between them.
 ///
 /// While a photo is dragged, the button it's heading for grows with the
 /// drag, and Delete fills in solid red once letting go would delete. So the
@@ -15,9 +15,11 @@ class DecisionButtons extends StatelessWidget {
     required this.onDelete,
     required this.onKeep,
     required this.onUndo,
+    this.onLater,
     this.showUndo = true,
     this.keepSide = KeepSide.right,
     this.dragProgress,
+    this.upProgress,
   });
 
   final KeepSide keepSide;
@@ -28,6 +30,10 @@ class DecisionButtons extends StatelessWidget {
   /// Null when there's nothing to undo, which greys the button out.
   final VoidCallback? onUndo;
 
+  /// Puts the photo off for later. Null hides the button, as in the zoomed
+  /// photo viewer.
+  final VoidCallback? onLater;
+
   /// False where undo makes no sense, such as the zoomed photo viewer.
   final bool showUndo;
 
@@ -35,18 +41,27 @@ class DecisionButtons extends StatelessWidget {
   /// -1 means letting go counts as a swipe. Null where nothing is dragged.
   final ValueListenable<double>? dragProgress;
 
+  /// How far the photo is dragged up, from 0 to 1 (letting go puts it off).
+  final ValueListenable<double>? upProgress;
+
+  // Even, and a little tighter than Material's icon-button default, so the
+  // labels fit beside Undo and Later on a 360-wide phone.
+  static const _padding = EdgeInsets.symmetric(horizontal: 12);
+
   @override
   Widget build(BuildContext context) {
-    final progress = dragProgress;
-    if (progress == null) return _buttons(context, 0);
+    final sideways = dragProgress;
+    final up = upProgress;
+    if (sideways == null && up == null) return _buttons(context, 0, 0);
     // Only the buttons rebuild as the drag moves, not the whole screen.
-    return ValueListenableBuilder(
-      valueListenable: progress,
-      builder: (context, progress, _) => _buttons(context, progress),
+    return ListenableBuilder(
+      listenable: Listenable.merge([sideways, up]),
+      builder: (context, _) =>
+          _buttons(context, sideways?.value ?? 0, up?.value ?? 0),
     );
   }
 
-  Widget _buttons(BuildContext context, double progress) {
+  Widget _buttons(BuildContext context, double progress, double upPull) {
     final colors = SortColors.of(context);
     final scheme = Theme.of(context).colorScheme;
     // Dark text on a light green, light text on a dark one: always readable.
@@ -75,6 +90,7 @@ class DecisionButtons extends StatelessWidget {
           builder: (context, fill, _) => FilledButton.icon(
             onPressed: onDelete,
             style: FilledButton.styleFrom(
+              padding: _padding,
               // A soft red wash rather than a solid red at rest: deleting
               // is the weightier choice, so it's clear but doesn't shout.
               backgroundColor: Color.lerp(
@@ -101,6 +117,7 @@ class DecisionButtons extends StatelessWidget {
         child: FilledButton.icon(
           onPressed: onKeep,
           style: FilledButton.styleFrom(
+            padding: _padding,
             backgroundColor: colors.keep,
             foregroundColor: onKeepColor,
           ),
@@ -113,27 +130,61 @@ class DecisionButtons extends StatelessWidget {
       KeepSide.right => (deleteButton, keepButton),
       KeepSide.left => (keepButton, deleteButton),
     };
+    final middle = [
+      if (showUndo)
+        _SquareButton(onPressed: onUndo, icon: Icons.undo, tooltip: 'Undo'),
+      if (onLater != null)
+        _Leaning(
+          pull: upPull,
+          child: _SquareButton(
+            onPressed: onLater,
+            icon: Icons.schedule,
+            tooltip: 'Decide later',
+          ),
+        ),
+    ];
 
     return Row(
       children: [
         left,
-        if (showUndo) ...[
-          const SizedBox(width: 12),
-          IconButton.outlined(
-            onPressed: onUndo,
-            style: IconButton.styleFrom(
-              minimumSize: const Size(52, 52),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
-            icon: const Icon(Icons.undo),
-            tooltip: 'Undo',
-          ),
-        ],
         const SizedBox(width: 12),
+        for (final (index, button) in middle.indexed) ...[
+          if (index > 0) const SizedBox(width: 8),
+          button,
+        ],
+        if (middle.isNotEmpty) const SizedBox(width: 12),
         right,
       ],
+    );
+  }
+}
+
+/// Undo and Later: outlined, so they read as smaller choices than Keep and
+/// Delete. A little narrower than tall, leaving Keep and Delete room for
+/// their labels on a small phone.
+class _SquareButton extends StatelessWidget {
+  const _SquareButton({
+    required this.onPressed,
+    required this.icon,
+    required this.tooltip,
+  });
+
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.outlined(
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        minimumSize: const Size(48, 52),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      icon: Icon(icon),
+      tooltip: tooltip,
     );
   }
 }

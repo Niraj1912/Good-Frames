@@ -196,6 +196,59 @@ void main() {
     expect(behindOpacity(), 0);
   });
 
+  testWidgets('a photo put off comes back once the rest are sorted', (
+    tester,
+  ) async {
+    await openCamera(tester);
+
+    // The button puts it off, and Undo brings it straight back.
+    await tester.tap(find.byTooltip('Decide later'));
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_2.jpg'), findsOneWidget);
+    expect(countChip('Later 1'), findsOneWidget);
+    await tester.tap(find.byTooltip('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+    expect(countChip('Later 1'), findsNothing);
+
+    // Swiping up and the up arrow do the same.
+    await tester.drag(find.byType(SwipeCard), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_3.jpg'), findsOneWidget);
+    expect(countChip('Later 2'), findsOneWidget);
+    expect(find.text('0 / 3 sorted'), findsOneWidget); // Not decisions.
+
+    // Once the rest are sorted, they come back in the order they went.
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+    expect(countChip('Later 1'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_2.jpg'), findsOneWidget);
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    expect(find.text('All sorted'), findsOneWidget);
+  });
+
+  testWidgets('putting off the last photo brings it straight back', (
+    tester,
+  ) async {
+    await startApp(tester, FakePhotoRepository(photoCounts: {'Camera': 1}));
+    await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+    final middle = tester.getCenter(find.byType(PhotoCard));
+
+    await tester.tap(find.byTooltip('Decide later'));
+    await tester.pumpAndSettle();
+
+    // Nothing else to sort, so it's next again, back in the middle.
+    expect(find.text('IMG_1.jpg'), findsOneWidget);
+    expect(tester.getCenter(find.byType(PhotoCard)), middle);
+  });
+
   testWidgets('shows a summary once every photo is sorted', (tester) async {
     await openCamera(tester);
 

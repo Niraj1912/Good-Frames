@@ -15,6 +15,13 @@ phone gives a small vibration when letting go would count. A short drag
 springs back; a quick flick counts even if it's short. Buttons and keys
 animate the card the same way. Undo and a progress bar are always there.
 
+Not sure about a photo? Swipe it up (or tap the clock button) to decide
+later. It goes to the back of the line and comes back once everything else
+in the album is sorted; a blue "Later" count shows how many are waiting.
+Undo brings it straight back. Putting off is only for that visit: it isn't
+saved, so if you leave the album, the photo is simply unsorted in its usual
+place next time.
+
 Decisions are saved as you go, so you can close the app and pick up where you
 stopped.
 
@@ -168,15 +175,18 @@ All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
   separators ("10,020").
 - Motion explains something: a flicked card leaves at the flick's speed, a
   short drag springs back with a real spring, and an undone photo slides back
-  in from the side it left on. Nothing moves just to decorate.
+  in from the side it left on (from the top if it was put off for later). A
+  drag counts in whichever direction it moved furthest, and the stamp and
+  buttons only ever show that one, so they always say what letting go will
+  do. Nothing moves just to decorate.
 - Albums are shown by their newest photo, not a generic icon.
 - Light and dark mode follow the phone's setting, unless the user picks one
   in Settings.
 
 See the roadmap below.
 
-On Windows: drag with the mouse, or `←` Delete, `→` Keep, `Z` (or `Ctrl+Z`,
-`Backspace`) Undo. Click the photo to zoom; in the viewer the arrows still
+On Windows: drag with the mouse, or `←` Delete, `→` Keep, `↑` Later, `Z` (or
+`Ctrl+Z`, `Backspace`) Undo. Click the photo to zoom; in the viewer the arrows still
 decide and `Esc` closes.
 
 ## Tested
@@ -390,6 +400,7 @@ interface, which has one implementation per environment:
 - [x] Folder mode: share chosen folders instead of every photo
 - [x] Settings: swipe directions, order, vibration, theme, what SwipeSort
       sees, version and licences
+- [x] Decide later: swipe up to put a photo off until the rest are sorted
 
 ## Safety rules
 

@@ -112,6 +112,48 @@ void main() {
     expect(swipes, [SwipeDirection.left]);
   });
 
+  testWidgets('a drag up swipes up; a crooked sideways one goes sideways', (
+    tester,
+  ) async {
+    await showCard(tester);
+    await tester.drag(find.byType(SwipeCard), const Offset(30, -250));
+    await tester.pumpAndSettle();
+    expect(swipes, [SwipeDirection.up]);
+
+    await showCard(tester, cardId: 'b');
+    await tester.drag(find.byType(SwipeCard), const Offset(250, -100));
+    await tester.pumpAndSettle();
+    expect(swipes, [SwipeDirection.up, SwipeDirection.right]);
+  });
+
+  testWidgets('a drag down springs back', (tester) async {
+    await showCard(tester);
+    final start = cardCorner(tester);
+
+    await tester.drag(find.byType(SwipeCard), const Offset(0, 250));
+    await tester.pumpAndSettle();
+
+    expect(swipes, isEmpty);
+    expect(cardCorner(tester), start);
+  });
+
+  testWidgets('going up shows only the LATER stamp', (tester) async {
+    await showCard(tester);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(SwipeCard)),
+    );
+    await gesture.moveBy(const Offset(0, -40));
+    await gesture.moveBy(const Offset(20, -200));
+    await tester.pump();
+
+    expect(stampOpacity(tester, 'LATER'), 1);
+    expect(stampOpacity(tester, 'KEEP'), 0);
+    expect(stampOpacity(tester, 'DELETE'), 0);
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('the stamp for the drag direction fades in', (tester) async {
     await showCard(tester);
     expect(stampOpacity(tester, 'KEEP'), 0);
@@ -149,6 +191,19 @@ void main() {
     // Undo after a delete: the photo comes back from the left.
     await showCard(tester, cardId: 'b', enterFrom: SwipeDirection.left);
     expect(cardCorner(tester).dx, lessThan(0)); // Starts off to the left.
+
+    await tester.pumpAndSettle();
+    expect(cardCorner(tester), start);
+  });
+
+  testWidgets('a photo put off and undone comes back from the top', (
+    tester,
+  ) async {
+    await showCard(tester);
+    final start = cardCorner(tester);
+
+    await showCard(tester, cardId: 'b', enterFrom: SwipeDirection.up);
+    expect(cardCorner(tester).dy, lessThan(0)); // Starts above.
 
     await tester.pumpAndSettle();
     expect(cardCorner(tester), start);

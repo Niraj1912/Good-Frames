@@ -10,12 +10,16 @@ class SortProgress extends StatelessWidget {
     required this.total,
     required this.kept,
     required this.deleted,
+    this.later = 0,
   });
 
   final int sorted;
   final int total;
   final int kept;
   final int deleted;
+
+  /// Photos put off for later, still waiting to come back.
+  final int later;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +80,17 @@ class SortProgress extends StatelessWidget {
                     icon: Icons.close,
                     colour: colors.delete,
                   ),
+                  // Only while there are some, so it's clear where they went.
+                  // In the accent blue: not keep or delete, just not yet.
+                  if (later > 0) ...[
+                    const SizedBox(width: 8),
+                    _CountChip(
+                      label: 'Later',
+                      count: later,
+                      icon: Icons.schedule,
+                      colour: theme.colorScheme.primary,
+                    ),
+                  ],
                 ],
               ),
             ],

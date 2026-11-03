@@ -35,9 +35,12 @@ class SortController extends ChangeNotifier {
   // Every saved decision, including ones for photos in other albums. Only
   // photos in [_inAlbum] are ever counted or shown.
   final _decisions = <String, Decision>{};
-  // Photo ids in the order they were decided, newest last. Undo takes the
-  // newest one that belongs to this album.
-  final _history = <String>[];
+  // Photos put off for later, in the order they were put off (a map keeps
+  // the order things were added). Not saved: only for this visit.
+  final _later = <String, Photo>{};
+  // What undo can take back, newest last: decisions, and photos put off.
+  // Undo takes the newest one that belongs to this album.
+  final _history = <_Step>[];
   // After an undo, the photo to show next, even if it isn't first in line.
   Photo? _undone;
   bool _loading = true;
@@ -62,32 +65,43 @@ class SortController extends ChangeNotifier {
   int get keepCount =>
       _photos.where((photo) => _decisions[photo.id] == Decision.keep).length;
   int get deleteCount => sortedCount - keepCount;
-  bool get canUndo => _history.any(_inAlbum.contains);
+  bool get canUndo => _history.any((step) => _inAlbum.contains(step.photoId));
+
+  /// Photos put off for later that are still waiting to come back.
+  int get laterCount {
+    final currentId = current?.id;
+    return _later.keys.where((id) => id != currentId).length;
+  }
 
   /// Every photo is sorted. Never true while later pages may still bring
   /// unsorted photos.
   bool get isDone => isFullyLoaded && _loadError == null && current == null;
 
   /// The photo waiting for a decision, or null once everything is sorted.
-  Photo? get current {
-    if (_undone case final photo? when !_decisions.containsKey(photo.id)) {
-      return photo;
-    }
-    return _photos
-        .where((photo) => !_decisions.containsKey(photo.id))
-        .firstOrNull;
-  }
+  Photo? get current => _queue.firstOrNull;
 
   /// Up to [count] photos waiting after [current], in order. Used to draw the
   /// card behind and to load images before the user reaches them.
-  List<Photo> upcoming(int count) {
-    final currentId = current?.id;
-    return _photos
-        .where(
-          (photo) => photo.id != currentId && !_decisions.containsKey(photo.id),
-        )
-        .take(count)
-        .toList();
+  List<Photo> upcoming(int count) => _queue.skip(1).take(count).toList();
+
+  // Every photo still waiting for a decision, in the order they come up.
+  Iterable<Photo> get _queue sync* {
+    // After an undo, that photo first.
+    final undone = _undone;
+    if (undone != null && !_decisions.containsKey(undone.id)) yield undone;
+    for (final photo in _photos) {
+      if (photo.id != undone?.id &&
+          !_decisions.containsKey(photo.id) &&
+          !_later.containsKey(photo.id)) {
+        yield photo;
+      }
+    }
+    // Then the photos put off for later. Not while pages are still loading,
+    // or they'd come back ahead of photos that haven't arrived yet.
+    if (!isFullyLoaded) return;
+    for (final photo in _later.values) {
+      if (photo.id != undone?.id) yield photo;
+    }
   }
 
   /// Photos marked for deletion, in album order.
@@ -106,7 +120,7 @@ class SortController extends ChangeNotifier {
       // Decisions first, so each photo shows as sorted the moment it loads.
       for (final record in await store.loadAll()) {
         _decisions[record.photoId] = record.decision;
-        _history.add(record.photoId);
+        _history.add((photoId: record.photoId, later: false));
       }
       await for (final page in repository.photosIn(album, order: order)) {
         for (final photo in page) {
@@ -131,42 +145,83 @@ class SortController extends ChangeNotifier {
 
     // Update the screen first so fast sorting feels instant, then save. If
     // saving fails, put everything back and let the caller show an error.
+    final step = (photoId: photo.id, later: false);
+    final wasLater = _later.remove(photo.id) != null;
     _decisions[photo.id] = decision;
-    _history.add(photo.id);
+    _history.add(step);
     _notify();
     try {
       await store.record(photo.id, decision);
     } catch (_) {
       _decisions.remove(photo.id);
-      _history.remove(photo.id);
+      _history.remove(step);
+      if (wasLater) _later[photo.id] = photo;
       _undone = photo;
       _notify();
       rethrow;
     }
   }
 
-  /// The decision [undo] would take back, or null if there's none.
-  Decision? get lastDecision {
-    final index = _history.lastIndexWhere(_inAlbum.contains);
-    return index == -1 ? null : _decisions[_history[index]];
+  /// Puts the current photo off: it comes back once every other photo in
+  /// the album is sorted. Nothing is saved, so if the album is closed it's
+  /// simply unsorted, in its usual place, next time.
+  void putOff() {
+    final photo = current;
+    if (photo == null) return;
+
+    if (_undone?.id == photo.id) _undone = null;
+    // Put off again: it goes to the back of the line.
+    _later.remove(photo.id);
+    _later[photo.id] = photo;
+    _history.add((photoId: photo.id, later: true));
+    _notify();
   }
 
-  /// Takes back the most recent decision in this album and shows that photo
-  /// again.
+  /// The decision [undo] would take back, or null if there's none or it
+  /// would take back putting a photo off ([lastWasPutOff]).
+  Decision? get lastDecision => switch (_lastStep) {
+    (:final photoId, later: false) => _decisions[photoId],
+    _ => null,
+  };
+
+  /// Whether [undo] would bring back a photo that was put off for later.
+  bool get lastWasPutOff => _lastStep?.later ?? false;
+
+  _Step? get _lastStep {
+    final index = _lastStepIndex;
+    return index == -1 ? null : _history[index];
+  }
+
+  int get _lastStepIndex =>
+      _history.lastIndexWhere((step) => _inAlbum.contains(step.photoId));
+
+  /// Takes back the most recent decision in this album, or putting a photo
+  /// off, and shows that photo again.
   Future<void> undo() async {
-    final index = _history.lastIndexWhere(_inAlbum.contains);
+    final index = _lastStepIndex;
     if (index == -1) return;
 
-    final photoId = _history.removeAt(index);
-    final decision = _decisions.remove(photoId)!;
+    final step = _history.removeAt(index);
+    final photo = _photos.firstWhere((photo) => photo.id == step.photoId);
     final previous = _undone;
-    _undone = _photos.firstWhere((photo) => photo.id == photoId);
+    _undone = photo;
+
+    if (step.later) {
+      // Out of the later line, unless it was put off before this too.
+      if (!_history.any((other) => other.photoId == photo.id && other.later)) {
+        _later.remove(photo.id);
+      }
+      _notify();
+      return;
+    }
+
+    final decision = _decisions.remove(photo.id)!;
     _notify();
     try {
-      await store.remove(photoId);
+      await store.remove(photo.id);
     } catch (_) {
-      _decisions[photoId] = decision;
-      _history.insert(index, photoId);
+      _decisions[photo.id] = decision;
+      _history.insert(index, step);
       _undone = previous;
       _notify();
       rethrow;
@@ -214,10 +269,7 @@ class SortController extends ChangeNotifier {
         if (!movedIds.contains(photo.id)) photo,
     ];
     _inAlbum.removeAll(movedIds);
-    for (final id in movedIds) {
-      _decisions.remove(id);
-      _history.remove(id);
-    }
+    _forget(movedIds);
     if (_undone case final photo? when movedIds.contains(photo.id)) {
       _undone = null;
     }
@@ -262,10 +314,7 @@ class SortController extends ChangeNotifier {
         if (stillThere.contains(photo.id)) photo,
     ];
     _inAlbum.removeAll(gone);
-    for (final id in gone) {
-      _decisions.remove(id);
-      _history.remove(id);
-    }
+    _forget(gone.toSet());
     _notify();
     try {
       await store.removeAll(gone);
@@ -277,10 +326,17 @@ class SortController extends ChangeNotifier {
   Future<void> startOver() async {
     await _fullyLoaded.future; // The whole album, not just the first pages.
     await store.removeAll(_inAlbum);
-    _decisions.removeWhere((id, _) => _inAlbum.contains(id));
-    _history.removeWhere(_inAlbum.contains);
+    _forget(_inAlbum);
     _undone = null;
     _notify();
+  }
+
+  // Stops tracking anything about these photos: decisions, undo steps and
+  // putting off.
+  void _forget(Set<String> ids) {
+    _decisions.removeWhere((id, _) => ids.contains(id));
+    _history.removeWhere((step) => ids.contains(step.photoId));
+    _later.removeWhere((id, _) => ids.contains(id));
   }
 
   // The screen may close while a load or save is still running. Telling a
@@ -295,6 +351,10 @@ class SortController extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// One thing undo can take back: a decision about a photo, or putting it
+/// off for later.
+typedef _Step = ({String photoId, bool later});
 
 /// What happened when the marked photos were moved to the trash.
 class TrashResult {

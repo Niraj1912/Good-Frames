@@ -8,14 +8,22 @@ import 'support/contrast.dart';
 
 void main() {
   late ValueNotifier<double> drag;
+  late ValueNotifier<double> up;
 
-  setUp(() => drag = ValueNotifier(0));
-  tearDown(() => drag.dispose());
+  setUp(() {
+    drag = ValueNotifier(0);
+    up = ValueNotifier(0);
+  });
+  tearDown(() {
+    drag.dispose();
+    up.dispose();
+  });
 
   Future<void> showButtons(
     WidgetTester tester, {
     KeepSide keepSide = KeepSide.right,
     ThemeData? theme,
+    VoidCallback? onLater,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -25,8 +33,10 @@ void main() {
             onDelete: () {},
             onKeep: () {},
             onUndo: null,
+            onLater: onLater,
             keepSide: keepSide,
             dragProgress: drag,
+            upProgress: up,
           ),
         ),
       ),
@@ -124,5 +134,35 @@ void main() {
       );
       await dragTo(tester, 0);
     }
+  });
+
+  testWidgets('Later grows as the photo is dragged up', (tester) async {
+    var putOff = 0;
+    await showButtons(tester, onLater: () => putOff++);
+    double laterScale() => tester
+        .widget<AnimatedScale>(
+          find.ancestor(
+            of: find.byTooltip('Decide later'),
+            matching: find.byType(AnimatedScale),
+          ),
+        )
+        .scale;
+    expect(laterScale(), 1);
+
+    up.value = 0.5;
+    await tester.pumpAndSettle();
+    expect(laterScale(), greaterThan(1));
+    expect(scaleOf(tester, 'Keep'), 1);
+    expect(scaleOf(tester, 'Delete'), 1);
+
+    await tester.tap(find.byTooltip('Decide later'));
+    expect(putOff, 1);
+  });
+
+  testWidgets('no Later button where there is nothing to put off', (
+    tester,
+  ) async {
+    await showButtons(tester); // No onLater, as in the zoomed viewer.
+    expect(find.byTooltip('Decide later'), findsNothing);
   });
 }
