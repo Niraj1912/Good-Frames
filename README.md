@@ -118,17 +118,50 @@ needs an order that's the same on every page, or a photo could be skipped.
 
 ## Design
 
-All of it lives in `lib/theme/app_theme.dart` (design tokens: colours, type,
-shapes), so screens never pick their own colours.
+All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
+`app_theme.dart`), so screens never pick their own colours.
 
-- Photo first: neutral surfaces (near-black in dark mode, warm off-white in
-  light), not tinted, so photos' own colours read true.
+- Photo first: the app's own surfaces are neutral (near-black in dark
+  mode, warm off-white in light), and the photo being sorted is a card of
+  its own shape: as large as fits, never cropped, with rounded corners and
+  no frame or bars around it, like a print. Cropping to fill would hide
+  the edges of a photo you're deciding to delete, and a blurred fill would
+  put noise next to it. The whole area still catches drags, so a thin
+  panorama is as easy to swipe as a tall portrait. The next photo waits
+  behind out of sight, so a bigger one never shows round the edges of a
+  smaller one; as you drag, it fades in and grows to full size, ready to
+  take the front. A file that can't be shown gets a dark 3:4 card with a
+  message.
+- Album colours come from the photos: each album's name sits on a panel
+  tinted from its cover (`photo_tint.dart`), so that colour belongs to the
+  pictures and never competes with them. A 32-pixel copy of the cover is
+  grouped into at most 32 colours, and the one with the best mix of how
+  much of the photo it covers and how colourful it is wins, off the main
+  thread. It's Material's colour science (HCT: hue, chroma, tone), the
+  same that picks Android's colours from the wallpaper. The panel keeps
+  the cover's hue but sets its own tone (lightness), and tone decides
+  contrast, so text stays readable on any cover's tint; a test checks
+  every hue in both modes. A grey cover gets a plain panel.
+  (Tinting the whole sorting screen with each photo's colour was tried
+  and dropped: it changed with every swipe and pulled attention from the
+  photo.)
 - Colour carries meaning: green keeps, brick red deletes (`SortColors`, a
   theme extension), and one ink-blue accent marks other actions and
-  selections. The meaning colours show up where they help: the progress bar
-  is split green and red, the counts are coloured, the Delete button is
-  tinted red, and the space behind the card washes green or red as you drag.
-  Everything else is ink on paper.
+  choices. The meaning colours show up as colour blocks where they help:
+  the counts above the photo sit on small green and red tiles with the
+  same icons as the buttons, the end of an album shows the two totals on
+  big green and red tiles, the progress bar is split green and red, the
+  Delete button is tinted red, and the Review screen's note is red.
+  Settings' icons sit on soft tiles of the accent blue. Everything else is
+  ink on paper.
+- While you drag, the buttons show what letting go will do instead of the
+  photo being coloured: the button the photo is heading for grows with
+  the drag, and Delete turns solid red once letting go would delete (the
+  moment the phone vibrates). It switches with a short fade rather than
+  shading in along the way, so its label never blends into the red. (A
+  green or red wash behind the card was tried and dropped: around a
+  photo-shaped card it became a coloured box that pulled attention from
+  the photo.)
 - Quiet shapes: 12-16 px corners and hairline borders instead of shadows or
   glows. No gradients, no decorative blur, no emoji in the interface.
 - Numbers use tabular figures (so counters don't wobble) and thousands
@@ -163,7 +196,7 @@ decide and `Esc` closes.
 | Delete forever, Android 17 emulator | Android's own prompt appears for trashed photos; Deny keeps them, Allow erases them |
 | Folder mode, Android 11 and 17 emulators, no photo permission | Choose, sort, zoom (rotation right), trash, restore, delete forever; decisions carried over from all-photos mode |
 | Signed 1.0.0 release on a real Android 16 phone | Installs; signed with the release key, not debuggable |
-| Settings, Android 17 emulator | Swapped directions (buttons, stamps, colour wash), oldest and newest first, dark theme at once, version from Android, licences page, choice screen's Cancel and back gesture; all remembered after a restart |
+| Settings, Android 17 emulator | Swapped directions (buttons, stamps), oldest and newest first, dark theme at once, version from Android, licences page, choice screen's Cancel and back gesture; all remembered after a restart |
 | Signed 1.0.1 installed over 1.0.0, Android 17 emulator | Updates in place: decisions, Recently deleted and photo access kept; Settings, folder mode and restore work in the release build |
 | Upgrading 1.0.0's database (version 2) | Decisions and Recently deleted kept on the emulator, and in `test/decision_store_test.dart` |
 
@@ -320,8 +353,10 @@ lib/
 ├── state/        App logic the screens listen to (current photo, undo,
 │                 progress, settings)
 ├── screens/      Full pages: album picker, swipe, review, done, settings
-├── theme/        Design tokens: colours, type, shapes (app_theme.dart)
-└── widgets/      Reusable pieces: swipe card, photo card, buttons, progress bar
+├── theme/        Design tokens: colours, type, shapes (app_theme.dart), and
+│                 the tint borrowed from photos (photo_tint.dart)
+└── widgets/      Reusable pieces: swipe card, photo card, buttons, progress
+                  bar, note card
 test/             Automated tests (test/fakes/ holds FakePhotoRepository)
 tool/             Developer scripts, such as the test-photo generator
 android/          Android project (permissions live in AndroidManifest.xml;
@@ -348,6 +383,8 @@ interface, which has one implementation per environment:
 - [x] Phase 6: UI and animation polish (beta feedback: the look was plain,
       and must not look "vibe coded")
 - [x] Zoom to check a photo before deciding, and more meaningful colour
+- [x] More colour: album panels tinted from their covers, keep/delete tiles,
+      a dark photo card, grouped Settings
 - [x] Phase 7: release: app icon, splash screen, signed release APK
 - [x] Delete forever from Recently deleted
 - [x] Folder mode: share chosen folders instead of every photo

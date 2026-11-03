@@ -47,42 +47,93 @@ class SortProgress extends StatelessWidget {
               trackColor: theme.colorScheme.outlineVariant,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           // A Wrap, not a Row: with large text on a small phone the counts
           // move onto a second line instead of running off the screen.
           Wrap(
             alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 16,
-            runSpacing: 4,
+            runSpacing: 6,
             children: [
               Text(
                 '${formatCount(sorted)} / ${formatCount(total)} sorted',
                 style: counts,
               ),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Keep ${formatCount(kept)}',
-                      style: TextStyle(color: colors.keep),
-                    ),
-                    TextSpan(
-                      text: '  ·  ',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Delete ${formatCount(deleted)}',
-                      style: TextStyle(color: colors.delete),
-                    ),
-                  ],
-                ),
-                style: counts,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CountChip(
+                    label: 'Keep',
+                    count: kept,
+                    icon: Icons.check,
+                    colour: colors.keep,
+                  ),
+                  const SizedBox(width: 8),
+                  _CountChip(
+                    label: 'Delete',
+                    count: deleted,
+                    icon: Icons.close,
+                    colour: colors.delete,
+                  ),
+                ],
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A count on a soft wash of its meaning colour, with the same icon as its
+/// button: the small version of the totals at the end of an album. Read
+/// out as one phrase, such as "Keep 12".
+class _CountChip extends StatelessWidget {
+  const _CountChip({
+    required this.label,
+    required this.count,
+    required this.icon,
+    required this.colour,
+  });
+
+  final String label;
+  final int count;
+  final IconData icon;
+  final Color colour;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: '$label ${formatCount(count)}',
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          // Faint enough that the coloured number on it stays readable.
+          color: Color.alphaBlend(
+            colour.withValues(alpha: 0.10),
+            theme.colorScheme.surface,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: colour),
+              const SizedBox(width: 4),
+              Text(
+                formatCount(count),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: colour,
+                  fontFeatures: AppTheme.tabularFigures,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -110,9 +161,9 @@ class _SplitBar extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         return ClipRRect(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(3),
           child: SizedBox(
-            height: 4,
+            height: 6,
             child: Stack(
               children: [
                 Positioned.fill(child: ColoredBox(color: trackColor)),

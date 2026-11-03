@@ -11,6 +11,11 @@ import 'fakes/fake_photo_repository.dart';
 import 'support/broken_store.dart';
 import 'support/test_store.dart';
 
+// The keep or delete count above the photo, such as "Keep 2".
+Finder countChip(String label) => find.byWidgetPredicate(
+  (widget) => widget is Semantics && widget.properties.label == label,
+);
+
 void main() {
   group('saved settings', () {
     test('start with the defaults', () async {
@@ -134,16 +139,19 @@ void main() {
     // Dragging right now deletes...
     await tester.drag(find.byType(SwipeCard), const Offset(400, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Keep 0  ·  Delete 1'), findsOneWidget);
+    expect(countChip('Keep 0'), findsOneWidget);
+    expect(countChip('Delete 1'), findsOneWidget);
     // ...and the Keep button sends the card left, keeping it.
     await tester.tap(find.text('Keep'));
     await tester.pumpAndSettle();
-    expect(find.text('Keep 1  ·  Delete 1'), findsOneWidget);
+    expect(countChip('Keep 1'), findsOneWidget);
+    expect(countChip('Delete 1'), findsOneWidget);
     // The arrow keys follow the swipes: right deletes.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pumpAndSettle();
     expect(find.text('All sorted'), findsOneWidget);
-    expect(find.text('1 to keep, 2 to delete.'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 to keep'), findsOneWidget);
+    expect(find.bySemanticsLabel('2 to delete'), findsOneWidget);
   });
 
   testWidgets('oldest first starts with the oldest photo', (tester) async {

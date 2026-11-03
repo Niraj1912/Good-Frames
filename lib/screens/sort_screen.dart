@@ -313,7 +313,6 @@ class _SortScreenState extends State<SortScreen> {
     final upcoming = _controller.upcoming(3);
     _preload(upcoming.skip(1), width);
     final image = widget.repository.imageFor(photo, width: width);
-    final sortColors = SortColors.of(context);
 
     return Column(
       children: [
@@ -323,44 +322,28 @@ class _SortScreenState extends State<SortScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // A faint wash of the colour the card is heading for, so
-                // the whole screen agrees with the stamp.
-                Positioned.fill(
-                  child: ValueListenableBuilder(
-                    valueListenable: _dragProgress,
-                    builder: (context, progress, _) {
-                      final heading = _decisionFor(
-                        progress > 0
-                            ? SwipeDirection.right
-                            : SwipeDirection.left,
-                      );
-                      final colour = heading == Decision.keep
-                          ? sortColors.keep
-                          : sortColors.delete;
-                      return DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: colour.withValues(
-                            alpha: 0.14 * progress.abs(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // The next photo waits behind, slightly smaller, and grows
-                // as the top card is dragged away.
+                // The next photo waits behind, out of sight until the top
+                // card is dragged: then it fades in and grows to full size,
+                // ready to take its place. Hidden at rest, so a bigger photo
+                // never shows round the edges of a smaller one.
                 if (upcoming.isNotEmpty)
                   ValueListenableBuilder(
                     valueListenable: _dragProgress,
-                    builder: (context, progress, child) => Transform.scale(
-                      scale: 0.94 + 0.06 * progress.abs(),
-                      child: child,
+                    builder: (context, progress, child) => Opacity(
+                      opacity: progress.abs(),
+                      child: Transform.scale(
+                        scale: 0.94 + 0.06 * progress.abs(),
+                        child: child,
+                      ),
                     ),
-                    child: PhotoCard(
-                      image: widget.repository.imageFor(
-                        upcoming.first,
-                        width: width,
+                    // Still built while hidden, so its photo is decoded and
+                    // ready the moment it comes to the front.
+                    child: Center(
+                      child: PhotoCard(
+                        image: widget.repository.imageFor(
+                          upcoming.first,
+                          width: width,
+                        ),
                       ),
                     ),
                   ),
@@ -373,8 +356,8 @@ class _SortScreenState extends State<SortScreen> {
                   vibration: widget.settings.vibration,
                   onSwiped: _onSwiped,
                   onTap: () => _openViewer(photo, image),
+                  // Sized by the photo, so the zoom hint sits on its corner.
                   child: Stack(
-                    fit: StackFit.expand,
                     children: [
                       PhotoCard(image: image, heroTag: _heroTag(photo)),
                       // Says "you can zoom"; the tap itself is handled by
@@ -401,6 +384,7 @@ class _SortScreenState extends State<SortScreen> {
                 onKeep: _keep,
                 onUndo: _controller.canUndo ? _undo : null,
                 keepSide: _keepSide,
+                dragProgress: _dragProgress,
               ),
               if (isDesktop) ...[
                 const SizedBox(height: 8),
@@ -455,60 +439,128 @@ class _DoneView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = SortColors.of(context);
-    final number = TextStyle(
-      fontWeight: FontWeight.w700,
-      fontFeatures: AppTheme.tabularFigures,
-    );
     // Scrollable, so it still fits on a small phone with large text.
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.task_alt, size: 40, color: colors.keep),
-            const SizedBox(height: 16),
-            Text('All sorted', style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: formatCount(kept),
-                    style: number.copyWith(color: colors.keep),
-                  ),
-                  const TextSpan(text: ' to keep, '),
-                  TextSpan(
-                    text: formatCount(deleted),
-                    style: number.copyWith(color: colors.delete),
-                  ),
-                  const TextSpan(text: ' to delete.'),
-                ],
-              ),
-              style: theme.textTheme.bodyLarge,
-            ),
-            if (deleted > 0) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Nothing is deleted until you review them.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('All sorted', style: theme.textTheme.headlineSmall),
+              const SizedBox(height: 20),
+              // IntrinsicHeight, so the two tiles are always the same
+              // height, even when large text wraps one of them.
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _Tally(
+                        count: kept,
+                        label: 'to keep',
+                        icon: Icons.check,
+                        colour: colors.keep,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _Tally(
+                        count: deleted,
+                        label: 'to delete',
+                        icon: Icons.close,
+                        colour: colors.delete,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: onReview,
-                icon: const Icon(Icons.delete_sweep_outlined),
-                label: Text('Review ${formatCount(deleted)} to delete'),
+              if (deleted > 0) ...[
+                const SizedBox(height: 20),
+                Text(
+                  'Nothing is deleted until you review them.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onReview,
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    label: Text('Review ${formatCount(deleted)} to delete'),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: onUndo,
+                icon: const Icon(Icons.undo),
+                label: const Text('Undo last'),
               ),
             ],
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: onUndo,
-              icon: const Icon(Icons.undo),
-              label: const Text('Undo last'),
-            ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One of the two totals at the end: a big number on a soft wash of its
+/// meaning colour. Read out as one phrase, such as "12 to keep".
+class _Tally extends StatelessWidget {
+  const _Tally({
+    required this.count,
+    required this.label,
+    required this.icon,
+    required this.colour,
+  });
+
+  final int count;
+  final String label;
+  final IconData icon;
+  final Color colour;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: '${formatCount(count)} $label',
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            colour.withValues(alpha: 0.14),
+            theme.colorScheme.surface,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: colour),
+              const SizedBox(height: 12),
+              // Shrinks rather than overflowing for a very big number.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  formatCount(count),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: colour,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: AppTheme.tabularFigures,
+                  ),
+                ),
+              ),
+              Text(label, style: theme.textTheme.bodyMedium),
+            ],
+          ),
         ),
       ),
     );

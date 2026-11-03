@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
+import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/note_card.dart';
 
 /// The last stop before anything is deleted: a grid of every photo marked
 /// Delete. Tapping one rescues it; the button moves the rest to the trash in
@@ -161,11 +163,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                       sliver: SliverToBoxAdapter(
-                        child: Text(
-                          'Tap a photo to keep it instead. Nothing is deleted '
-                          'until you press the button below.\n'
-                          '${_controller.repository.trashExplanation}',
-                          style: theme.textTheme.bodyMedium,
+                        child: NoteCard(
+                          icon: Icons.delete_sweep_outlined,
+                          colour: SortColors.of(context).delete,
+                          text:
+                              'Tap a photo to keep it instead. Nothing is '
+                              'deleted until you press the button below.\n'
+                              '${_controller.repository.trashExplanation}',
                         ),
                       ),
                     ),

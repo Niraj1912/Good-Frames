@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:photo_swipe/theme/photo_tint.dart';
 
 /// SwipeSort's look, in one place. The rules:
 ///
-/// * Photo first: surfaces are neutral (no tint), so a photo's own colours
-///   read true and nothing competes with it.
+/// * Photo first: the app's own surfaces are neutral, and photos are sorted
+///   on a near-black card so their colours read true. Album names borrow a
+///   soft tint of their cover ([PhotoTint]), so that colour belongs to the
+///   pictures instead of competing with them.
 /// * Colour means something: green keeps, red deletes, and one ink-blue
-///   accent marks other actions and selections. Everything else is ink on
+///   accent marks other actions and choices. Everything else is ink on
 ///   paper.
 /// * Quiet shapes: modest corners and thin borders instead of shadows.
 abstract final class AppTheme {
@@ -14,6 +17,8 @@ abstract final class AppTheme {
       brightness: Brightness.light,
       primary: Color(0xFF2D5BA6), // Ink blue, the one accent
       onPrimary: Color(0xFFFFFFFF),
+      primaryContainer: Color(0xFFDCE4F5), // Behind icons that mark a choice
+      onPrimaryContainer: Color(0xFF173A73),
       secondary: Color(0xFF5E5D59),
       onSecondary: Color(0xFFF7F6F3),
       error: Color(0xFFB3372B), // Brick red, the delete colour
@@ -39,6 +44,8 @@ abstract final class AppTheme {
       brightness: Brightness.dark,
       primary: Color(0xFF8FB2EE),
       onPrimary: Color(0xFF0E1A2E),
+      primaryContainer: Color(0xFF223A61),
+      onPrimaryContainer: Color(0xFFD6E2F8),
       secondary: Color(0xFFA6A49F),
       onSecondary: Color(0xFF131313),
       error: Color(0xFFE2705F),
@@ -159,25 +166,33 @@ class SortColors extends ThemeExtension<SortColors> {
     required this.keep,
     required this.delete,
     required this.photoMatte,
+    required this.frame,
   });
 
+  // Deep enough to read as text on its own soft wash too (4.5:1 or more).
   static const light = SortColors(
-    keep: Color(0xFF2D7A4C),
+    keep: Color(0xFF2A7347),
     delete: Color(0xFFB3372B),
     photoMatte: Color(0xFFE9E7E2),
+    frame: Color(0xFF1C1C1B),
   );
 
   static const dark = SortColors(
     keep: Color(0xFF63B482),
     delete: Color(0xFFE2705F),
     photoMatte: Color(0xFF0D0D0D),
+    frame: Color(0xFF0A0A0A),
   );
 
   final Color keep;
   final Color delete;
 
-  /// Behind photos that don't fill their frame.
+  /// Behind photos while they load, such as album covers.
   final Color photoMatte;
+
+  /// The card a photo is sorted on: near-black in both modes, because
+  /// photos are judged best against dark, as in a darkroom or a viewer.
+  final Color frame;
 
   /// The theme's colours, or the defaults if a widget is used outside the
   /// app's theme (in a test, say), so it never crashes for lack of them.
@@ -188,12 +203,17 @@ class SortColors extends ThemeExtension<SortColors> {
   }
 
   @override
-  SortColors copyWith({Color? keep, Color? delete, Color? photoMatte}) =>
-      SortColors(
-        keep: keep ?? this.keep,
-        delete: delete ?? this.delete,
-        photoMatte: photoMatte ?? this.photoMatte,
-      );
+  SortColors copyWith({
+    Color? keep,
+    Color? delete,
+    Color? photoMatte,
+    Color? frame,
+  }) => SortColors(
+    keep: keep ?? this.keep,
+    delete: delete ?? this.delete,
+    photoMatte: photoMatte ?? this.photoMatte,
+    frame: frame ?? this.frame,
+  );
 
   // Lets the colours fade smoothly when switching between light and dark.
   @override
@@ -203,6 +223,7 @@ class SortColors extends ThemeExtension<SortColors> {
       keep: Color.lerp(keep, other.keep, t)!,
       delete: Color.lerp(delete, other.delete, t)!,
       photoMatte: Color.lerp(photoMatte, other.photoMatte, t)!,
+      frame: Color.lerp(frame, other.frame, t)!,
     );
   }
 }

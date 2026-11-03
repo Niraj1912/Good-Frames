@@ -42,6 +42,10 @@ class SwipeCard extends StatefulWidget {
   final String cardId;
 
   final ValueChanged<SwipeDirection> onSwiped;
+
+  /// The card's face, centred at its own size: a photo-shaped card can be
+  /// smaller than the area. The whole area still catches drags, so a thin
+  /// panorama is as easy to swipe as a tall portrait.
   final Widget child;
 
   /// Updated from -1 (dragged fully left) to 1 (fully right), so the card
@@ -250,7 +254,7 @@ class SwipeCardState extends State<SwipeCard>
             _maxTilt * (_offset.dx / math.max(_size.width, 1)).clamp(-1.0, 1.0);
 
         return GestureDetector(
-          // Catch drags anywhere on the card, even on see-through parts.
+          // Catch drags anywhere in the area, not just on the card itself.
           behavior: HitTestBehavior.opaque,
           // A tap and a drag can't be confused: the drag only starts once
           // the finger has moved, and the tap only fires if it didn't.
@@ -260,35 +264,39 @@ class SwipeCardState extends State<SwipeCard>
           onPanEnd: _onPanEnd,
           child: Transform.translate(
             offset: _offset,
-            child: Transform.rotate(
-              angle: tilt,
-              // Pivot near the bottom, like a card held at its base.
-              alignment: const Alignment(0, 0.8),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  widget.child,
-                  Positioned(
-                    top: 20,
-                    left: 20,
-                    child: _Stamp(
-                      label: right.label,
-                      color: right.color,
-                      angle: -0.12,
-                      strength: progress.clamp(0.0, 1.0),
+            child: Center(
+              child: Transform.rotate(
+                angle: tilt,
+                // Pivot near the bottom, like a card held at its base.
+                alignment: const Alignment(0, 0.8),
+                // Sized by the face, so the stamps sit on its corners. Not
+                // clipped, so a stamp can stick out of a very thin panorama.
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    widget.child,
+                    Positioned(
+                      top: 20,
+                      left: 20,
+                      child: _Stamp(
+                        label: right.label,
+                        color: right.color,
+                        angle: -0.12,
+                        strength: progress.clamp(0.0, 1.0),
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    top: 20,
-                    right: 20,
-                    child: _Stamp(
-                      label: left.label,
-                      color: left.color,
-                      angle: 0.12,
-                      strength: (-progress).clamp(0.0, 1.0),
+                    Positioned(
+                      top: 20,
+                      right: 20,
+                      child: _Stamp(
+                        label: left.label,
+                        color: left.color,
+                        angle: 0.12,
+                        strength: (-progress).clamp(0.0, 1.0),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

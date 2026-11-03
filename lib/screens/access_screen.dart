@@ -375,12 +375,12 @@ class _ChoiceCard extends StatelessWidget {
               // The app's one accent colour, marking the choices.
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
+                  color: colors.primaryContainer,
                   shape: BoxShape.circle,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Icon(icon, color: colors.primary),
+                  child: Icon(icon, color: colors.onPrimaryContainer),
                 ),
               ),
               const SizedBox(width: 16),

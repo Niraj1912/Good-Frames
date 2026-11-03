@@ -123,53 +123,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListenableBuilder(
         listenable: _settings,
         builder: (context, _) => ListView(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           children: [
-            const _SectionTitle('Sorting'),
-            ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: const Text('Swipe directions'),
-              subtitle: Text(_keepSideLabels[_settings.keepSide]!),
-              onTap: _chooseKeepSide,
+            _Section(
+              title: 'Sorting',
+              children: [
+                ListTile(
+                  leading: const _IconTile(Icons.swap_horiz),
+                  title: const Text('Swipe directions'),
+                  subtitle: Text(_keepSideLabels[_settings.keepSide]!),
+                  onTap: _chooseKeepSide,
+                ),
+                ListTile(
+                  leading: const _IconTile(Icons.sort),
+                  title: const Text('Order'),
+                  subtitle: Text(_orderLabels[_settings.order]!),
+                  onTap: _chooseOrder,
+                ),
+                SwitchListTile(
+                  secondary: const _IconTile(Icons.vibration),
+                  title: const Text('Vibration'),
+                  subtitle: const Text(
+                    'A small buzz when letting go will count',
+                  ),
+                  value: _settings.vibration,
+                  onChanged: (on) => _change(() => _settings.setVibration(on)),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.sort),
-              title: const Text('Order'),
-              subtitle: Text(_orderLabels[_settings.order]!),
-              onTap: _chooseOrder,
+            _Section(
+              title: 'Look',
+              children: [
+                ListTile(
+                  leading: const _IconTile(Icons.contrast),
+                  title: const Text('Theme'),
+                  subtitle: Text(_themeLabels[_settings.theme]!),
+                  onTap: _chooseTheme,
+                ),
+              ],
             ),
-            SwitchListTile(
-              secondary: const Icon(Icons.vibration),
-              title: const Text('Vibration'),
-              subtitle: const Text('A small buzz when letting go will count'),
-              value: _settings.vibration,
-              onChanged: (on) => _change(() => _settings.setVibration(on)),
-            ),
-            const _SectionTitle('Look'),
-            ListTile(
-              leading: const Icon(Icons.contrast),
-              title: const Text('Theme'),
-              subtitle: Text(_themeLabels[_settings.theme]!),
-              onTap: _chooseTheme,
-            ),
-            if (widget.photos case final photos?) ...[
-              const _SectionTitle('Photos'),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('What SwipeSort sees'),
-                subtitle: Text(photos.summary),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _changePhotos(photos),
+            if (widget.photos case final photos?)
+              _Section(
+                title: 'Photos',
+                children: [
+                  ListTile(
+                    leading: const _IconTile(Icons.photo_library_outlined),
+                    title: const Text('What SwipeSort sees'),
+                    subtitle: Text(photos.summary),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _changePhotos(photos),
+                  ),
+                ],
               ),
-            ],
-            const _SectionTitle('About'),
             FutureBuilder(
               future: _version,
-              builder: (context, snapshot) => Column(
+              builder: (context, snapshot) => _Section(
+                title: 'About',
                 children: [
                   if (snapshot.data case final version?)
                     ListTile(
-                      leading: const Icon(Icons.info_outline),
+                      leading: const _IconTile(Icons.info_outline),
                       title: const Text('Version'),
                       subtitle: Text(version),
                     ),
@@ -177,15 +190,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // condition: their licence notices go with the app.
                   // Flutter collects them all on this page.
                   ListTile(
-                    leading: const Icon(Icons.description_outlined),
+                    leading: const _IconTile(Icons.description_outlined),
                     title: const Text('Open-source licenses'),
+                    trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showLicences(snapshot.data),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(4, 20, 4, 0),
               child: Row(
                 children: [
                   Icon(
@@ -226,22 +240,62 @@ const _themeLabels = {
   ThemeMode.dark: 'Dark',
 };
 
-/// A small heading over each group of settings, in the app's accent colour.
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
+/// A group of settings: a small heading in the accent colour, over a card
+/// holding the group's rows.
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.children});
 
   final String title;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
-      child: Text(
-        title,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.primary,
+    final colors = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+          child: Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(color: colors.primary),
+          ),
         ),
+        Material(
+          // A step lighter than the page in light mode, darker in dark.
+          color: theme.brightness == Brightness.light
+              ? colors.surfaceContainerLowest
+              : colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.outlineVariant),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+/// A setting's icon on a soft square of the accent colour.
+class _IconTile extends StatelessWidget {
+  const _IconTile(this.icon);
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, size: 20, color: colors.onPrimaryContainer),
       ),
     );
   }

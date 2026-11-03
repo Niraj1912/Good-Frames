@@ -8,6 +8,7 @@ import 'package:photo_swipe/state/trash_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/note_card.dart';
 
 /// Photos SwipeSort moved to the trash. Pick some and bring them back, or
 /// erase them for good. Erasing is the one thing in the app that can't be
@@ -264,10 +265,12 @@ class _RecentlyDeletedScreenState extends State<RecentlyDeletedScreen> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           sliver: SliverToBoxAdapter(
-            child: Text(
-              'Choose photos to bring back, or to delete for good.\n'
-              '${widget.repository.trashExplanation}',
-              style: Theme.of(context).textTheme.bodyMedium,
+            child: NoteCard(
+              icon: Icons.restore_from_trash_outlined,
+              colour: Theme.of(context).colorScheme.primary,
+              text:
+                  'Choose photos to bring back, or to delete for good.\n'
+                  '${widget.repository.trashExplanation}',
             ),
           ),
         ),

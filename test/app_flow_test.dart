@@ -4,10 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/main.dart';
 import 'package:photo_swipe/state/settings.dart';
+import 'package:photo_swipe/widgets/photo_card.dart';
 import 'package:photo_swipe/widgets/swipe_card.dart';
 
 import 'fakes/fake_photo_repository.dart';
 import 'support/test_store.dart';
+
+// The keep or delete count above the photo, such as "Keep 2".
+Finder countChip(String label) => find.byWidgetPredicate(
+  (widget) => widget is Semantics && widget.properties.label == label,
+);
 
 void main() {
   Future<void> startApp(
@@ -107,7 +113,8 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await tester.pumpAndSettle();
-    expect(find.text('Keep 1  ·  Delete 1'), findsOneWidget);
+    expect(countChip('Keep 1'), findsOneWidget);
+    expect(countChip('Delete 1'), findsOneWidget);
     expect(find.text('IMG_3.jpg'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
@@ -121,12 +128,72 @@ void main() {
 
     await tester.drag(find.byType(SwipeCard), const Offset(400, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Keep 1  ·  Delete 0'), findsOneWidget);
+    expect(countChip('Keep 1'), findsOneWidget);
+    expect(countChip('Delete 0'), findsOneWidget);
 
     await tester.fling(find.byType(SwipeCard), const Offset(-80, 0), 2000);
     await tester.pumpAndSettle();
-    expect(find.text('Keep 1  ·  Delete 1'), findsOneWidget);
+    expect(countChip('Keep 1'), findsOneWidget);
+    expect(countChip('Delete 1'), findsOneWidget);
     expect(find.text('IMG_3.jpg'), findsOneWidget);
+  });
+
+  testWidgets('while dragging, the button it will press grows', (tester) async {
+    await openCamera(tester);
+    double deleteScale() => tester
+        .widget<AnimatedScale>(
+          find.ancestor(
+            of: find.text('Delete'),
+            matching: find.byType(AnimatedScale),
+          ),
+        )
+        .scale;
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(SwipeCard)),
+    );
+    await gesture.moveBy(const Offset(-40, 0));
+    await gesture.moveBy(const Offset(-360, 0));
+    await tester.pumpAndSettle();
+    expect(deleteScale(), greaterThan(1));
+
+    // Let go: the photo is marked, and the button goes back to its size.
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(countChip('Delete 1'), findsOneWidget);
+    expect(deleteScale(), 1);
+  });
+
+  testWidgets('the next photo stays hidden until the card is dragged', (
+    tester,
+  ) async {
+    await openCamera(tester);
+    // The photo behind is the first card in the pile.
+    double behindOpacity() => tester
+        .widget<Opacity>(
+          find
+              .ancestor(
+                of: find.byType(PhotoCard).first,
+                matching: find.byType(Opacity),
+              )
+              .first,
+        )
+        .opacity;
+    expect(behindOpacity(), 0);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(SwipeCard)),
+    );
+    await gesture.moveBy(const Offset(40, 0));
+    await gesture.moveBy(const Offset(360, 0));
+    await tester.pump();
+    expect(behindOpacity(), 1);
+
+    // Once it's at the front, the photo after it waits out of sight.
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_2.jpg'), findsOneWidget);
+    expect(behindOpacity(), 0);
   });
 
   testWidgets('shows a summary once every photo is sorted', (tester) async {
@@ -140,7 +207,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('All sorted'), findsOneWidget);
-    expect(find.text('2 to keep, 1 to delete.'), findsOneWidget);
+    expect(find.bySemanticsLabel('2 to keep'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 to delete'), findsOneWidget);
     expect(find.text('Nothing is deleted until you review them.'), findsOne);
     expect(find.text('Review 1 to delete'), findsOneWidget);
   });

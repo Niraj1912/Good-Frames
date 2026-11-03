@@ -71,6 +71,38 @@ void main() {
     expect(cardCorner(tester), start);
   });
 
+  testWidgets('a thin card can be dragged from anywhere in its area', (
+    tester,
+  ) async {
+    // Like a panorama: a 400 x 60 card in a 400 x 600 area.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 400,
+            height: 600,
+            child: SwipeCard(
+              key: cardKey,
+              cardId: 'a',
+              onSwiped: swipes.add,
+              child: const SizedBox(width: 400, height: 60),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Starting well below the card itself.
+    final area = tester.getRect(find.byType(SwipeCard));
+    await tester.dragFrom(
+      area.bottomCenter - const Offset(0, 40),
+      const Offset(250, 0),
+    );
+    await tester.pumpAndSettle();
+
+    expect(swipes, [SwipeDirection.right]);
+  });
+
   testWidgets('a quick flick counts even if it is short', (tester) async {
     await showCard(tester);
 

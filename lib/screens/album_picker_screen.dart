@@ -7,6 +7,7 @@ import 'package:photo_swipe/screens/settings_screen.dart';
 import 'package:photo_swipe/screens/sort_screen.dart';
 import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/photo_tint.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
@@ -174,22 +175,28 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
                       sliver: SliverGrid.builder(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columns,
-                          mainAxisSpacing: 20,
+                          mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio: 0.78,
+                          childAspectRatio: 0.74,
                         ),
                         itemCount: albums.length,
                         itemBuilder: (context, index) {
                           final album = albums[index];
+                          final cover = album.cover;
                           return _AlbumTile(
                             album: album,
-                            cover: switch (album.cover) {
-                              final photo? => widget.repository.imageFor(
-                                photo,
-                                width: coverWidth,
-                              ),
-                              null => null,
-                            },
+                            cover: cover == null
+                                ? null
+                                : widget.repository.imageFor(
+                                    cover,
+                                    width: coverWidth,
+                                  ),
+                            tintSample: cover == null
+                                ? null
+                                : () => widget.repository.imageFor(
+                                    cover,
+                                    width: PhotoTint.sampleWidth,
+                                  ),
                             onTap: () => _open(album),
                           );
                         },
@@ -206,16 +213,23 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
   }
 }
 
-/// One album on the list: its newest photo, its name and how many photos.
+/// One album on the list: its newest photo, then its name and how many
+/// photos on a panel tinted with the cover's colours, so each album has a
+/// colour of its own that comes from its photos.
 class _AlbumTile extends StatelessWidget {
   const _AlbumTile({
     required this.album,
     required this.cover,
+    required this.tintSample,
     required this.onTap,
   });
 
   final Album album;
   final ImageProvider? cover;
+
+  /// A tiny copy of the cover to find its colour from, or null for none.
+  final ImageProvider Function()? tintSample;
+
   final VoidCallback onTap;
 
   @override
@@ -227,47 +241,67 @@ class _AlbumTile extends StatelessWidget {
         color: theme.colorScheme.onSurfaceVariant,
       ),
     );
+    final sample = tintSample;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: ColoredBox(
-                color: SortColors.of(context).photoMatte,
-                child: SizedBox.expand(
-                  child: switch (cover) {
-                    final image? => Image(
-                      image: image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => placeholder,
-                    ),
-                    null => placeholder,
-                  },
+    return PhotoTintBuilder(
+      id: album.cover?.id,
+      sample: () => sample?.call(),
+      builder: (context, seed) => AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color: seed == null
+              ? theme.colorScheme.surfaceContainer
+              : PhotoTint.panel(seed, theme.brightness),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ColoredBox(
+                    color: SortColors.of(context).photoMatte,
+                    child: switch (cover) {
+                      final image? => Image(
+                        image: image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            placeholder,
+                      ),
+                      null => placeholder,
+                    },
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        album.name,
+                        style: theme.textTheme.titleSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        photoCount(album.photoCount),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontFeatures: AppTheme.tabularFigures,
+                        ),
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            album.name,
-            style: theme.textTheme.titleSmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            photoCount(album.photoCount),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontFeatures: AppTheme.tabularFigures,
-            ),
-            maxLines: 1,
-          ),
-        ],
+        ),
       ),
     );
   }
