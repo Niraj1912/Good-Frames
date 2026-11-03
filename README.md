@@ -243,6 +243,7 @@ decide and `Esc` closes.
 | Signed 1.0.0 release on a real Android 16 phone | Installs; signed with the release key, not debuggable |
 | Settings, Android 17 emulator | Swapped directions (buttons, stamps), oldest and newest first, dark theme at once, version from Android, licences page, choice screen's Cancel and back gesture; all remembered after a restart |
 | Signed 1.0.1 installed over 1.0.0, Android 17 emulator | Updates in place: decisions, Recently deleted and photo access kept; Settings, folder mode and restore work in the release build |
+| Signed 1.1.0 installed over 1.0.1, Android 17 emulator | Updates in place (same first-install time): decisions and photo access kept; glass, decide later, undo and the month picker work in the release build |
 | Upgrading 1.0.0's database (version 2) | Decisions and Recently deleted kept on the emulator, and in `test/decision_store_test.dart` |
 
 Measure performance in a profile or release build (`flutter run --profile`),
@@ -325,7 +326,9 @@ allowing "Install unknown apps" for whichever app opens the file.
 
 The version is `version:` in `pubspec.yaml`: `1.0.0+1` means version name
 1.0.0 (what people see) and build number 1 (what Android compares; it must go
-up with every APK you share). The app ID `com.photoswipe.photo_swipe` is
+up with every APK you share). The name follows major.minor.patch: the last
+number goes up for fixes (1.0.0 to 1.0.1), the middle one for new features
+(1.1.0, which added decide later, month chunks and the glass look). The app ID `com.photoswipe.photo_swipe` is
 permanent: change it and Android treats it as a different app.
 
 ### Test photos
