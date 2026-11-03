@@ -30,7 +30,7 @@ class SortProgress extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
         children: [
           // Two colours, so the bar shows the keep/delete split at a glance,

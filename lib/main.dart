@@ -11,6 +11,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/screens/access_screen.dart';
 import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' as sqflite_ffi;
 
@@ -90,6 +91,8 @@ class PhotoSwipeApp extends StatelessWidget {
         darkTheme: AppTheme.dark,
         themeMode: settings.theme,
         debugShowCheckedModeBanner: false,
+        // One background under every page, so it stays still as they change.
+        builder: (context, navigator) => GlassBackground(child: navigator!),
         home: home,
       ),
       child: AccessScreen(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/chosen_folder.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
 /// The folders SwipeSort may see: add more, stop sharing some, or switch to
@@ -77,22 +78,31 @@ class _ManageFoldersScreenState extends State<ManageFoldersScreen> {
             );
           }
           return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             children: [
-              for (final folder in folders)
-                ListTile(
-                  leading: const Icon(Icons.folder_outlined),
-                  title: Text(folder.name),
-                  subtitle: Text(folder.path),
-                  trailing: IconButton(
-                    onPressed: _working ? null : () => _remove(folder),
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Stop sharing ${folder.name}',
+              Glass(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    children: [
+                      for (final folder in folders)
+                        ListTile(
+                          leading: const Icon(Icons.folder_outlined),
+                          title: Text(folder.name),
+                          subtitle: Text(folder.path),
+                          trailing: IconButton(
+                            onPressed: _working ? null : () => _remove(folder),
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Stop sharing ${folder.name}',
+                          ),
+                        ),
+                    ],
                   ),
                 ),
+              ),
               // Below the folders, so with large text they still come first.
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
                 child: Text(
                   'SwipeSort can see these folders and the folders inside '
                   'them, and nothing else on this phone.',
@@ -105,25 +115,22 @@ class _ManageFoldersScreenState extends State<ManageFoldersScreen> {
           );
         },
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              FilledButton.icon(
-                onPressed: _working ? null : _add,
-                icon: const Icon(Icons.create_new_folder_outlined),
-                label: const Text('Add a folder'),
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: _working ? null : _useAllPhotos,
-                child: const Text('Use all photos instead'),
-              ),
-            ],
-          ),
+      bottomNavigationBar: GlassBar(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              onPressed: _working ? null : _add,
+              icon: const Icon(Icons.create_new_folder_outlined),
+              label: const Text('Add a folder'),
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: _working ? null : _useAllPhotos,
+              child: const Text('Use all photos instead'),
+            ),
+          ],
         ),
       ),
     );

@@ -13,6 +13,7 @@ import 'package:photo_swipe/screens/review_screen.dart';
 import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
@@ -305,12 +306,17 @@ class _SortScreenState extends State<SortScreen> {
     final photo = controller.current;
     return Column(
       children: [
-        SortProgress(
-          sorted: controller.sortedCount,
-          total: controller.total,
-          kept: controller.keepCount,
-          deleted: controller.deleteCount,
-          later: controller.laterCount,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+          child: Glass(
+            child: SortProgress(
+              sorted: controller.sortedCount,
+              total: controller.total,
+              kept: controller.keepCount,
+              deleted: controller.deleteCount,
+              later: controller.laterCount,
+            ),
+          ),
         ),
         if (!controller.isFullyLoaded)
           Padding(
@@ -430,36 +436,41 @@ class _SortScreenState extends State<SortScreen> {
             ),
           ),
         ),
-        PhotoInfo(photo: photo),
+        // The photo's details and the buttons, on one pane of glass.
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            children: [
-              DecisionButtons(
-                onDelete: _delete,
-                onKeep: _keep,
-                onUndo: _controller.canUndo ? _undo : null,
-                onLater: _later,
-                keepSide: _keepSide,
-                dragProgress: _dragProgress,
-                upProgress: _upProgress,
-              ),
-              if (isDesktop) ...[
-                const SizedBox(height: 8),
-                Text(
-                  switch (_keepSide) {
-                    KeepSide.right =>
-                      '←  Delete    ↑  Later    →  Keep    '
-                          'Z  Undo    Click to zoom',
-                    KeepSide.left =>
-                      '←  Keep    ↑  Later    →  Delete    '
-                          'Z  Undo    Click to zoom',
-                  },
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Glass(
+            borderRadius: const BorderRadius.all(Radius.circular(24)),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              children: [
+                PhotoInfo(photo: photo),
+                DecisionButtons(
+                  onDelete: _delete,
+                  onKeep: _keep,
+                  onUndo: _controller.canUndo ? _undo : null,
+                  onLater: _later,
+                  keepSide: _keepSide,
+                  dragProgress: _dragProgress,
+                  upProgress: _upProgress,
                 ),
+                if (isDesktop) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    switch (_keepSide) {
+                      KeepSide.right =>
+                        '←  Delete    ↑  Later    →  Keep    '
+                            'Z  Undo    Click to zoom',
+                      KeepSide.left =>
+                        '←  Keep    ↑  Later    →  Delete    '
+                            'Z  Undo    Click to zoom',
+                    },
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],
@@ -467,7 +478,10 @@ class _SortScreenState extends State<SortScreen> {
   }
 }
 
-/// A small magnifier in the card's corner, showing the photo can be opened.
+/// A small magnifier in the card's corner, showing the photo can be opened:
+/// a bead of dark glass, so it stays clear on any photo. Tinted, not
+/// blurred: it moves with every drag, and a blur would be redrawn each
+/// frame.
 class _ZoomHint extends StatelessWidget {
   const _ZoomHint();
 
@@ -475,8 +489,9 @@ class _ZoomHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
+        color: Colors.black.withValues(alpha: 0.42),
         shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: const Padding(
         padding: EdgeInsets.all(8),
@@ -520,94 +535,97 @@ class _DoneView extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                switch (month) {
-                  final month? => '${formatMonth(month)} sorted',
-                  null => 'All sorted',
-                },
-                style: theme.textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              // IntrinsicHeight, so the two tiles are always the same
-              // height, even when large text wraps one of them.
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _Tally(
-                        count: kept,
-                        label: 'to keep',
-                        icon: Icons.check,
-                        colour: colors.keep,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _Tally(
-                        count: deleted,
-                        label: 'to delete',
-                        icon: Icons.close,
-                        colour: colors.delete,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (deleted > 0) ...[
-                const SizedBox(height: 20),
+          child: Glass(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  'Nothing is deleted until you review them.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  switch (month) {
+                    final month? => '${formatMonth(month)} sorted',
+                    null => 'All sorted',
+                  },
+                  style: theme.textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onReview,
-                    icon: const Icon(Icons.delete_sweep_outlined),
-                    label: Text('Review ${formatCount(deleted)} to delete'),
+                const SizedBox(height: 20),
+                // IntrinsicHeight, so the two tiles are always the same
+                // height, even when large text wraps one of them.
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _Tally(
+                          count: kept,
+                          label: 'to keep',
+                          icon: Icons.check,
+                          colour: colors.keep,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _Tally(
+                          count: deleted,
+                          label: 'to delete',
+                          icon: Icons.close,
+                          colour: colors.delete,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-              // One month at a time: straight on to the next one.
-              if (nextMonth != null) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => onShowMonth(nextMonth),
-                    icon: const Icon(Icons.arrow_forward),
-                    label: Text('Next: ${formatMonth(nextMonth)}'),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 8),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                children: [
-                  TextButton.icon(
-                    onPressed: onUndo,
-                    icon: const Icon(Icons.undo),
-                    label: const Text('Undo last'),
-                  ),
-                  if (month != null)
-                    TextButton.icon(
-                      onPressed: () => onShowMonth(null),
-                      icon: const Icon(Icons.calendar_month_outlined),
-                      label: const Text('All months'),
+                if (deleted > 0) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    'Nothing is deleted until you review them.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: onReview,
+                      icon: const Icon(Icons.delete_sweep_outlined),
+                      label: Text('Review ${formatCount(deleted)} to delete'),
+                    ),
+                  ),
                 ],
-              ),
-            ],
+                // One month at a time: straight on to the next one.
+                if (nextMonth != null) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => onShowMonth(nextMonth),
+                      icon: const Icon(Icons.arrow_forward),
+                      label: Text('Next: ${formatMonth(nextMonth)}'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  children: [
+                    TextButton.icon(
+                      onPressed: onUndo,
+                      icon: const Icon(Icons.undo),
+                      label: const Text('Undo last'),
+                    ),
+                    if (month != null)
+                      TextButton.icon(
+                        onPressed: () => onShowMonth(null),
+                        icon: const Icon(Icons.calendar_month_outlined),
+                        label: const Text('All months'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

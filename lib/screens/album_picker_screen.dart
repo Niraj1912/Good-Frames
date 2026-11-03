@@ -7,6 +7,7 @@ import 'package:photo_swipe/screens/settings_screen.dart';
 import 'package:photo_swipe/screens/sort_screen.dart';
 import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/theme/photo_tint.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
@@ -213,9 +214,9 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
   }
 }
 
-/// One album on the list: its newest photo, then its name and how many
-/// photos on a panel tinted with the cover's colours, so each album has a
-/// colour of its own that comes from its photos.
+/// One album on the list: a pane of glass tinted with its cover's colour,
+/// holding its newest photo, then its name and how many photos. So each
+/// album has a colour of its own that comes from its photos.
 class _AlbumTile extends StatelessWidget {
   const _AlbumTile({
     required this.album,
@@ -242,19 +243,24 @@ class _AlbumTile extends StatelessWidget {
       ),
     );
     final sample = tintSample;
+    final plain = GlassColors.of(context).fill;
 
     return PhotoTintBuilder(
       id: album.cover?.id,
       sample: () => sample?.call(),
-      builder: (context, seed) => AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        decoration: BoxDecoration(
-          color: seed == null
-              ? theme.colorScheme.surfaceContainer
-              : PhotoTint.panel(seed, theme.brightness),
-          borderRadius: BorderRadius.circular(16),
+      // The tint fades in once the cover's colour is found.
+      builder: (context, seed) => TweenAnimationBuilder(
+        tween: ColorTween(
+          begin: plain,
+          end: seed == null
+              ? plain
+              : PhotoTint.panel(
+                  seed,
+                  theme.brightness,
+                ).withValues(alpha: AppTheme.tintedGlass),
         ),
-        clipBehavior: Clip.antiAlias,
+        duration: const Duration(milliseconds: 300),
+        builder: (context, tint, child) => Glass(tint: tint, child: child!),
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
@@ -263,17 +269,25 @@ class _AlbumTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  child: ColoredBox(
-                    color: SortColors.of(context).photoMatte,
-                    child: switch (cover) {
-                      final image? => Image(
-                        image: image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            placeholder,
+                  // Set into the glass with a narrow margin, like a print
+                  // behind a pane.
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: ColoredBox(
+                        color: SortColors.of(context).photoMatte,
+                        child: switch (cover) {
+                          final image? => Image(
+                            image: image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                placeholder,
+                          ),
+                          null => placeholder,
+                        },
                       ),
-                      null => placeholder,
-                    },
+                    ),
                   ),
                 ),
                 Padding(

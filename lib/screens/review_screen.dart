@@ -3,6 +3,7 @@ import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 import 'package:photo_swipe/widgets/note_card.dart';
@@ -202,34 +203,31 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     ),
                   ],
                 ),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_progress case (final done, final total)) ...[
-                    LinearProgressIndicator(value: done / total),
-                    const SizedBox(height: 12),
-                  ],
-                  FilledButton.icon(
-                    onPressed: count == 0 || _working ? null : _moveToTrash,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: theme.colorScheme.error,
-                      foregroundColor: theme.colorScheme.onError,
-                      minimumSize: const Size.fromHeight(56),
-                    ),
-                    icon: const Icon(Icons.delete_outline),
-                    label: Text(switch (_progress) {
-                      (final done, final total) when done < total =>
-                        'Preparing $done of $total…',
-                      (_, _) => 'Waiting for confirmation…',
-                      null when count == 0 => 'Nothing to delete',
-                      null => 'Move ${photoCount(count)} to the trash',
-                    }),
-                  ),
+          bottomNavigationBar: GlassBar(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_progress case (final done, final total)) ...[
+                  LinearProgressIndicator(value: done / total),
+                  const SizedBox(height: 12),
                 ],
-              ),
+                FilledButton.icon(
+                  onPressed: count == 0 || _working ? null : _moveToTrash,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.error,
+                    foregroundColor: theme.colorScheme.onError,
+                    minimumSize: const Size.fromHeight(56),
+                  ),
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(switch (_progress) {
+                    (final done, final total) when done < total =>
+                      'Preparing $done of $total…',
+                    (_, _) => 'Waiting for confirmation…',
+                    null when count == 0 => 'Nothing to delete',
+                    null => 'Move ${photoCount(count)} to the trash',
+                  }),
+                ),
+              ],
             ),
           ),
         );

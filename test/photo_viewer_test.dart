@@ -136,7 +136,7 @@ void main() {
         theme: AppTheme.light,
         home: const Scaffold(
           body: SizedBox(
-            width: 432, // 400 wide inside the 16 px padding.
+            width: 428, // 400 wide inside the 14 px padding.
             child: SortProgress(sorted: 4, total: 10, kept: 3, deleted: 1),
           ),
         ),

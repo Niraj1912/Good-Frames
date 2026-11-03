@@ -87,7 +87,8 @@ and `lib/data/app_info.dart`).
 Phase 5: hardening. Tested with big libraries, older Android versions, large
 text, and photos changing behind the app's back. See "Tested" below.
 
-Phase 6: design. A restrained, photo-first look; see "Design" below.
+Phase 6: design. Frosted glass over soft colour, with the photos kept
+clear; see "Design" below.
 
 Checking a photo up close: tap the card (instead of swiping) and the photo
 grows into a full-screen viewer on black. Pinch to zoom, drag to look around,
@@ -136,8 +137,34 @@ needs an order that's the same on every page, or a photo could be skipped.
 All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
 `app_theme.dart`), so screens never pick their own colours.
 
-- Photo first: the app's own surfaces are neutral (near-black in dark
-  mode, warm off-white in light), and the photo being sorted is a card of
+- Glass: every screen sits on one still background (`glass.dart`):
+  fields of coral, sky blue, amber and teal, one near each corner, on warm
+  paper, or deep glows of them on near-black in dark mode. Panels, bars,
+  cards, album tiles and the month picker are panes of glass over it:
+  milky, a little brighter at the top where light catches them, with a
+  hairline rim that's brightest at the top left. The background sits under
+  the app's navigator and pages are see-through, so it stays still while
+  pages fade over it.
+  - Built to run on most phones: the background is painted once, as its
+    own layer, and never moves. The panes don't blur what's behind them,
+    because what's behind is that still, already-soft background, where a
+    blur would look the same. A real blur (Flutter's `BackdropFilter`) is
+    one of the heaviest things a phone draws: each one makes the graphics
+    chip stop and copy the screen behind it, on every frame of a swipe.
+    The only real blur is on the month picker, where a photo is behind
+    the glass and it's drawn while nothing moves.
+  - The colours are as vivid as readability allows: in light mode each is
+    full strength at its centre, at a lightness where the grey and blue
+    text still reads at 4.5:1. Contrast was set by calculation, not by
+    eye: on the background (even where two colours mix), on glass top and
+    bottom, on any album's tinted glass, and on the month picker over any
+    photo (white, black or red). `test/glass_test.dart` checks all of them
+    in both modes.
+  - Buttons and counts stay solid on the glass, so they're always easy to
+    read, and photos themselves are never blurred or tinted.
+  - The zoom viewer stays plain black: it's for checking a photo, so
+    nothing should sit on top of it.
+- Photo first: the photo being sorted is a card of
   its own shape: as large as fits, never cropped, with rounded corners and
   no frame or bars around it, like a print. Cropping to fill would hide
   the edges of a photo you're deciding to delete, and a blurred fill would
@@ -147,7 +174,7 @@ All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
   smaller one; as you drag, it fades in and grows to full size, ready to
   take the front. A file that can't be shown gets a dark 3:4 card with a
   message.
-- Album colours come from the photos: each album's name sits on a panel
+- Album colours come from the photos: each album is a pane of glass
   tinted from its cover (`photo_tint.dart`), so that colour belongs to the
   pictures and never competes with them. A 32-pixel copy of the cover is
   grouped into at most 32 colours, and the one with the best mix of how
@@ -168,7 +195,7 @@ All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
   big green and red tiles, the progress bar is split green and red, the
   Delete button is tinted red, and the Review screen's note is red.
   Settings' icons sit on soft tiles of the accent blue. Everything else is
-  ink on paper.
+  ink on glass.
 - While you drag, the buttons show what letting go will do instead of the
   photo being coloured: the button the photo is heading for grows with
   the drag, and Delete turns solid red once letting go would delete (the
@@ -177,8 +204,8 @@ All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
   green or red wash behind the card was tried and dropped: around a
   photo-shaped card it became a coloured box that pulled attention from
   the photo.)
-- Quiet shapes: 12-16 px corners and hairline borders instead of shadows or
-  glows. No gradients, no decorative blur, no emoji in the interface.
+- Quiet shapes: 12-24 px corners and hairline edges instead of shadows or
+  glows. No emoji in the interface.
 - Numbers use tabular figures (so counters don't wobble) and thousands
   separators ("10,020").
 - Motion explains something: a flicked card leaves at the flick's speed, a
@@ -371,8 +398,9 @@ lib/
 ├── state/        App logic the screens listen to (current photo, undo,
 │                 progress, settings)
 ├── screens/      Full pages: album picker, swipe, review, done, settings
-├── theme/        Design tokens: colours, type, shapes (app_theme.dart), and
-│                 the tint borrowed from photos (photo_tint.dart)
+├── theme/        Design tokens: colours, type, shapes (app_theme.dart), the
+│                 glass background and panels (glass.dart), and the tint
+│                 borrowed from photos (photo_tint.dart)
 └── widgets/      Reusable pieces: swipe card, photo card, buttons, progress
                   bar, note card
 test/             Automated tests (test/fakes/ holds FakePhotoRepository)
@@ -410,6 +438,7 @@ interface, which has one implementation per environment:
       sees, version and licences
 - [x] Decide later: swipe up to put a photo off until the rest are sorted
 - [x] One month at a time: pick a month of a big album to sort
+- [x] Glass look: frosted panels over a still background of soft colour
 
 ## Safety rules
 

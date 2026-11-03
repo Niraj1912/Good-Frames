@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 
 /// The sort screen's title: the album's name, with the month being sorted
@@ -74,7 +75,8 @@ class SortTitle extends StatelessWidget {
 Future<void> showMonthPicker(BuildContext context, SortController controller) {
   return showModalBottomSheet<void>(
     context: context,
-    showDragHandle: true,
+    // The sheet is a pane of glass, so the sheet itself is see-through.
+    backgroundColor: Colors.transparent,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (context) => DraggableScrollableSheet(
@@ -82,50 +84,83 @@ Future<void> showMonthPicker(BuildContext context, SortController controller) {
       initialChildSize: 0.6,
       minChildSize: 0.3,
       maxChildSize: 0.9,
-      builder: (context, scrollController) => ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) {
-          void choose(DateTime? month) {
-            controller.showMonth(month);
-            Navigator.pop(context);
-          }
+      builder: (context, scrollController) => Glass(
+        // The photo may be behind it, so the glass hides more of it, and
+        // blurs it for real: the one pane that needs to.
+        tint: GlassColors.of(context).overPhotos,
+        blur: true,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        // On the glass, so taps ripple over it rather than under it.
+        child: Material(
+          type: MaterialType.transparency,
+          child: ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) {
+              void choose(DateTime? month) {
+                controller.showMonth(month);
+                Navigator.pop(context);
+              }
 
-          final months = controller.months;
-          return ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.only(bottom: 16),
-            children: [
-              _MonthTile(
-                label: 'All months',
-                photos: months.fold(0, (sum, month) => sum + month.photos),
-                sorted: months.fold(0, (sum, month) => sum + month.sorted),
-                selected: controller.month == null,
-                onTap: () => choose(null),
-              ),
-              const Divider(indent: 16, endIndent: 16),
-              for (final month in months)
-                _MonthTile(
-                  label: formatMonth(month.month),
-                  photos: month.photos,
-                  sorted: month.sorted,
-                  selected: controller.month == month.month,
-                  onTap: () => choose(month.month),
-                ),
-              if (!controller.isFullyLoaded)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Text(
-                    'Loading ${formatCount(controller.loadedCount)} of '
-                    '${formatCount(controller.album.photoCount)} photos…',
-                    style: Theme.of(context).textTheme.bodySmall,
+              final months = controller.months;
+              return ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.only(bottom: 16),
+                children: [
+                  const _DragHandle(),
+                  _MonthTile(
+                    label: 'All months',
+                    photos: months.fold(0, (sum, month) => sum + month.photos),
+                    sorted: months.fold(0, (sum, month) => sum + month.sorted),
+                    selected: controller.month == null,
+                    onTap: () => choose(null),
                   ),
-                ),
-            ],
-          );
-        },
+                  const Divider(indent: 16, endIndent: 16),
+                  for (final month in months)
+                    _MonthTile(
+                      label: formatMonth(month.month),
+                      photos: month.photos,
+                      sorted: month.sorted,
+                      selected: controller.month == month.month,
+                      onTap: () => choose(month.month),
+                    ),
+                  if (!controller.isFullyLoaded)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Text(
+                        'Loading ${formatCount(controller.loadedCount)} of '
+                        '${formatCount(controller.album.photoCount)} photos…',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     ),
   );
+}
+
+/// The little bar at the top of the sheet that shows it can be dragged.
+class _DragHandle extends StatelessWidget {
+  const _DragHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        width: 32,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.onSurfaceVariant
+              .withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
 }
 
 /// One row of the month picker: "October 2026 · 108 / 310", with a green

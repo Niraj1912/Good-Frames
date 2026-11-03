@@ -6,6 +6,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 import 'package:photo_swipe/state/trash_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 import 'package:photo_swipe/widgets/note_card.dart';
@@ -184,57 +185,54 @@ class _RecentlyDeletedScreenState extends State<RecentlyDeletedScreen> {
     final theme = Theme.of(context);
     final delete = SortColors.of(context).delete;
     final enabled = _selected.isNotEmpty && !_working;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _selected.isEmpty
-                  ? 'Tap photos to choose them'
-                  : '${photoCount(_selected.length)} chosen',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontFeatures: AppTheme.tabularFigures,
+    return GlassBar(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _selected.isEmpty
+                ? 'Tap photos to choose them'
+                : '${photoCount(_selected.length)} chosen',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontFeatures: AppTheme.tabularFigures,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // Same red tint as Delete on the sort screen, and on the
+              // left, where deleting always is in this app.
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: enabled ? _deleteForever : null,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                    backgroundColor: Color.alphaBlend(
+                      delete.withValues(alpha: 0.16),
+                      theme.colorScheme.surface,
+                    ),
+                    foregroundColor: delete,
+                  ),
+                  icon: const Icon(Icons.delete_forever),
+                  label: const Text('Delete forever'),
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                // Same red tint as Delete on the sort screen, and on the
-                // left, where deleting always is in this app.
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: enabled ? _deleteForever : null,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                      backgroundColor: Color.alphaBlend(
-                        delete.withValues(alpha: 0.16),
-                        theme.colorScheme.surface,
-                      ),
-                      foregroundColor: delete,
-                    ),
-                    icon: const Icon(Icons.delete_forever),
-                    label: const Text('Delete forever'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: enabled ? _restore : null,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
                   ),
+                  icon: const Icon(Icons.restore),
+                  label: const Text('Restore'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: enabled ? _restore : null,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                    ),
-                    icon: const Icon(Icons.restore),
-                    label: const Text('Restore'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

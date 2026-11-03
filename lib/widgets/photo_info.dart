@@ -16,8 +16,9 @@ class PhotoInfo extends StatelessWidget {
       if (photo.sizeBytes != null) formatSize(photo.sizeBytes!),
     ].join('  ·  ');
 
+    // Snug, as it sits inside the glass bar, which has its own margin.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Column(
         children: [
           Text(

@@ -3,6 +3,7 @@ import 'package:photo_swipe/data/app_info.dart';
 import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/state/settings.dart';
+import 'package:photo_swipe/theme/glass.dart';
 
 /// What SwipeSort can see, in a few words, and what to do to change it.
 typedef PhotoSource = ({String summary, VoidCallback change});
@@ -240,8 +241,8 @@ const _themeLabels = {
   ThemeMode.dark: 'Dark',
 };
 
-/// A group of settings: a small heading in the accent colour, over a card
-/// holding the group's rows.
+/// A group of settings: a small heading in the accent colour, over a pane
+/// of glass holding the group's rows.
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.children});
 
@@ -262,17 +263,11 @@ class _Section extends StatelessWidget {
             style: theme.textTheme.labelLarge?.copyWith(color: colors.primary),
           ),
         ),
-        Material(
-          // A step lighter than the page in light mode, darker in dark.
-          color: theme.brightness == Brightness.light
-              ? colors.surfaceContainerLowest
-              : colors.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: colors.outlineVariant),
+        Glass(
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(children: children),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(children: children),
         ),
       ],
     );

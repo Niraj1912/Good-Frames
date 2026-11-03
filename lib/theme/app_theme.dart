@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/theme/photo_tint.dart';
 
 /// SwipeSort's look, in one place. The rules:
 ///
-/// * Photo first: the app's own surfaces are neutral, and photos are sorted
-///   on a near-black card so their colours read true. Album names borrow a
-///   soft tint of their cover ([PhotoTint]), so that colour belongs to the
-///   pictures instead of competing with them.
+/// * Glass: every screen sits on one still background of soft colour
+///   ([GlassBackground]), and panels, bars and cards are frosted glass over
+///   it ([Glass]). Pages are see-through, so they fade over the background
+///   rather than replacing it. Album names sit on glass tinted with their
+///   cover's colour ([PhotoTint]).
+/// * Photos stay clear: never blurred or tinted, at their own shape.
 /// * Colour means something: green keeps, red deletes, and one ink-blue
-///   accent marks other actions and choices. Everything else is ink on
-///   paper.
-/// * Quiet shapes: modest corners and thin borders instead of shadows.
+///   accent marks other actions and choices. Buttons stay solid on the
+///   glass, so they're always easy to read.
+/// * Quiet shapes: modest corners and hairline edges instead of shadows.
 abstract final class AppTheme {
   static final light = _build(
     const ColorScheme(
@@ -37,6 +40,7 @@ abstract final class AppTheme {
       outlineVariant: Color(0xFFE1DFD9),
     ),
     SortColors.light,
+    GlassColors.light,
   );
 
   static final dark = _build(
@@ -64,12 +68,22 @@ abstract final class AppTheme {
       outlineVariant: Color(0xFF2E2D2B),
     ),
     SortColors.dark,
+    GlassColors.dark,
   );
 
   /// Digits all the same width, so counters don't wobble as they change.
   static const tabularFigures = [FontFeature.tabularFigures()];
 
-  static ThemeData _build(ColorScheme colors, SortColors sort) {
+  /// How solid a tinted pane of glass is, such as an album's: enough of
+  /// the background shows through to read as glass, and text on it stays
+  /// readable whatever is behind.
+  static const tintedGlass = 0.6;
+
+  static ThemeData _build(
+    ColorScheme colors,
+    SortColors sort,
+    GlassColors glass,
+  ) {
     final base = ThemeData(colorScheme: colors);
     final text = base.textTheme.copyWith(
       headlineSmall: base.textTheme.headlineSmall?.copyWith(
@@ -92,11 +106,12 @@ abstract final class AppTheme {
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: colors.surface,
+      // See-through, so every page shows the glass background under it.
+      scaffoldBackgroundColor: Colors.transparent,
       textTheme: text,
-      extensions: [sort],
+      extensions: [sort, glass],
       appBarTheme: AppBarTheme(
-        backgroundColor: colors.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: colors.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -145,13 +160,19 @@ abstract final class AppTheme {
         ),
       ),
       bannerTheme: MaterialBannerThemeData(
-        backgroundColor: colors.surfaceContainerLow,
-        dividerColor: colors.outlineVariant,
+        backgroundColor: glass.fill,
+        dividerColor: Colors.transparent,
       ),
+      // Pages fade and slide over the still background, with nothing
+      // painted behind them in between.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(
+            backgroundColor: Colors.transparent,
+          ),
+          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(
+            backgroundColor: Colors.transparent,
+          ),
         },
       ),
     );
