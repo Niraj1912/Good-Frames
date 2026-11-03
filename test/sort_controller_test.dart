@@ -3,6 +3,7 @@ import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/models/album.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
+import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 
 import 'fakes/fake_photo_repository.dart';
@@ -11,6 +12,11 @@ import 'support/test_store.dart';
 
 void main() {
   const camera = Album(id: 'Camera', name: 'Camera', photoCount: 3);
+  // Four photos 20 days apart: IMG_1 in December 2025, IMG_2 and IMG_3 in
+  // November, IMG_4 in October.
+  final december = DateTime(2025, 12);
+  final november = DateTime(2025, 11);
+  final october = DateTime(2025, 10);
   late DecisionStore store;
 
   setUp(() async => store = await openTestStore());
@@ -29,6 +35,26 @@ void main() {
     await controller.load();
     return controller;
   }
+
+  Future<SortController> openMonths({
+    PhotoOrder order = PhotoOrder.newestFirst,
+  }) async {
+    final controller = SortController(
+      repository: FakePhotoRepository(
+        photoCounts: {'Camera': 4},
+        spacing: const Duration(days: 20),
+      ),
+      store: store,
+      album: camera,
+      order: order,
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+    return controller;
+  }
+
+  Iterable<String> names(Iterable<Photo> photos) =>
+      photos.map((photo) => photo.name);
 
   test('starts at the first photo with nothing sorted', () async {
     final controller = await openCamera();
@@ -265,6 +291,113 @@ void main() {
     expect(controller.canUndo, isFalse);
   });
 
+  group('one month at a time', () {
+    test('lists each month with its photos, newest first', () async {
+      final controller = await openMonths();
+      await controller.decide(Decision.keep); // IMG_1, December
+
+      expect(controller.months, [
+        (month: december, photos: 1, sorted: 1),
+        (month: november, photos: 2, sorted: 0),
+        (month: october, photos: 1, sorted: 0),
+      ]);
+    });
+
+    test('oldest first lists the oldest month first', () async {
+      final controller = await openMonths(order: PhotoOrder.oldestFirst);
+      expect(controller.months.map((month) => month.month), [
+        october,
+        november,
+        december,
+      ]);
+    });
+
+    test('a month shows and counts only its own photos', () async {
+      final controller = await openMonths();
+
+      controller.showMonth(november);
+      expect(controller.current?.name, 'IMG_2.jpg');
+      expect(names(controller.upcoming(5)), ['IMG_3.jpg']);
+      expect(controller.total, 2);
+
+      await controller.decide(Decision.delete);
+      expect(controller.sortedCount, 1);
+      expect(controller.deleteCount, 1);
+      expect(names(controller.markedForDelete), ['IMG_2.jpg']);
+    });
+
+    test('decisions count in the whole album too', () async {
+      final controller = await openMonths();
+      controller.showMonth(november);
+      await controller.decide(Decision.keep);
+
+      controller.showMonth(null);
+      expect(controller.sortedCount, 1);
+      expect(controller.total, 4);
+      expect(controller.current?.name, 'IMG_1.jpg');
+    });
+
+    test('when a month is done, the next one still to sort is next', () async {
+      final controller = await openMonths();
+      controller.showMonth(december);
+
+      await controller.decide(Decision.keep);
+      expect(controller.isDone, isTrue);
+      expect(controller.nextMonth, november);
+
+      // Skipping ahead to October: nothing after it, so back to the top,
+      // where December is done and November isn't.
+      controller.showMonth(october);
+      await controller.decide(Decision.keep);
+      expect(controller.nextMonth, november);
+
+      // Every month done: nothing next.
+      controller.showMonth(november);
+      await controller.decide(Decision.keep);
+      await controller.decide(Decision.keep);
+      expect(controller.isDone, isTrue);
+      expect(controller.nextMonth, isNull);
+    });
+
+    test('undo only takes back decisions in the month shown', () async {
+      final controller = await openMonths();
+      await controller.decide(Decision.keep); // IMG_1, December
+
+      controller.showMonth(november);
+      expect(controller.canUndo, isFalse);
+      await controller.decide(Decision.keep); // IMG_2
+      await controller.undo();
+      expect(controller.current?.name, 'IMG_2.jpg');
+
+      controller.showMonth(null);
+      expect(controller.sortedCount, 1); // December's decision is still there.
+    });
+
+    test('start over in a month forgets only that month', () async {
+      final controller = await openMonths();
+      await controller.decide(Decision.keep); // IMG_1, December
+      await controller.decide(Decision.delete); // IMG_2, November
+
+      controller.showMonth(november);
+      await controller.startOver();
+      expect(controller.sortedCount, 0);
+
+      controller.showMonth(null);
+      expect(controller.sortedCount, 1);
+      expect(controller.keepCount, 1);
+    });
+
+    test('a month emptied by the trash goes back to every month', () async {
+      final controller = await openMonths();
+      controller.showMonth(december);
+      await controller.decide(Decision.delete); // Its only photo.
+
+      await controller.trashMarked();
+      expect(controller.month, isNull);
+      expect(controller.current?.name, 'IMG_2.jpg');
+    });
+  });
+
   group('decide later', () {
     test('a photo put off comes back once the rest are sorted', () async {
       final controller = await openCamera();
@@ -355,6 +488,16 @@ void main() {
         expect(controller.current?.name, 'IMG_2.jpg'); // ...which came first.
       },
     );
+
+    test('a photo put off in a month comes back in that month', () async {
+      final controller = await openMonths();
+      controller.showMonth(november);
+
+      controller.putOff(); // IMG_2
+      expect(controller.current?.name, 'IMG_3.jpg');
+      await controller.decide(Decision.keep);
+      expect(controller.current?.name, 'IMG_2.jpg');
+    });
 
     test('start over forgets photos put off too', () async {
       final controller = await openCamera();

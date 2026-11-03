@@ -23,6 +23,25 @@ String formatSize(int bytes) {
   return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 
+/// "March 2024".
+String formatMonth(DateTime month) =>
+    '${_monthNames[month.month - 1]} ${month.year}';
+
+const _monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 /// "2026-10-31 23:59".
 String formatDate(DateTime date) {
   String two(int n) => n.toString().padLeft(2, '0');

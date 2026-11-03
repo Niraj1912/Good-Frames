@@ -24,7 +24,11 @@ void main() {
     addTearDown(store.close);
     await tester.pumpWidget(
       PhotoSwipeApp(
-        repository: FakePhotoRepository(photoCounts: {'Camera': 2}),
+        // Two photos from different months, so the month picker shows.
+        repository: FakePhotoRepository(
+          photoCounts: {'Camera': 2},
+          spacing: const Duration(days: 40),
+        ),
         store: store,
         settings: await Settings.load(store),
       ),
@@ -37,8 +41,14 @@ void main() {
   ) async {
     await startOnSmallPhoneWithBigText(tester);
 
-    // Album list, then the sort screen.
+    // Album list, then the sort screen, with the month under its name.
     await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+
+    // The month picker, then back to every month.
+    await tester.tap(find.text('All months'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All months').last);
     await tester.pumpAndSettle();
 
     // Sort both photos to reach the done screen.

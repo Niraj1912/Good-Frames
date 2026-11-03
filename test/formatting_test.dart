@@ -22,4 +22,10 @@ void main() {
     expect(formatSize(2000), '2 KB');
     expect(formatSize(4404019), '4.2 MB');
   });
+
+  test('months read as a name and a year', () {
+    expect(formatMonth(DateTime(2024, 3)), 'March 2024');
+    expect(formatMonth(DateTime(2025, 12, 31, 23)), 'December 2025');
+    expect(formatMonth(DateTime(2026)), 'January 2026');
+  });
 }

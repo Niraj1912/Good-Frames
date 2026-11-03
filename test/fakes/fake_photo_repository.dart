@@ -10,9 +10,13 @@ import 'package:photo_swipe/models/trashed_photo.dart';
 /// In-memory photos for tests: fast, predictable, and needs no files or
 /// phone. Tests change [access] to play the part of the user.
 class FakePhotoRepository implements PhotoRepository {
+  /// Each album's photos are [spacing] apart, going back from the start of
+  /// 2026: an hour by default, so they're all from December 2025. Space
+  /// them weeks apart to spread them over several months.
   FakePhotoRepository({
     this.access = AccessStatus.granted,
     Map<String, int> photoCounts = const {'Camera': 3},
+    Duration spacing = const Duration(hours: 1),
   }) : _photos = {
          for (final MapEntry(key: album, value: count) in photoCounts.entries)
            album: [
@@ -22,7 +26,7 @@ class FakePhotoRepository implements PhotoRepository {
                  name: 'IMG_$i.jpg',
                  // IMG_1 is the newest, so albums start with it, as real
                  // ones start with their newest photo.
-                 date: DateTime(2026).subtract(Duration(hours: i)),
+                 date: DateTime(2026).subtract(spacing * i),
                  sizeBytes: 1000 * i,
                ),
            ],

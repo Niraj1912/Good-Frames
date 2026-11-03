@@ -249,6 +249,48 @@ void main() {
     expect(tester.getCenter(find.byType(PhotoCard)), middle);
   });
 
+  testWidgets('sorts one month at a time, picked from the title', (
+    tester,
+  ) async {
+    // IMG_1 in December 2025, IMG_2 and IMG_3 in November, IMG_4 in October.
+    await startApp(
+      tester,
+      FakePhotoRepository(
+        photoCounts: {'Camera': 4},
+        spacing: const Duration(days: 20),
+      ),
+    );
+    await tester.tap(find.text('Camera'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('All months'));
+    await tester.pumpAndSettle();
+    expect(find.text('December 2025'), findsOneWidget);
+    expect(find.text('0 / 2'), findsOneWidget); // November's two.
+    await tester.tap(find.text('November 2025'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('IMG_2.jpg'), findsOneWidget);
+    expect(find.text('0 / 2 sorted'), findsOneWidget);
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    // Done with November: on to the next month with photos to sort.
+    expect(find.text('November 2025 sorted'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 to delete'), findsOneWidget);
+    await tester.tap(find.text('Next: October 2025'));
+    await tester.pumpAndSettle();
+    expect(find.text('IMG_4.jpg'), findsOneWidget);
+    expect(find.text('October 2025'), findsOneWidget); // In the title.
+  });
+
+  testWidgets('an album from one month has no month picker', (tester) async {
+    await openCamera(tester); // All three from December 2025.
+    expect(find.text('All months'), findsNothing);
+  });
+
   testWidgets('shows a summary once every photo is sorted', (tester) async {
     await openCamera(tester);
 

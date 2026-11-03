@@ -22,6 +22,14 @@ Undo brings it straight back. Putting off is only for that visit: it isn't
 saved, so if you leave the album, the photo is simply unsorted in its usual
 place next time.
 
+A big album can be sorted a month at a time. Under the album's name, tap
+"All months" to pick a month: each one shows how much of it is sorted, with
+a tick once it's done. The counts, Review and Start over then cover only
+that month, and when it's done the app offers the next month still to sort.
+Decisions are the same either way, so a photo sorted in its month counts
+as sorted in the whole album too. Albums whose photos are all from one
+month don't show the picker.
+
 Decisions are saved as you go, so you can close the app and pick up where you
 stopped.
 
@@ -401,6 +409,7 @@ interface, which has one implementation per environment:
 - [x] Settings: swipe directions, order, vibration, theme, what SwipeSort
       sees, version and licences
 - [x] Decide later: swipe up to put a photo off until the rest are sorted
+- [x] One month at a time: pick a month of a big album to sort
 
 ## Safety rules
 

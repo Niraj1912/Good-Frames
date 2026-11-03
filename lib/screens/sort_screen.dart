@@ -16,6 +16,7 @@ import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/decision_buttons.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/month_picker.dart';
 import 'package:photo_swipe/widgets/photo_card.dart';
 import 'package:photo_swipe/widgets/photo_info.dart';
 import 'package:photo_swipe/widgets/sort_progress.dart';
@@ -167,6 +168,17 @@ class _SortScreenState extends State<SortScreen> {
     });
   }
 
+  Future<void> _pickMonth() async {
+    final before = _controller.month;
+    await showMonthPicker(context, _controller);
+    if (_controller.month != before) _enterFrom = null;
+  }
+
+  void _showMonth(DateTime? month) {
+    _enterFrom = null;
+    _controller.showMonth(month);
+  }
+
   void _openReview() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -181,8 +193,12 @@ class _SortScreenState extends State<SortScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Start over?'),
         content: Text(
-          'This forgets your decisions for the ${_controller.total} photos '
-          'in ${widget.album.name}. No photos are deleted.',
+          'This forgets your decisions for the '
+          '${formatCount(_controller.total)} photos '
+          '${switch (_controller.month) {
+            final month? => 'from ${formatMonth(month)} in',
+            null => 'in',
+          }} ${widget.album.name}. No photos are deleted.',
         ),
         actions: [
           TextButton(
@@ -203,7 +219,18 @@ class _SortScreenState extends State<SortScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.album.name),
+        // Taller with large text, so the month under the name still fits.
+        toolbarHeight: MediaQuery.textScalerOf(context)
+            .scale(kToolbarHeight)
+            .clamp(kToolbarHeight, 2 * kToolbarHeight),
+        title: ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) => SortTitle(
+            albumName: widget.album.name,
+            month: _controller.month,
+            onPickMonth: _controller.months.length > 1 ? _pickMonth : null,
+          ),
+        ),
         actions: [
           // Review what's marked so far, without sorting the whole album.
           // Both buttons wait until every page has loaded, so they always
@@ -305,6 +332,9 @@ class _SortScreenState extends State<SortScreen> {
             null => _DoneView(
               kept: controller.keepCount,
               deleted: controller.deleteCount,
+              month: controller.month,
+              nextMonth: controller.nextMonth,
+              onShowMonth: _showMonth,
               onReview: _openReview,
               onUndo: controller.canUndo ? _undo : null,
             ),
@@ -460,12 +490,22 @@ class _DoneView extends StatelessWidget {
   const _DoneView({
     required this.kept,
     required this.deleted,
+    required this.month,
+    required this.nextMonth,
+    required this.onShowMonth,
     required this.onReview,
     required this.onUndo,
   });
 
   final int kept;
   final int deleted;
+
+  /// The month just finished, or null for the whole album.
+  final DateTime? month;
+
+  /// The next month with photos still to sort, offered as the next step.
+  final DateTime? nextMonth;
+  final ValueChanged<DateTime?> onShowMonth;
   final VoidCallback onReview;
   final VoidCallback? onUndo;
 
@@ -473,6 +513,7 @@ class _DoneView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = SortColors.of(context);
+    final nextMonth = this.nextMonth;
     // Scrollable, so it still fits on a small phone with large text.
     return Center(
       child: SingleChildScrollView(
@@ -482,7 +523,14 @@ class _DoneView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('All sorted', style: theme.textTheme.headlineSmall),
+              Text(
+                switch (month) {
+                  final month? => '${formatMonth(month)} sorted',
+                  null => 'All sorted',
+                },
+                style: theme.textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 20),
               // IntrinsicHeight, so the two tiles are always the same
               // height, even when large text wraps one of them.
@@ -529,11 +577,35 @@ class _DoneView extends StatelessWidget {
                   ),
                 ),
               ],
+              // One month at a time: straight on to the next one.
+              if (nextMonth != null) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => onShowMonth(nextMonth),
+                    icon: const Icon(Icons.arrow_forward),
+                    label: Text('Next: ${formatMonth(nextMonth)}'),
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: onUndo,
-                icon: const Icon(Icons.undo),
-                label: const Text('Undo last'),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: onUndo,
+                    icon: const Icon(Icons.undo),
+                    label: const Text('Undo last'),
+                  ),
+                  if (month != null)
+                    TextButton.icon(
+                      onPressed: () => onShowMonth(null),
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      label: const Text('All months'),
+                    ),
+                ],
               ),
             ],
           ),

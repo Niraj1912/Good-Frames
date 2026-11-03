@@ -29,12 +29,15 @@ class SortController extends ChangeNotifier {
   /// The order photos come up for sorting.
   final PhotoOrder order;
 
-  // The album's photos loaded so far, in album order, and their ids.
+  // The album's photos loaded so far, in album order, and the same photos
+  // by id.
   List<Photo> _photos = [];
-  final _inAlbum = <String>{};
+  final _byId = <String, Photo>{};
   // Every saved decision, including ones for photos in other albums. Only
-  // photos in [_inAlbum] are ever counted or shown.
+  // photos in [_byId] are ever counted or shown.
   final _decisions = <String, Decision>{};
+  // The month being sorted (its first day), or null for the whole album.
+  DateTime? _month;
   // Photos put off for later, in the order they were put off (a map keeps
   // the order things were added). Not saved: only for this visit.
   final _later = <String, Photo>{};
@@ -56,22 +59,89 @@ class SortController extends ChangeNotifier {
   Object? get loadError => _loadError;
   int get loadedCount => _photos.length;
 
-  /// How many photos the album has: from the album list until every page
-  /// has arrived, then exact.
-  int get total =>
-      isFullyLoaded ? _photos.length : max(album.photoCount, _photos.length);
+  /// The month being sorted (its first day), or null for the whole album.
+  /// Everything else here (the counts, the queue, undo, review and start
+  /// over) covers only the photos being sorted.
+  DateTime? get month => _month;
+
+  /// Sorts only the photos taken in [month], or the whole album if null.
+  void showMonth(DateTime? month) {
+    _month = month == null ? null : DateTime(month.year, month.month);
+    _notify();
+  }
+
+  /// How many photos are being sorted. For the whole album: the album
+  /// list's count until every page has arrived, then exact. For a month:
+  /// those loaded so far.
+  int get total {
+    if (_month != null) return _shown.length;
+    return isFullyLoaded
+        ? _photos.length
+        : max(album.photoCount, _photos.length);
+  }
+
   int get sortedCount =>
-      _photos.where((photo) => _decisions.containsKey(photo.id)).length;
+      _shown.where((photo) => _decisions.containsKey(photo.id)).length;
   int get keepCount =>
-      _photos.where((photo) => _decisions[photo.id] == Decision.keep).length;
+      _shown.where((photo) => _decisions[photo.id] == Decision.keep).length;
   int get deleteCount => sortedCount - keepCount;
-  bool get canUndo => _history.any((step) => _inAlbum.contains(step.photoId));
+  bool get canUndo => _history.any((step) => _isShown(step.photoId));
 
   /// Photos put off for later that are still waiting to come back.
   int get laterCount {
     final currentId = current?.id;
-    return _later.keys.where((id) => id != currentId).length;
+    return _later.values
+        .where((photo) => photo.id != currentId && _inMonth(photo))
+        .length;
   }
+
+  /// Each month the album's photos (loaded so far) were taken in, with how
+  /// many photos it has and how many are sorted. In the order photos come
+  /// up: newest month first, unless sorting oldest first.
+  List<MonthCount> get months {
+    final photos = <DateTime, int>{};
+    final sorted = <DateTime, int>{};
+    for (final photo in _photos) {
+      final month = monthOf(photo);
+      photos.update(month, (count) => count + 1, ifAbsent: () => 1);
+      if (_decisions.containsKey(photo.id)) {
+        sorted.update(month, (count) => count + 1, ifAbsent: () => 1);
+      }
+    }
+    final list = [
+      for (final MapEntry(key: month, value: count) in photos.entries)
+        (month: month, photos: count, sorted: sorted[month] ?? 0),
+    ]..sort((a, b) => a.month.compareTo(b.month));
+    return order == PhotoOrder.newestFirst ? list.reversed.toList() : list;
+  }
+
+  /// Once [month] is done: the next month in [months] with photos still to
+  /// sort (or the first one before it), or null if every month is done.
+  DateTime? get nextMonth {
+    final month = _month;
+    if (month == null) return null;
+    final list = months;
+    final at = list.indexWhere((entry) => entry.month == month);
+    for (final entry in [...list.skip(at + 1), ...list.take(max(at, 0))]) {
+      if (entry.sorted < entry.photos) return entry.month;
+    }
+    return null;
+  }
+
+  /// The month [photo] was taken in, as the first day of that month.
+  static DateTime monthOf(Photo photo) =>
+      DateTime(photo.date.year, photo.date.month);
+
+  bool _inMonth(Photo photo) => _month == null || monthOf(photo) == _month;
+
+  // The photos being sorted: the whole album, or one month of it.
+  Iterable<Photo> get _shown =>
+      _month == null ? _photos : _photos.where(_inMonth);
+
+  bool _isShown(String photoId) => switch (_byId[photoId]) {
+    final photo? => _inMonth(photo),
+    null => false,
+  };
 
   /// Every photo is sorted. Never true while later pages may still bring
   /// unsorted photos.
@@ -88,8 +158,12 @@ class SortController extends ChangeNotifier {
   Iterable<Photo> get _queue sync* {
     // After an undo, that photo first.
     final undone = _undone;
-    if (undone != null && !_decisions.containsKey(undone.id)) yield undone;
-    for (final photo in _photos) {
+    if (undone != null &&
+        !_decisions.containsKey(undone.id) &&
+        _inMonth(undone)) {
+      yield undone;
+    }
+    for (final photo in _shown) {
       if (photo.id != undone?.id &&
           !_decisions.containsKey(photo.id) &&
           !_later.containsKey(photo.id)) {
@@ -100,13 +174,13 @@ class SortController extends ChangeNotifier {
     // or they'd come back ahead of photos that haven't arrived yet.
     if (!isFullyLoaded) return;
     for (final photo in _later.values) {
-      if (photo.id != undone?.id) yield photo;
+      if (photo.id != undone?.id && _inMonth(photo)) yield photo;
     }
   }
 
   /// Photos marked for deletion, in album order.
   List<Photo> get markedForDelete => [
-    for (final photo in _photos)
+    for (final photo in _shown)
       if (_decisions[photo.id] == Decision.delete) photo,
   ];
 
@@ -125,7 +199,9 @@ class SortController extends ChangeNotifier {
       await for (final page in repository.photosIn(album, order: order)) {
         for (final photo in page) {
           // Skip repeats, in case the album changed while it was loading.
-          if (_inAlbum.add(photo.id)) _photos.add(photo);
+          if (_byId.containsKey(photo.id)) continue;
+          _byId[photo.id] = photo;
+          _photos.add(photo);
         }
         _loading = false;
         _notify();
@@ -162,8 +238,8 @@ class SortController extends ChangeNotifier {
     }
   }
 
-  /// Puts the current photo off: it comes back once every other photo in
-  /// the album is sorted. Nothing is saved, so if the album is closed it's
+  /// Puts the current photo off: it comes back once every other photo being
+  /// sorted is done. Nothing is saved, so if the album is closed it's
   /// simply unsorted, in its usual place, next time.
   void putOff() {
     final photo = current;
@@ -193,16 +269,16 @@ class SortController extends ChangeNotifier {
   }
 
   int get _lastStepIndex =>
-      _history.lastIndexWhere((step) => _inAlbum.contains(step.photoId));
+      _history.lastIndexWhere((step) => _isShown(step.photoId));
 
-  /// Takes back the most recent decision in this album, or putting a photo
-  /// off, and shows that photo again.
+  /// Takes back the most recent decision among the photos being sorted, or
+  /// putting one off, and shows that photo again.
   Future<void> undo() async {
     final index = _lastStepIndex;
     if (index == -1) return;
 
     final step = _history.removeAt(index);
-    final photo = _photos.firstWhere((photo) => photo.id == step.photoId);
+    final photo = _byId[step.photoId]!;
     final previous = _undone;
     _undone = photo;
 
@@ -264,15 +340,7 @@ class SortController extends ChangeNotifier {
     final moved = marked.where((photo) => movedIds.contains(photo.id));
 
     // The photos are gone whatever happens next, so update the screen first.
-    _photos = [
-      for (final photo in _photos)
-        if (!movedIds.contains(photo.id)) photo,
-    ];
-    _inAlbum.removeAll(movedIds);
-    _forget(movedIds);
-    if (_undone case final photo? when movedIds.contains(photo.id)) {
-      _undone = null;
-    }
+    _drop(movedIds);
     _notify();
 
     // Then list them as trashed and forget their decisions, in one database
@@ -309,12 +377,7 @@ class SortController extends ChangeNotifier {
     ];
     if (gone.isEmpty) return 0;
 
-    _photos = [
-      for (final photo in _photos)
-        if (stillThere.contains(photo.id)) photo,
-    ];
-    _inAlbum.removeAll(gone);
-    _forget(gone.toSet());
+    _drop(gone.toSet());
     _notify();
     try {
       await store.removeAll(gone);
@@ -322,11 +385,13 @@ class SortController extends ChangeNotifier {
     return gone.length;
   }
 
-  /// Forgets every decision made in this album, and only in this album.
+  /// Forgets every decision about the photos being sorted (the album, or
+  /// the month), and nothing else.
   Future<void> startOver() async {
     await _fullyLoaded.future; // The whole album, not just the first pages.
-    await store.removeAll(_inAlbum);
-    _forget(_inAlbum);
+    final ids = {for (final photo in _shown) photo.id};
+    await store.removeAll(ids);
+    _forget(ids);
     _undone = null;
     _notify();
   }
@@ -337,6 +402,20 @@ class SortController extends ChangeNotifier {
     _decisions.removeWhere((id, _) => ids.contains(id));
     _history.removeWhere((step) => ids.contains(step.photoId));
     _later.removeWhere((id, _) => ids.contains(id));
+  }
+
+  // Stops tracking photos that have left the album: moved to the trash, or
+  // deleted by another app.
+  void _drop(Set<String> ids) {
+    _photos = [
+      for (final photo in _photos)
+        if (!ids.contains(photo.id)) photo,
+    ];
+    ids.forEach(_byId.remove);
+    _forget(ids);
+    if (_undone case final photo? when ids.contains(photo.id)) _undone = null;
+    // A month with no photos left has nothing to show.
+    if (_month != null && !_photos.any(_inMonth)) _month = null;
   }
 
   // The screen may close while a load or save is still running. Telling a
@@ -355,6 +434,10 @@ class SortController extends ChangeNotifier {
 /// One thing undo can take back: a decision about a photo, or putting it
 /// off for later.
 typedef _Step = ({String photoId, bool later});
+
+/// A month of an album, for choosing which month to sort: its first day,
+/// how many photos were taken in it, and how many of those are sorted.
+typedef MonthCount = ({DateTime month, int photos, int sorted});
 
 /// What happened when the marked photos were moved to the trash.
 class TrashResult {
