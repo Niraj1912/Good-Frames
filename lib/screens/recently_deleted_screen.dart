@@ -11,7 +11,7 @@ import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 import 'package:photo_swipe/widgets/note_card.dart';
 
-/// Photos SwipeSort moved to the trash. Pick some and bring them back, or
+/// Photos Good Frames moved to the trash. Pick some and bring them back, or
 /// erase them for good. Erasing is the one thing in the app that can't be
 /// undone, so it always asks first (and on Android, Android asks too).
 class RecentlyDeletedScreen extends StatefulWidget {
@@ -102,7 +102,7 @@ class _RecentlyDeletedScreenState extends State<RecentlyDeletedScreen> {
           title: Text('Delete ${photoCount(count)} forever?'),
           content: Text(
             "${count == 1 ? 'It' : 'They'} will be erased for good. Nothing, "
-            "including SwipeSort, can bring ${count == 1 ? 'it' : 'them'} "
+            "including Good Frames, can bring ${count == 1 ? 'it' : 'them'} "
             'back.',
           ),
           actions: [
@@ -246,7 +246,7 @@ class _RecentlyDeletedScreenState extends State<RecentlyDeletedScreen> {
     }
     if (photos.isEmpty) {
       return const MessageView(
-        'Nothing here. Photos you move to the trash with SwipeSort show up '
+        'Nothing here. Photos you move to the trash with Good Frames show up '
         'here, so you can bring them back.',
       );
     }

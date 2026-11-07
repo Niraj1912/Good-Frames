@@ -1,4 +1,4 @@
-# One-time setup: makes SwipeSort's release signing key, and the
+# One-time setup: makes Good Frames' release signing key, and the
 # android\key.properties file that tells the build where the key is.
 #
 # Run it from the project folder:
@@ -24,7 +24,7 @@ if (Test-Path $propertiesFile) {
 }
 
 Write-Host ''
-Write-Host 'This makes the key that proves SwipeSort updates come from you.'
+Write-Host 'This makes the key that proves Good Frames updates come from you.'
 Write-Host ''
 $name = Read-Host 'Your name (it goes in every APK, where anyone can read it)'
 # Drop characters that mean something special in a certificate's name.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- What shows while the app starts, until Flutter draws its first frame:
-     the icon on a blue circle, in the middle of the app's background colour.
+     the logo on a black circle, in the middle of the app's background colour.
 
      Android 12+ shows its own splash screen first (the app icon, cropped to a
      160dp circle, at 240dp), then this. The sizes here match it exactly, so

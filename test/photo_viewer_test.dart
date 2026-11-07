@@ -9,6 +9,7 @@ import 'package:photo_swipe/widgets/sort_progress.dart';
 import 'package:photo_swipe/widgets/swipe_card.dart';
 
 import 'fakes/fake_photo_repository.dart';
+import 'support/sort_actions.dart';
 import 'support/test_store.dart';
 
 void main() {
@@ -67,7 +68,7 @@ void main() {
 
     expect(find.byType(PhotoViewerScreen), findsNothing);
     expect(find.text('1 / 3 sorted'), findsOneWidget);
-    expect(find.text('IMG_2.jpg'), findsOneWidget);
+    expect(showing('IMG_2.jpg'), findsOneWidget);
   });
 
   testWidgets('double-tap zooms in, and again zooms back out', (tester) async {
@@ -116,7 +117,7 @@ void main() {
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.text('0 / 3 sorted'), findsOneWidget);
-    expect(find.text('IMG_1.jpg'), findsOneWidget); // Same photo, waiting.
+    expect(showing('IMG_1.jpg'), findsOneWidget); // Same photo, waiting.
   });
 
   testWidgets('Escape closes the viewer without deciding', (tester) async {

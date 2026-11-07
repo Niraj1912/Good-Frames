@@ -4,7 +4,7 @@ import 'package:photo_swipe/models/chosen_folder.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
-/// The folders SwipeSort may see: add more, stop sharing some, or switch to
+/// The folders Good Frames may see: add more, stop sharing some, or switch to
 /// all photos instead.
 ///
 /// Pops with true if the user chose all photos instead (having stopped
@@ -104,7 +104,7 @@ class _ManageFoldersScreenState extends State<ManageFoldersScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
                 child: Text(
-                  'SwipeSort can see these folders and the folders inside '
+                  'Good Frames can see these folders and the folders inside '
                   'them, and nothing else on this phone.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

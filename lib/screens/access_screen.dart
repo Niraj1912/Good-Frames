@@ -10,7 +10,7 @@ import 'package:photo_swipe/theme/glass.dart';
 
 /// The first screen: gets access to photos, then shows the albums.
 ///
-/// Where there's a choice (Android), it first asks what SwipeSort should
+/// Where there's a choice (Android), it first asks what Good Frames should
 /// see: folders the user picks, or every photo. Elsewhere it just asks for
 /// access, and explains if the user refuses.
 class AccessScreen extends StatefulWidget {
@@ -155,7 +155,7 @@ class _AccessScreenState extends State<AccessScreen>
     await widget.repository.openAccessSettings();
   }
 
-  // What SwipeSort sees, for the Settings screen, and how to change it:
+  // What Good Frames sees, for the Settings screen, and how to change it:
   // the Folders screen for folders, the first-launch choice otherwise.
   PhotoSource? get _photoSource {
     if (widget.folders == null) return null;
@@ -199,7 +199,7 @@ class _AccessScreenState extends State<AccessScreen>
         store: widget.store,
         settings: widget.settings,
         accessNote: _status == AccessStatus.limited
-            ? 'SwipeSort can only see the photos you selected.'
+            ? 'Good Frames can only see the photos you selected.'
             : null,
         onAccessAction: widget.repository.changeSelectedPhotos,
         photos: _photoSource,
@@ -209,7 +209,7 @@ class _AccessScreenState extends State<AccessScreen>
         repository: widget.folders!,
         store: widget.store,
         settings: widget.settings,
-        accessNote: 'SwipeSort can only see the folders you chose.',
+        accessNote: 'Good Frames can only see the folders you chose.',
         accessActionLabel: 'Folders',
         onAccessAction: _manageFolders,
         photos: _photoSource,
@@ -218,7 +218,7 @@ class _AccessScreenState extends State<AccessScreen>
   }
 }
 
-/// What should SwipeSort see: a folder, or every photo?
+/// What should Good Frames see: a folder, or every photo?
 class _ChoiceView extends StatelessWidget {
   const _ChoiceView({
     required this.refused,
@@ -272,7 +272,7 @@ class _ChoiceView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'What should SwipeSort see?',
+                      'What should Good Frames see?',
                       style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
@@ -428,7 +428,7 @@ class _AccessDeniedView extends StatelessWidget {
               const Icon(Icons.photo_library_outlined, size: 64),
               const SizedBox(height: 24),
               Text(
-                'SwipeSort needs your photos',
+                'Good Frames needs your photos',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),

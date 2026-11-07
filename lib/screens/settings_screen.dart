@@ -5,7 +5,7 @@ import 'package:photo_swipe/models/photo_order.dart';
 import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/theme/glass.dart';
 
-/// What SwipeSort can see, in a few words, and what to do to change it.
+/// What Good Frames can see, in a few words, and what to do to change it.
 typedef PhotoSource = ({String summary, VoidCallback change});
 
 /// The app's few settings. Each change applies at once and is saved.
@@ -41,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ..showSnackBar(
           const SnackBar(
             content: Text(
-              "Couldn't save that setting. It applies until SwipeSort closes.",
+              "Couldn't save that setting. It applies until Good Frames closes.",
             ),
           ),
         );
@@ -100,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
   );
 
-  // Changing what SwipeSort sees changes the album list, so go back to it
+  // Changing what Good Frames sees changes the album list, so go back to it
   // first and make the change from there.
   void _changePhotos(PhotoSource photos) {
     Navigator.of(context).pop();
@@ -109,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showLicences(String? version) async => showLicensePage(
     context: context,
-    applicationName: 'SwipeSort',
+    applicationName: 'Good Frames',
     applicationVersion: version,
   );
 
@@ -169,7 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   ListTile(
                     leading: const _IconTile(Icons.photo_library_outlined),
-                    title: const Text('What SwipeSort sees'),
+                    title: const Text('What Good Frames sees'),
                     subtitle: Text(photos.summary),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _changePhotos(photos),
@@ -187,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: const Text('Version'),
                       subtitle: Text(version),
                     ),
-                  // The packages SwipeSort is built from are free on one
+                  // The packages Good Frames is built from are free on one
                   // condition: their licence notices go with the app.
                   // Flutter collects them all on this page.
                   ListTile(

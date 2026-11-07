@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The icon in one colour, for Android 13+ "themed icons": the system tints
      it to match the wallpaper, so only shape and transparency count. Same
-     shapes as ic_launcher_foreground.xml, with the photo's window cut out of
+     shapes as the old two-card icon, with the photo's window cut out of
      the print instead of filled with sky. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"

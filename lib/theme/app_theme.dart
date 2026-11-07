@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/theme/photo_tint.dart';
 
-/// SwipeSort's look, in one place. The rules:
+/// Good Frames' look, in one place. The rules:
 ///
 /// * Glass: every screen sits on one still background of soft colour
 ///   ([GlassBackground]), and panels, bars and cards are frosted glass over

@@ -15,14 +15,13 @@ import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/decision_buttons.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 import 'package:photo_swipe/widgets/month_picker.dart';
 import 'package:photo_swipe/widgets/photo_card.dart';
-import 'package:photo_swipe/widgets/photo_info.dart';
 import 'package:photo_swipe/widgets/sort_progress.dart';
 import 'package:photo_swipe/widgets/swipe_card.dart';
+import 'package:photo_swipe/widgets/swipe_hint.dart';
 
 /// Shows an album's photos one at a time so the user can mark each one to
 /// keep or delete. Decisions are only recorded here; nothing is deleted.
@@ -84,8 +83,6 @@ class _SortScreenState extends State<SortScreen> {
 
   void _swipe(SwipeDirection direction) =>
       _cardKey.currentState?.swipe(direction);
-  void _keep() => _swipe(_directionFor(Decision.keep));
-  void _delete() => _swipe(_directionFor(Decision.delete));
   void _later() => _swipe(SwipeDirection.up);
 
   void _undo() {
@@ -435,38 +432,42 @@ class _SortScreenState extends State<SortScreen> {
                   onSwiped: _onSwiped,
                   onTap: () => _openViewer(photo, image),
                   // Sized by the photo, so the zoom hint sits on its corner.
-                  child: Stack(
-                    children: [
-                      PhotoCard(image: image, heroTag: _heroTag(photo)),
-                      // Says "you can zoom"; the tap itself is handled by
-                      // the whole card, so this just shows the way.
-                      const Positioned(
-                        right: 12,
-                        bottom: 12,
-                        child: IgnorePointer(child: _ZoomHint()),
-                      ),
-                    ],
+                  // The file name isn't shown, but screen readers get it.
+                  child: Semantics(
+                    label: photo.name,
+                    image: true,
+                    child: Stack(
+                      children: [
+                        PhotoCard(image: image, heroTag: _heroTag(photo)),
+                        // Says "you can zoom"; the tap itself is handled by
+                        // the whole card, so this just shows the way.
+                        const Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: IgnorePointer(child: _ZoomHint()),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ),
-        // The photo's details and the buttons, on one pane of glass.
+        // Undo and the swipe hint, on one slim pane of glass.
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: Glass(
             borderRadius: const BorderRadius.all(Radius.circular(24)),
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: const EdgeInsets.all(8),
             child: Column(
               children: [
-                PhotoInfo(photo: photo),
-                DecisionButtons(
-                  onDelete: _delete,
-                  onKeep: _keep,
-                  onUndo: _controller.canUndo ? _undo : null,
-                  onLater: _later,
+                SwipeHint(
                   keepSide: _keepSide,
+                  onUndo: _controller.canUndo ? _undo : null,
+                  onLeft: () => _swipe(SwipeDirection.left),
+                  onUp: _later,
+                  onRight: () => _swipe(SwipeDirection.right),
                   dragProgress: _dragProgress,
                   upProgress: _upProgress,
                 ),

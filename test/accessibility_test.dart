@@ -7,6 +7,7 @@ import 'package:photo_swipe/state/settings.dart';
 
 import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
+import 'support/sort_actions.dart';
 import 'support/test_store.dart';
 
 // The worst case for layout: a small phone with the text size turned up to
@@ -52,9 +53,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Sort both photos to reach the done screen.
-    await tester.tap(find.text('Delete'));
+    await swipeLeft(tester);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Keep'));
+    await swipeRight(tester);
     await tester.pumpAndSettle();
     expect(find.text('All sorted'), findsOneWidget);
 
@@ -108,7 +109,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+    expect(find.text('What should Good Frames see?'), findsOneWidget);
 
     // The folders screen, from the album list's note.
     await tester.tap(find.text('Choose a folder'));

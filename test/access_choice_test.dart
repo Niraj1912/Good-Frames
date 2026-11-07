@@ -40,12 +40,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('with nothing shared yet, asks what SwipeSort should see', (
+  testWidgets('with nothing shared yet, asks what Good Frames should see', (
     tester,
   ) async {
     await startApp(tester);
 
-    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+    expect(find.text('What should Good Frames see?'), findsOneWidget);
     expect(find.text('Choose a folder'), findsOneWidget);
     expect(find.text('All photos, or some'), findsOneWidget);
     // Nothing to go back to on first launch.
@@ -64,7 +64,7 @@ void main() {
     expect(find.text('Holiday'), findsOneWidget);
     expect(find.text('Camera'), findsNothing);
     expect(
-      find.text('SwipeSort can only see the folders you chose.'),
+      find.text('Good Frames can only see the folders you chose.'),
       findsOneWidget,
     );
   });
@@ -77,7 +77,7 @@ void main() {
     await tester.tap(find.text('Choose a folder'));
     await tester.pumpAndSettle();
 
-    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+    expect(find.text('What should Good Frames see?'), findsOneWidget);
   });
 
   testWidgets('a shared folder is remembered: the app opens straight on it', (
@@ -87,7 +87,7 @@ void main() {
     await startApp(tester);
 
     expect(find.text('Holiday'), findsOneWidget);
-    expect(find.text('What should SwipeSort see?'), findsNothing);
+    expect(find.text('What should Good Frames see?'), findsNothing);
   });
 
   testWidgets('removing the last folder goes back to the choice', (
@@ -107,7 +107,7 @@ void main() {
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+    expect(find.text('What should Good Frames see?'), findsOneWidget);
   });
 
   testWidgets('all photos, once allowed, shows every album', (tester) async {
@@ -134,7 +134,7 @@ void main() {
 
     expect(find.text('Camera'), findsOneWidget);
     expect(
-      find.text('SwipeSort can only see the photos you selected.'),
+      find.text('Good Frames can only see the photos you selected.'),
       findsOneWidget,
     );
     // "Change" reopens Android's picker, to share more photos.
@@ -146,7 +146,7 @@ void main() {
   Future<void> openWhatSwipeSortSees(WidgetTester tester) async {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('What SwipeSort sees'));
+    await tester.tap(find.text('What Good Frames sees'));
     await tester.pumpAndSettle();
   }
 
@@ -161,10 +161,10 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('All photos'), findsOneWidget);
-    await tester.tap(find.text('What SwipeSort sees'));
+    await tester.tap(find.text('What Good Frames sees'));
     await tester.pumpAndSettle();
     // The first-launch choice again.
-    expect(find.text('What should SwipeSort see?'), findsOneWidget);
+    expect(find.text('What should Good Frames see?'), findsOneWidget);
     await tester.tap(find.text('Choose a folder'));
     await tester.pumpAndSettle();
 
@@ -211,7 +211,7 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Only the Holiday folder'), findsOneWidget);
-    await tester.tap(find.text('What SwipeSort sees'));
+    await tester.tap(find.text('What Good Frames sees'));
     await tester.pumpAndSettle();
 
     expect(find.text('Pictures/Holiday'), findsOneWidget);
@@ -243,7 +243,7 @@ void main() {
     allPhotos.access = AccessStatus.granted;
     await startApp(tester);
 
-    expect(find.text('What should SwipeSort see?'), findsNothing);
+    expect(find.text('What should Good Frames see?'), findsNothing);
     expect(find.text('Camera'), findsOneWidget);
   });
 

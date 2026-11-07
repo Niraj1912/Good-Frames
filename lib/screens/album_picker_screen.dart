@@ -29,7 +29,7 @@ class AlbumPickerScreen extends StatefulWidget {
   final DecisionStore store;
   final Settings settings;
 
-  /// A note at the top saying SwipeSort sees only part of the library, such
+  /// A note at the top saying Good Frames sees only part of the library, such
   /// as only the photos or folders the user chose. Null for none.
   final String? accessNote;
 
@@ -37,7 +37,7 @@ class AlbumPickerScreen extends StatefulWidget {
   final String accessActionLabel;
   final Future<void> Function()? onAccessAction;
 
-  /// What SwipeSort sees, shown in Settings with a way to change it. Null
+  /// What Good Frames sees, shown in Settings with a way to change it. Null
   /// where there's no choice.
   final PhotoSource? photos;
 

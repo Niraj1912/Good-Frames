@@ -86,7 +86,7 @@ class PhotoSwipeApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: settings,
       builder: (context, home) => MaterialApp(
-        title: 'SwipeSort',
+        title: 'Good Frames',
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: settings.theme,

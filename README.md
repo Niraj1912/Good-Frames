@@ -1,4 +1,4 @@
-# SwipeSort
+# Good Frames
 
 Swipe through your photos one at a time: right to keep, left to delete.
 Nothing is deleted while you swipe. Photos marked for deletion go to a review
@@ -53,10 +53,10 @@ instead. The button at the bottom moves the rest to the trash in one go:
   subfolders. The app asks first. Nothing is erased yet.
 
 Recently deleted (the trash-can button on the album list) shows everything
-SwipeSort moved to the trash. Pick photos and restore them, or delete them
+Good Frames moved to the trash. Pick photos and restore them, or delete them
 forever to free the space now instead of waiting. On Android each one shows
 how many days are left before Android removes it for good. Android hides
-trashed photos even from the app that trashed them, so SwipeSort saves a
+trashed photos even from the app that trashed them, so Good Frames saves a
 small thumbnail of each photo just before trashing it, to have something to
 show.
 
@@ -67,9 +67,9 @@ asks again with its own prompt showing the photos. photo_manager can't erase
 trashed photos (it looks each one up first, and Android hides trashed photos
 from lookups), so the app does it with its own Android code (below).
 
-Folder mode: on first launch, Android users choose what SwipeSort sees:
+Folder mode: on first launch, Android users choose what Good Frames sees:
 
-- **Choose a folder**: Android's folder picker. SwipeSort then sees that
+- **Choose a folder**: Android's folder picker. Good Frames then sees that
   folder and the folders inside it, and nothing else; each folder holding
   photos is an album. No photo permission is involved at all: picking the
   folder is the permission (the Storage Access Framework). Android's own
@@ -122,7 +122,7 @@ about are there.
 - **Vibration**: the small buzz when letting go will count. On by default.
 - **Theme**: the same as the phone (the default), light, or dark. It
   changes at once.
-- **What SwipeSort sees** (Android): all photos, the photos picked one by
+- **What Good Frames sees** (Android): all photos, the photos picked one by
   one, or the shared folders. Tapping it opens the Folders screen, or the
   first-launch choice with a Cancel button.
 - **About**: the version, read from Android so it always matches the
@@ -507,7 +507,7 @@ All on the phone, with no internet and no AI service.
 - [x] Phase 7: release: app icon, splash screen, signed release APK
 - [x] Delete forever from Recently deleted
 - [x] Folder mode: share chosen folders instead of every photo
-- [x] Settings: swipe directions, order, vibration, theme, what SwipeSort
+- [x] Settings: swipe directions, order, vibration, theme, what Good Frames
       sees, version and licences
 - [x] Decide later: swipe up to put a photo off until the rest are sorted
 - [x] One month at a time: pick a month of a big album to sort

@@ -9,6 +9,7 @@ import 'package:photo_swipe/widgets/swipe_card.dart';
 
 import 'fakes/fake_photo_repository.dart';
 import 'support/broken_store.dart';
+import 'support/sort_actions.dart';
 import 'support/test_store.dart';
 
 // The keep or delete count above the photo, such as "Keep 2".
@@ -118,11 +119,11 @@ void main() {
     );
     // Nothing to choose between on this photo source (like Windows), and
     // no version without Android to ask.
-    expect(find.text('What SwipeSort sees'), findsNothing);
+    expect(find.text('What Good Frames sees'), findsNothing);
     expect(find.text('Version'), findsNothing);
   });
 
-  testWidgets('swapped swipe directions swap the buttons and the swipes', (
+  testWidgets('swapped swipe directions swap the hint and the swipes', (
     tester,
   ) async {
     await startApp(tester);
@@ -132,6 +133,7 @@ void main() {
     expect(find.text('Left keeps, right deletes'), findsOneWidget);
     await openCamera(tester);
 
+    // The hint under the photo follows: Keep on the left, Delete on the right.
     expect(
       tester.getCenter(find.text('Keep')).dx,
       lessThan(tester.getCenter(find.text('Delete')).dx),
@@ -141,8 +143,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(countChip('Keep 0'), findsOneWidget);
     expect(countChip('Delete 1'), findsOneWidget);
-    // ...and the Keep button sends the card left, keeping it.
-    await tester.tap(find.text('Keep'));
+    // ...and swiping left keeps it.
+    await swipeLeft(tester);
     await tester.pumpAndSettle();
     expect(countChip('Keep 1'), findsOneWidget);
     expect(countChip('Delete 1'), findsOneWidget);
@@ -161,7 +163,7 @@ void main() {
     await choose(tester, 'Order', 'Oldest first');
     await openCamera(tester);
 
-    expect(find.text('IMG_3.jpg'), findsOneWidget); // The fake's oldest.
+    expect(showing('IMG_3.jpg'), findsOneWidget); // The fake's oldest.
   });
 
   testWidgets('the theme changes at once', (tester) async {
@@ -199,7 +201,8 @@ void main() {
     await startApp(tester);
     await tester.tap(find.text('Camera'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Keep'));
+    // The arrow key swipes without the drag's own click at the threshold.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await tester.pumpAndSettle();
     expect(buzzes, 1);
 
@@ -209,7 +212,8 @@ void main() {
     await tester.tap(find.text('Vibration'));
     await tester.pumpAndSettle();
     await openCamera(tester);
-    await tester.tap(find.text('Keep'));
+    // The arrow key swipes without the drag's own click at the threshold.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await tester.pumpAndSettle();
 
     expect(buzzes, 1);

@@ -179,7 +179,7 @@ class FakePhotoRepository implements PhotoRepository {
     return moved;
   }
 
-  /// Plays another app deleting [photoId] behind SwipeSort's back.
+  /// Plays another app deleting [photoId] behind Good Frames' back.
   void vanish(String photoId) {
     for (final list in _photos.values) {
       list.removeWhere((photo) => photo.id == photoId);
