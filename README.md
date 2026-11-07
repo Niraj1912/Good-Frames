@@ -254,6 +254,7 @@ decide and `Esc` closes.
 | Settings, Android 17 emulator | Swapped directions (buttons, stamps), oldest and newest first, dark theme at once, version from Android, licences page, choice screen's Cancel and back gesture; all remembered after a restart |
 | Signed 1.0.1 installed over 1.0.0, Android 17 emulator | Updates in place: decisions, Recently deleted and photo access kept; Settings, folder mode and restore work in the release build |
 | Signed 1.1.0 installed over 1.0.1, Android 17 emulator | Updates in place (same first-install time): decisions and photo access kept; glass, decide later, undo and the month picker work in the release build |
+| Signed 1.2.0 installed over 1.0.1, Android 17 emulator | Updates in place (same first-install time), and the database upgrades from version 3 to 5: decisions kept; similar photos works in the release build |
 | Upgrading 1.0.0's database (version 2) | Decisions and Recently deleted kept on the emulator, and in `test/decision_store_test.dart` |
 
 Measure performance in a profile or release build (`flutter run --profile`),
