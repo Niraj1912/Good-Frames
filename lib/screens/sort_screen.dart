@@ -227,6 +227,9 @@ class _SortScreenState extends State<SortScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // Left-aligned: the title and three actions don't both fit around
+        // the middle of a narrow phone.
+        centerTitle: false,
         // Taller with large text, so the month under the name still fits.
         toolbarHeight: MediaQuery.textScalerOf(context)
             .scale(kToolbarHeight)
@@ -248,8 +251,7 @@ class _SortScreenState extends State<SortScreen> {
             builder: (context, _) {
               final count = _controller.deleteCount;
               final ready = _controller.isFullyLoaded;
-              return Row(
-                mainAxisSize: MainAxisSize.min,
+              return GlassCapsule(
                 children: [
                   // Shots of the same thing, taken moments apart.
                   IconButton(
@@ -275,6 +277,7 @@ class _SortScreenState extends State<SortScreen> {
               );
             },
           ),
+          const SizedBox(width: 12),
         ],
       ),
       // Keyboard shortcuts for the Windows build. The arrows swipe that way,

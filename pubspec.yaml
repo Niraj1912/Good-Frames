@@ -27,3 +27,19 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Inter, a free font (SIL Open Font Licence, assets/fonts/OFL.txt) with
+  # a look close to Apple's. Bundled so it works offline and costs nothing.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+          weight: 400
+        - asset: assets/fonts/Inter.ttf
+          weight: 500
+        - asset: assets/fonts/Inter.ttf
+          weight: 600
+        - asset: assets/fonts/Inter.ttf
+          weight: 700
+  assets:
+    - assets/fonts/OFL.txt

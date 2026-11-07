@@ -112,7 +112,7 @@ void main() {
 
     expect(find.text('Right keeps, left deletes'), findsOneWidget);
     expect(find.text('Newest first'), findsOneWidget);
-    expect(find.text('Same as phone'), findsOneWidget);
+    expect(find.text('Auto'), findsOneWidget);
     expect(
       tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
       isTrue,
@@ -170,13 +170,15 @@ void main() {
     await startApp(tester);
     await openSettings(tester);
 
-    await choose(tester, 'Theme', 'Dark');
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
     expect(
       Theme.of(tester.element(find.text('Theme'))).brightness,
       Brightness.dark,
     );
 
-    await choose(tester, 'Theme', 'Light');
+    await tester.tap(find.text('Light'));
+    await tester.pumpAndSettle();
     expect(
       Theme.of(tester.element(find.text('Theme'))).brightness,
       Brightness.light,
@@ -239,6 +241,7 @@ void main() {
     expect(find.text('1.0.0 (1)'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Open-source licenses'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Open-source licenses'));
     await tester.pumpAndSettle();
     expect(find.byType(LicensePage), findsOneWidget);

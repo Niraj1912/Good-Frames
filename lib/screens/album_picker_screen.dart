@@ -10,6 +10,7 @@ import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/theme/photo_tint.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
+import 'package:photo_swipe/widgets/large_title_bar.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 
 /// Lists the albums so the user can pick which one to sort.
@@ -100,117 +101,146 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Choose an album'),
-        actions: [
-          IconButton(
-            onPressed: _openRecentlyDeleted,
-            icon: const Icon(Icons.restore_from_trash_outlined),
-            tooltip: 'Recently deleted',
-          ),
-          IconButton(
-            onPressed: _reload,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reload',
-          ),
-          IconButton(
-            onPressed: _openSettings,
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (widget.accessNote case final note?)
-            MaterialBanner(
-              leading: const Icon(Icons.info_outline),
-              content: Text(note),
+      // Pulling the list down reloads it, so there's no Reload button.
+      body: RefreshIndicator(
+        edgeOffset: MediaQuery.paddingOf(context).top + 56,
+        onRefresh: () async {
+          final reloaded = widget.repository.albums();
+          setState(() => _albums = reloaded);
+          await reloaded.then<void>((_) {}, onError: (_) {});
+        },
+        child: CustomScrollView(
+          // Pulls down even when the albums don't fill the screen.
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            LargeTitleBar(
+              title: 'Albums',
               actions: [
-                TextButton(
-                  onPressed: _onAccessAction,
-                  child: Text(widget.accessActionLabel),
+                IconButton(
+                  onPressed: _openRecentlyDeleted,
+                  icon: const Icon(Icons.restore_from_trash_outlined),
+                  tooltip: 'Recently deleted',
+                ),
+                IconButton(
+                  onPressed: _openSettings,
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: 'Settings',
                 ),
               ],
             ),
-          Expanded(
-            child: FutureBuilder(
-              future: _albums,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return MessageView(
-                    'Could not load albums.\n${snapshot.error}',
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final albums = snapshot.data!;
-                if (albums.isEmpty) {
-                  return MessageView(
-                    'No photos found in ${widget.repository.sourceName}.',
-                  );
-                }
-                final notice = widget.repository.notice;
-                final width = MediaQuery.sizeOf(context).width;
-                // More columns on wider windows, so covers stay a sensible size.
-                final columns = width >= 900
-                    ? 5
-                    : width >= 600
-                    ? 3
-                    : 2;
-                final coverWidth =
-                    (width / columns * MediaQuery.devicePixelRatioOf(context))
-                        .round();
-                return CustomScrollView(
-                  slivers: [
-                    if (notice != null)
-                      SliverToBoxAdapter(
-                        child: ListTile(
-                          leading: const Icon(Icons.info_outline),
-                          subtitle: Text(notice),
+            if (widget.accessNote case final note?)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                sliver: SliverToBoxAdapter(
+                  child: Glass(
+                    padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      sliver: SliverGrid.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.74,
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(note)),
+                        TextButton(
+                          onPressed: _onAccessAction,
+                          child: Text(widget.accessActionLabel),
                         ),
-                        itemCount: albums.length,
-                        itemBuilder: (context, index) {
-                          final album = albums[index];
-                          final cover = album.cover;
-                          return _AlbumTile(
-                            album: album,
-                            cover: cover == null
-                                ? null
-                                : widget.repository.imageFor(
-                                    cover,
-                                    width: coverWidth,
-                                  ),
-                            tintSample: cover == null
-                                ? null
-                                : () => widget.repository.imageFor(
-                                    cover,
-                                    width: PhotoTint.sampleWidth,
-                                  ),
-                            onTap: () => _open(album),
-                          );
-                        },
-                      ),
+                      ],
                     ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+                  ),
+                ),
+              ),
+            ..._buildAlbums(context),
+          ],
+        ),
       ),
     );
+  }
+
+  List<Widget> _buildAlbums(BuildContext context) {
+    return [
+      FutureBuilder(
+        future: _albums,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: MessageView('Could not load albums.\n${snapshot.error}'),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final albums = snapshot.data!;
+          if (albums.isEmpty) {
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: MessageView(
+                'No photos found in ${widget.repository.sourceName}.',
+              ),
+            );
+          }
+          final notice = widget.repository.notice;
+          final width = MediaQuery.sizeOf(context).width;
+          // More columns on wider windows, so covers stay a sensible size.
+          final columns = width >= 900
+              ? 5
+              : width >= 600
+              ? 3
+              : 2;
+          final coverWidth =
+              (width / columns * MediaQuery.devicePixelRatioOf(context))
+                  .round();
+          return SliverMainAxisGroup(
+            slivers: [
+              if (notice != null)
+                SliverToBoxAdapter(
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    subtitle: Text(notice),
+                  ),
+                ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                sliver: SliverGrid.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.74,
+                  ),
+                  itemCount: albums.length,
+                  itemBuilder: (context, index) {
+                    final album = albums[index];
+                    final cover = album.cover;
+                    return _AlbumTile(
+                      album: album,
+                      cover: cover == null
+                          ? null
+                          : widget.repository.imageFor(
+                              cover,
+                              width: coverWidth,
+                            ),
+                      tintSample: cover == null
+                          ? null
+                          : () => widget.repository.imageFor(
+                              cover,
+                              width: PhotoTint.sampleWidth,
+                            ),
+                      onTap: () => _open(album),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ];
   }
 }
 
@@ -272,9 +302,9 @@ class _AlbumTile extends StatelessWidget {
                   // Set into the glass with a narrow margin, like a print
                   // behind a pane.
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                    padding: const EdgeInsets.fromLTRB(7, 7, 7, 0),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
+                      borderRadius: BorderRadius.circular(17),
                       child: ColoredBox(
                         color: SortColors.of(context).photoMatte,
                         child: switch (cover) {

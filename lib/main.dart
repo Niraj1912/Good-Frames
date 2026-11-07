@@ -1,6 +1,9 @@
 import 'dart:io' show Directory, Platform;
 
+import 'package:flutter/foundation.dart'
+    show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_swipe/data/android_folder_photo_repository.dart';
@@ -26,6 +29,13 @@ Future<void> main() async {
   // Plugins (path_provider, sqflite) can only be used before runApp after
   // this call.
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inter is free on one condition: its licence goes with the app, on the
+  // open-source licences page in Settings.
+  LicenseRegistry.addLicense(() async* {
+    final text = await rootBundle.loadString('assets/fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(['Inter'], text);
+  });
 
   final appFolder = await getApplicationSupportDirectory();
 

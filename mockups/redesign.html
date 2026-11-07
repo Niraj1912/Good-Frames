@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Good Frames redesign mockups</title>
+<style>
+:root{--base:#F7F6F3;--ink:#1B1B1A;--mute:#5E5D59;--accent:#2D5BA6;--keep:#2A7347;--del:#B3372B;
+--sheen:rgba(255,255,255,.62);--fill:rgba(255,255,255,.34);--edge:rgba(255,255,255,.9);--hair:rgba(27,27,26,.10)}
+*{box-sizing:border-box;margin:0}
+body{font:15px/1.4 -apple-system,"SF Pro Text","Segoe UI",Roboto,Inter,sans-serif;background:#d9d8d3;color:var(--ink);padding:28px 20px 60px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}p.lead{color:#4a4945;max-width:760px;margin-bottom:26px}
+h2{font-size:16px;font-weight:600;margin:34px 0 12px}
+.row{display:flex;gap:26px;flex-wrap:wrap}
+.phone{width:290px;height:600px;border-radius:44px;border:7px solid #1b1b1a;overflow:hidden;position:relative;
+background:
+radial-gradient(circle at 0% 2%,#FFCDB2 0,transparent 85%),
+radial-gradient(circle at 100% 30%,#BCDCFF 0,transparent 70%),
+radial-gradient(circle at 0% 72%,#FFD877 0,transparent 75%),
+radial-gradient(circle at 100% 98%,#9EEBD3 0,transparent 85%),var(--base)}
+.cap{font-size:12px;color:#4a4945;margin-top:8px;width:290px}
+.status{height:34px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 24px 4px;font-size:12px;font-weight:600}
+.glass{background:linear-gradient(var(--sheen),var(--fill));border:1px solid var(--edge);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;height:44px}
+.back{color:var(--accent);font-size:16px;display:flex;align-items:center;gap:2px}
+.capsule{display:flex;gap:2px;border-radius:99px;padding:3px}
+.ib{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink)}
+svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.large{font-size:34px;font-weight:700;letter-spacing:-.8px;padding:2px 18px 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px}
+.tile{border-radius:24px;padding:6px 6px 10px}
+.cover{height:118px;border-radius:19px}
+.tile b{display:block;font-size:14px;font-weight:600;padding:8px 8px 0}.tile span{font-size:12px;color:var(--mute);padding:0 8px}
+.c1{background:linear-gradient(160deg,#6aa8c9,#2f5f7a 55%,#e8b27a)}.c2{background:linear-gradient(200deg,#d9a3a0,#7b4a5a 60%,#2d2d3a)}
+.c3{background:linear-gradient(170deg,#9bc27e,#3e6b43 60%,#c9d9a0)}.c4{background:linear-gradient(190deg,#f2c46b,#c9703a 55%,#5b3a2c)}
+.group{margin:0 14px 6px;border-radius:24px;overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;padding:11px 14px;position:relative}
+.li+.li:after{content:"";position:absolute;top:0;left:54px;right:0;border-top:1px solid var(--hair)}
+.tileic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:#DCE4F5;color:#173A73}
+.tileic svg{width:17px;height:17px}
+.li .t{flex:1;font-size:15px}.li .v{color:var(--mute);font-size:14px}.chev{color:#9a9893;font-size:18px}
+.foot{font-size:12px;color:var(--mute);padding:6px 32px 12px}
+.seg{display:flex;background:rgba(27,27,26,.07);border-radius:99px;padding:2px;margin:0 14px}
+.seg i{flex:1;text-align:center;font-style:normal;font-size:13px;padding:6px 0;border-radius:99px;color:var(--mute)}
+.seg i.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.hdr{font-size:13px;color:var(--mute);padding:14px 32px 6px}
+.chips{display:flex;gap:8px;padding:2px 14px 8px}
+.chip{border-radius:99px;padding:3px 10px;font-size:12px;font-weight:600}
+.k{background:rgba(42,115,71,.15);color:var(--keep)}.d{background:rgba(179,55,43,.14);color:var(--del)}
+.photo{margin:0 14px;border-radius:30px;height:318px;background:linear-gradient(175deg,#87b6d6 0,#4d7fa0 45%,#e6b98a 100%);position:relative;overflow:hidden}
+.photo:after{content:"";position:absolute;left:-10%;right:-10%;bottom:-6%;height:42%;background:#2f4d3a;border-radius:50% 50% 0 0}
+.bar{position:absolute;left:12px;right:12px;bottom:14px;border-radius:30px;padding:10px;display:flex;gap:8px}
+.btn{flex:1;height:50px;border-radius:18px;display:grid;place-items:center;font-weight:600;font-size:14px}
+.bd{background:var(--del);color:#fff}.bk{background:var(--keep);color:#fff}.bl{flex:.7;background:rgba(255,255,255,.55);color:var(--ink)}
+.tabbar{position:absolute;left:34px;right:34px;bottom:16px;height:58px;border-radius:99px;display:flex;padding:5px;gap:2px}
+.tab{flex:1;border-radius:99px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10.5px;color:var(--mute);gap:1px}
+.tab svg{width:20px;height:20px}.tab.on{background:rgba(255,255,255,.75);color:var(--accent);font-weight:600}
+.full{position:absolute;inset:0;background:linear-gradient(175deg,#87b6d6 0,#4d7fa0 48%,#e6b98a 100%)}
+.full:after{content:"";position:absolute;left:-10%;right:-10%;bottom:-8%;height:40%;background:#2f4d3a;border-radius:50% 50% 0 0}
+.fl{position:absolute;left:12px;right:12px;top:38px;display:flex;justify-content:space-between;align-items:center;z-index:2}
+.pill{border-radius:99px;padding:6px 14px;text-align:center;font-size:13px;font-weight:600;line-height:1.2}.pill small{display:block;font-weight:400;color:var(--mute);font-size:11px}
+.round{width:42px;height:42px;border-radius:50%;display:grid;place-items:center}
+.fbar{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;align-items:center;gap:16px;z-index:2}
+.big{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;color:#fff}.big svg{width:28px;height:28px;stroke-width:2}
+</style></head><body>
+<h1>Good Frames redesign: two directions</h1>
+<p class="lead">Same colours as today (paper, coral/sky/amber/teal fields, ink blue, green keeps, brick red deletes). Only the structure changes. Frosted panes here use real blur; in the app only bars with photos scrolling under them would.</p>
+
+<h2>A. Classic: large titles, inset grouped lists, glass top bar</h2>
+<div class="row">
+ <div><div class="phone"><div class="status"><span>9:41</span><span>5G</span></div>
+  <div class="nav"><span></span><div class="capsule glass"><div class="ib"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></div><div class="ib"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></div></div></div>
+  <div class="large">Albums</div>
+  <div class="grid">
+   <div class="tile glass"><div class="cover c1"></div><b>Camera</b><span>1,284 photos</span></div>
+   <div class="tile glass"><div class="cover c2"></div><b>Screenshots</b><span>412 photos</span></div>
+   <div class="tile glass"><div class="cover c3"></div><b>WhatsApp</b><span>906 photos</span></div>
+   <div class="tile glass"><div class="cover c4"></div><b>Downloads</b><span>57 photos</span></div>
+  </div></div><div class="cap">Albums. Reload becomes pull-down. Trash and Settings share one capsule. The title is big until you scroll, then shrinks into a blurred bar.</div></div>
+
+ <div><div class="phone"><div class="status"><span>9:41</span><span>5G</span></div>
+  <div class="nav"><span class="back"><svg viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M15 5l-7 7 7 7"/></svg>Albums</span>
+   <div class="capsule glass"><div class="ib"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="11" height="12" rx="2"/><path d="M18 8v10"/></svg></div><div class="ib"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></div></div></div>
+  <div style="text-align:center;font-weight:600;font-size:15px;line-height:1.2;margin-top:-2px">Camera<small style="display:block;font-weight:400;color:var(--mute);font-size:11px">November 2026</small></div>
+  <div class="chips" style="margin-top:8px"><span class="chip k">212 kept</span><span class="chip d">48 delete</span><span class="chip" style="background:rgba(0,0,0,.06);color:var(--mute)">1,024 left</span></div>
+  <div class="photo"></div>
+  <div class="bar glass"><div class="btn bd">Delete</div><div class="btn bl">Later</div><div class="btn bk">Keep</div></div></div>
+  <div class="cap">Sort. Photo keeps the 30px squircle. Actions sit in one capsule. The month sits under the album name.</div></div>
+
+ <div><div class="phone"><div class="status"><span>9:41</span><span>5G</span></div>
+  <div class="nav"><span class="back"><svg viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M15 5l-7 7 7 7"/></svg>Albums</span><span></span></div>
+  <div class="large">Settings</div>
+  <div class="hdr">Sorting</div>
+  <div class="group glass">
+   <div class="li"><div class="tileic"><svg viewBox="0 0 24 24"><path d="M4 9h14l-4-4M20 15H6l4 4"/></svg></div><span class="t">Swipe directions</span><span class="v">Right keeps</span><span class="chev">&rsaquo;</span></div>
+   <div class="li"><div class="tileic"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h10M5 17h6"/></svg></div><span class="t">Order</span><span class="v">Newest first</span><span class="chev">&rsaquo;</span></div>
+   <div class="li"><div class="tileic"><svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 3 10 2-5h3"/></svg></div><span class="t">Vibration</span><span style="width:42px;height:25px;border-radius:99px;background:var(--keep);position:relative"><i style="position:absolute;right:2px;top:2px;width:21px;height:21px;border-radius:50%;background:#fff"></i></span></div>
+  </div>
+  <div class="hdr">Look</div>
+  <div class="seg"><i>Phone</i><i class="on">Light</i><i>Dark</i></div>
+  <div class="foot">Your photos never leave this phone.</div></div>
+  <div class="cap">Settings. Inset grouped list: rows sit in rounded panes, dividers start after the icon. Theme becomes a segmented control instead of a pop-up.</div></div>
+</div>
+
+<h2>B. Floating: edge-to-edge photo, floating glass controls, bottom tab bar</h2>
+<div class="row">
+ <div><div class="phone"><div class="status"><span>9:41</span><span>5G</span></div>
+  <div class="large" style="padding-top:14px">Albums</div>
+  <div class="grid">
+   <div class="tile glass"><div class="cover c1"></div><b>Camera</b><span>1,284 photos</span></div>
+   <div class="tile glass"><div class="cover c2"></div><b>Screenshots</b><span>412 photos</span></div>
+   <div class="tile glass"><div class="cover c3"></div><b>WhatsApp</b><span>906 photos</span></div>
+   <div class="tile glass"><div class="cover c4"></div><b>Downloads</b><span>57 photos</span></div>
+  </div>
+  <div class="tabbar glass">
+   <div class="tab on"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Albums</div>
+   <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Deleted</div>
+   <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>Settings</div>
+  </div></div><div class="cap">Albums. Three places live in a floating tab bar, so there are no icons in the corner. A bigger change: Recently deleted and Settings become top-level tabs.</div></div>
+
+ <div><div class="phone"><div class="full"></div>
+  <div class="fl">
+   <div class="round glass"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></div>
+   <div class="pill glass">Camera<small>November 2026</small></div>
+   <div class="round glass"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></div>
+  </div>
+  <div style="position:absolute;left:0;right:0;top:100px;display:flex;justify-content:center;gap:8px;z-index:2"><span class="chip k glass" style="color:var(--keep)">212 kept</span><span class="chip d glass" style="color:var(--del)">48 delete</span></div>
+  <div class="fbar">
+   <div class="big" style="background:var(--del)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+   <div class="round glass" style="width:48px;height:48px"><svg viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6"/></svg></div>
+   <div class="big" style="background:var(--keep)"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  </div></div><div class="cap">Sort. The photo runs edge to edge, nothing around it. Controls float over it as glass. Delete and Keep are round and large for thumbs. Your rule about nothing around the photo is bent here: chips and buttons overlap it.</div></div>
+
+ <div><div class="phone"><div class="status"><span>9:41</span><span>5G</span></div>
+  <div class="large" style="padding-top:14px">Settings</div>
+  <div class="hdr">Sorting</div>
+  <div class="group glass">
+   <div class="li"><div class="tileic"><svg viewBox="0 0 24 24"><path d="M4 9h14l-4-4M20 15H6l4 4"/></svg></div><span class="t">Swipe directions</span><span class="v">Right keeps</span><span class="chev">&rsaquo;</span></div>
+   <div class="li"><div class="tileic"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h10M5 17h6"/></svg></div><span class="t">Order</span><span class="v">Newest first</span><span class="chev">&rsaquo;</span></div>
+   <div class="li"><div class="tileic"><svg viewBox="0 0 24 24"><path d="M3 12h3l2-5 3 10 2-5h3"/></svg></div><span class="t">Vibration</span><span style="width:42px;height:25px;border-radius:99px;background:var(--keep);position:relative"><i style="position:absolute;right:2px;top:2px;width:21px;height:21px;border-radius:50%;background:#fff"></i></span></div>
+  </div>
+  <div class="hdr">Look</div>
+  <div class="seg"><i>Phone</i><i class="on">Light</i><i>Dark</i></div>
+  <div class="tabbar glass">
+   <div class="tab"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Albums</div>
+   <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Deleted</div>
+   <div class="tab on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>Settings</div>
+  </div></div><div class="cap">Settings, as a tab. Same grouped list as A.</div></div>
+</div>
+</body></html>

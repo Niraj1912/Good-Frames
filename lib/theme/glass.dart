@@ -191,11 +191,28 @@ class GlassBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
         child: Glass(
-          borderRadius: const BorderRadius.all(Radius.circular(24)),
+          borderRadius: const BorderRadius.all(Radius.circular(28)),
           padding: const EdgeInsets.all(12),
           child: child,
         ),
       ),
+    );
+  }
+}
+
+/// A small capsule of glass holding a screen's top-right buttons together,
+/// so they read as one control rather than loose icons.
+class GlassCapsule extends StatelessWidget {
+  const GlassCapsule({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Glass(
+      borderRadius: const BorderRadius.all(Radius.circular(99)),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 }
@@ -211,7 +228,7 @@ class Glass extends StatelessWidget {
   const Glass({
     super.key,
     required this.child,
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.borderRadius = const BorderRadius.all(Radius.circular(22)),
     this.tint,
     this.padding = EdgeInsets.zero,
     this.blur = false,

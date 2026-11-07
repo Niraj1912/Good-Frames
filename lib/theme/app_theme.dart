@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/theme/photo_tint.dart';
+import 'package:photo_swipe/widgets/large_title_bar.dart';
 
 /// Good Frames' look, in one place. The rules:
 ///
@@ -13,7 +14,12 @@ import 'package:photo_swipe/theme/photo_tint.dart';
 /// * Colour means something: green keeps, red deletes, and one ink-blue
 ///   accent marks other actions and choices. Buttons stay solid on the
 ///   glass, so they're always easy to read.
-/// * Quiet shapes: modest corners and hairline edges instead of shadows.
+/// * Quiet shapes: generous, soft corners and hairline edges instead of
+///   shadows.
+/// * Apple-style structure: Inter type on an iPhone-like scale, a big title
+///   that shrinks into a blurred bar as lists scroll ([LargeTitleBar]),
+///   grouped settings rows, sheets with a grab handle, and one capsule of
+///   glass for a screen's top buttons.
 abstract final class AppTheme {
   static final light = _build(
     const ColorScheme(
@@ -84,25 +90,46 @@ abstract final class AppTheme {
     SortColors sort,
     GlassColors glass,
   ) {
-    final base = ThemeData(colorScheme: colors);
+    final base = ThemeData(colorScheme: colors, fontFamily: 'Inter');
+    // An Apple-like scale: a big bold title, 17 for reading, 15 and 13 for
+    // the smaller things, with the tighter spacing large type needs.
     final text = base.textTheme.copyWith(
       headlineSmall: base.textTheme.headlineSmall?.copyWith(
+        fontSize: 26,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.6,
+      ),
+      titleLarge: base.textTheme.titleLarge?.copyWith(
+        fontSize: 20,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
       ),
-      titleLarge: base.textTheme.titleLarge?.copyWith(
+      titleMedium: base.textTheme.titleMedium?.copyWith(
+        fontSize: 17,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.2,
       ),
       titleSmall: base.textTheme.titleSmall?.copyWith(
+        fontSize: 15,
         fontWeight: FontWeight.w600,
+        letterSpacing: -0.1,
       ),
+      bodyLarge: base.textTheme.bodyLarge?.copyWith(
+        fontSize: 17,
+        letterSpacing: -0.2,
+      ),
+      bodyMedium: base.textTheme.bodyMedium?.copyWith(
+        fontSize: 15,
+        letterSpacing: -0.1,
+      ),
+      bodySmall: base.textTheme.bodySmall?.copyWith(fontSize: 13),
       labelLarge: base.textTheme.labelLarge?.copyWith(
+        fontSize: 15,
         fontWeight: FontWeight.w600,
       ),
     );
     const corners = RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(12)),
+      borderRadius: BorderRadius.all(Radius.circular(16)),
     );
 
     return base.copyWith(
@@ -110,13 +137,22 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: Colors.transparent,
       textTheme: text,
       extensions: [sort, glass],
+      // The chevron back button in the accent colour, as on an iPhone.
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (context) => Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 20,
+          color: colors.primary,
+        ),
+      ),
       appBarTheme: AppBarTheme(
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         foregroundColor: colors.onSurface,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: text.titleLarge?.copyWith(color: colors.onSurface),
+        titleTextStyle: text.titleMedium?.copyWith(color: colors.onSurface),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -141,6 +177,16 @@ abstract final class AppTheme {
         ),
       ),
       listTileTheme: ListTileThemeData(iconColor: colors.onSurfaceVariant),
+      // Green when on, with a white thumb, like an iPhone's.
+      switchTheme: SwitchThemeData(
+        thumbColor: const WidgetStatePropertyAll(Colors.white),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? sort.keep
+              : colors.onSurface.withValues(alpha: 0.18),
+        ),
+        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+      ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: colors.primary,
         linearTrackColor: colors.outlineVariant,
@@ -156,7 +202,7 @@ abstract final class AppTheme {
         backgroundColor: colors.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(28)),
         ),
       ),
       bannerTheme: MaterialBannerThemeData(

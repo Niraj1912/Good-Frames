@@ -112,7 +112,12 @@ void main() {
     expect(find.text('What should Good Frames see?'), findsOneWidget);
 
     // The folders screen, from the album list's note.
+    // With text this big the choices run below the fold, so scroll first.
+    await tester.ensureVisible(find.text('Choose a folder'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Choose a folder'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Folders'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Folders'));
     await tester.pumpAndSettle();

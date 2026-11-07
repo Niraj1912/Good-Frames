@@ -146,6 +146,9 @@ void main() {
   Future<void> openWhatSwipeSortSees(WidgetTester tester) async {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
+    // Settings scrolls now, so bring the row into view first.
+    await tester.ensureVisible(find.text('What Good Frames sees'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('What Good Frames sees'));
     await tester.pumpAndSettle();
   }
@@ -161,6 +164,9 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('All photos'), findsOneWidget);
+    // Settings scrolls now, so bring the row into view first.
+    await tester.ensureVisible(find.text('What Good Frames sees'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('What Good Frames sees'));
     await tester.pumpAndSettle();
     // The first-launch choice again.
@@ -211,6 +217,9 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Only the Holiday folder'), findsOneWidget);
+    // Settings scrolls now, so bring the row into view first.
+    await tester.ensureVisible(find.text('What Good Frames sees'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('What Good Frames sees'));
     await tester.pumpAndSettle();
 
