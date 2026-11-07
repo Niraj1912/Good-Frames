@@ -28,18 +28,25 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Inter, a free font (SIL Open Font Licence, assets/fonts/OFL.txt) with
-  # a look close to Apple's. Bundled so it works offline and costs nothing.
+  # Two free fonts (SIL Open Font Licence, the OFL-*.txt files beside them),
+  # bundled so they work offline and cost nothing: Bricolage Grotesque for
+  # all text, and Barlow Condensed for frame numbers, like the print on the
+  # edge of a film.
   fonts:
-    - family: Inter
+    - family: Bricolage
       fonts:
-        - asset: assets/fonts/Inter.ttf
+        - asset: assets/fonts/Bricolage.ttf
           weight: 400
-        - asset: assets/fonts/Inter.ttf
+        - asset: assets/fonts/Bricolage.ttf
           weight: 500
-        - asset: assets/fonts/Inter.ttf
+        - asset: assets/fonts/Bricolage.ttf
           weight: 600
-        - asset: assets/fonts/Inter.ttf
+        - asset: assets/fonts/Bricolage.ttf
           weight: 700
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/BarlowCondensed-SemiBold.ttf
+          weight: 600
   assets:
-    - assets/fonts/OFL.txt
+    - assets/fonts/OFL-Bricolage.txt
+    - assets/fonts/OFL-Barlow.txt

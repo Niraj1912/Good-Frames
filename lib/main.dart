@@ -30,11 +30,16 @@ Future<void> main() async {
   // this call.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inter is free on one condition: its licence goes with the app, on the
-  // open-source licences page in Settings.
+  // The fonts are free on one condition: their licences go with the app,
+  // on the open-source licences page in Settings.
   LicenseRegistry.addLicense(() async* {
-    final text = await rootBundle.loadString('assets/fonts/OFL.txt');
-    yield LicenseEntryWithLineBreaks(['Inter'], text);
+    for (final (name, file) in [
+      ('Bricolage Grotesque', 'OFL-Bricolage.txt'),
+      ('Barlow Condensed', 'OFL-Barlow.txt'),
+    ]) {
+      final text = await rootBundle.loadString('assets/fonts/$file');
+      yield LicenseEntryWithLineBreaks([name], text);
+    }
   });
 
   final appFolder = await getApplicationSupportDirectory();

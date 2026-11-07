@@ -356,7 +356,7 @@ void main() {
     expect(repository.trashed, ['Camera/2']);
     expect(find.textContaining('Moved 1 photo to the trash.'), findsOneWidget);
     // Back on the sort screen, with the trashed photo gone.
-    expect(find.text('2 / 2 sorted'), findsOneWidget);
+    expect(find.text('All sorted'), findsOneWidget);
 
     // Let the message time out so the test ends cleanly.
     await tester.pump(const Duration(seconds: 5));
@@ -490,7 +490,7 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await tester.pumpAndSettle();
-    expect(find.text('3 / 3 sorted'), findsOneWidget);
+    expect(find.text('All sorted'), findsOneWidget);
   });
 
   testWidgets('asks before starting over', (tester) async {

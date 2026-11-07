@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Good Frames: contact sheet concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#17181a;--mute:#5b5d60;--keep:#2A7347;--del:#C23B2B;--amber:#F2A33A;--sheen:rgba(255,255,255,.66);--fill:rgba(255,255,255,.3);--edge:rgba(255,255,255,.92);--hair:rgba(23,24,26,.10)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.35 "Bricolage Grotesque",system-ui,sans-serif;background:#cfd1d0;color:var(--ink);padding:30px 22px 70px}
+h1{font-size:22px;font-weight:700;letter-spacing:-.4px}p.lead{max-width:720px;color:#3f4143;margin:6px 0 28px}
+.row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.cap{width:300px;font-size:12.5px;color:#3f4143;margin-top:10px}.cap b{font-weight:700;color:var(--ink)}
+.phone{width:300px;height:640px;border-radius:46px;border:7px solid #111;overflow:hidden;position:relative;
+background:radial-gradient(circle at 0% 0%,#FFCDB2 0,transparent 80%),radial-gradient(circle at 100% 28%,#BCDCFF 0,transparent 68%),radial-gradient(circle at 0% 74%,#FFD877 0,transparent 70%),radial-gradient(circle at 100% 100%,#9EEBD3 0,transparent 80%),#F6F5F2}
+.phone.dk{--ink:#f1f1ee;--mute:#a3a5a8;--sheen:rgba(255,255,255,.10);--fill:rgba(255,255,255,.04);--edge:rgba(255,255,255,.22);--hair:rgba(255,255,255,.10);--keep:#63B482;--del:#E2705F;color:var(--ink);
+background:radial-gradient(circle at 0% 0%,rgba(113,43,19,.55) 0,transparent 75%),radial-gradient(circle at 100% 28%,rgba(12,68,124,.5) 0,transparent 65%),radial-gradient(circle at 0% 76%,rgba(99,56,6,.45) 0,transparent 70%),radial-gradient(circle at 100% 100%,rgba(8,80,65,.5) 0,transparent 75%),#111214}
+.sb{height:34px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 26px 4px;font-size:12px;font-weight:700}
+.glass{background:linear-gradient(var(--sheen),var(--fill));border:1px solid var(--edge);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+svg{display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ph{background-size:cover}
+.s1{background:radial-gradient(circle at 70% 26%,#ffe9b0 0 7%,transparent 8%),linear-gradient(180deg,#f3b98a 0,#e58f78 34%,#6b86a8 62%,#26384f 100%)}
+.s2{background:linear-gradient(160deg,#8fc4d8,#3f7b95 55%,#e5c08f)}
+.s3{background:linear-gradient(200deg,#d8a6a0,#7a4a5a 60%,#2b2b38)}
+.s4{background:linear-gradient(170deg,#a6cb86,#3f6c45 60%,#d2dfa8)}
+.s5{background:linear-gradient(190deg,#f3cb73,#c9703a 55%,#5a392b)}
+.s6{background:linear-gradient(150deg,#b8c4d6,#5d6e8a 60%,#1f2a3c)}
+.s7{background:linear-gradient(170deg,#e9d7c2,#b8946f 58%,#4b3a2c)}
+.s8{background:linear-gradient(200deg,#9ad1b8,#2f7a66 60%,#16352f)}
+/* sort */
+.top{display:flex;align-items:center;padding:6px 18px 0;gap:8px;height:44px}
+.top .t{flex:1;font-weight:700;font-size:16px;letter-spacing:-.2px;line-height:1.1}.top .t small{display:block;font-weight:400;color:var(--mute);font-size:12px;letter-spacing:0}
+.top .n{font:600 20px "Barlow Condensed";color:var(--mute);letter-spacing:.3px}.top .n b{color:var(--ink)}
+.stage{position:relative;margin:12px 18px 0;height:330px}
+.stage .back{position:absolute;inset:8px 10px -2px;border-radius:26px;background:rgba(255,255,255,.4);border:1px solid var(--edge)}
+.dk .stage .back{background:rgba(255,255,255,.08)}
+.stage .main{position:absolute;inset:0 0 6px;border-radius:24px;box-shadow:0 10px 26px -12px rgba(0,0,0,.45)}
+.strip{margin:16px 12px 0;border-radius:16px;background:rgba(18,19,21,.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:11px 0 6px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.14)}
+.strip:before,.strip:after{content:"";position:absolute;left:0;right:0;height:5px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.55) 0 7px,transparent 7px 14px);-webkit-mask:none;opacity:.55}
+.strip:before{top:3px}.strip:after{bottom:3px}
+.frames{display:flex;gap:6px;padding:4px 10px 3px;justify-content:center;align-items:flex-end}
+.fr{width:38px;text-align:center;flex:none}
+.fr i{display:block;height:50px;border-radius:4px;position:relative}
+.fr em{display:block;font:600 12px "Barlow Condensed";font-style:normal;color:var(--amber);margin-top:3px;letter-spacing:.4px}
+.fr.next i{opacity:.45}.fr.next em{opacity:.5}
+.fr.now{width:50px}.fr.now i{height:66px;border-radius:5px;outline:2px solid #fff;outline-offset:2px}.fr.now em{color:#fff}
+.fr svg{position:absolute;inset:-3px;width:calc(100% + 6px);height:calc(100% + 6px)}
+.ok{color:#6fd49a}.no{color:#ff7a68}
+.fr.sorted i{opacity:.7}
+.ctl{position:absolute;left:14px;right:14px;bottom:16px}
+.later{text-align:center;color:var(--mute);font-size:13px;margin-bottom:9px;display:flex;justify-content:center;gap:6px;align-items:center}
+.btns{display:flex;gap:10px}
+.b{height:56px;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:16px;letter-spacing:-.2px}
+.b svg{width:20px;height:20px;stroke-width:2.2}
+.b.d{flex:1;color:var(--del)}.b.k{flex:1.25;background:var(--keep);color:#fff}
+.dk .b.k{color:#0c2417}
+.b.u{width:56px;color:var(--mute)}
+/* albums */
+.hd{display:flex;justify-content:space-between;align-items:flex-end;padding:8px 20px 0}
+.hd h2{font-size:34px;font-weight:700;letter-spacing:-1.1px;line-height:1}
+.rb{width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.hero{margin:14px 14px 0;border-radius:26px;padding:8px}
+.hero .img{height:150px;border-radius:19px;position:relative}
+.hero .img span{position:absolute;left:10px;bottom:10px;border-radius:99px;padding:4px 10px;font-size:12px;font-weight:500;background:rgba(18,19,21,.62);color:#fff;backdrop-filter:blur(8px)}
+.hero .tx{padding:11px 8px 4px}.hero h3{font-size:19px;font-weight:700;letter-spacing:-.4px}.hero p{font-size:13px;color:var(--mute)}
+.ticks{display:flex;gap:2px;height:16px;margin:11px 0 2px;align-items:flex-end}
+.ticks i{flex:1;border-radius:1px;background:rgba(23,24,26,.16)}.ticks i.k{background:var(--keep);height:100%}.ticks i.d{background:var(--del);height:100%}.ticks i.u{height:55%}
+.cont{margin-top:10px;height:46px;border-radius:15px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.sec{font-size:13px;color:var(--mute);padding:20px 22px 8px}
+.list{margin:0 14px;border-radius:24px;overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;position:relative}
+.li+.li:before{content:"";position:absolute;top:0;left:90px;right:0;border-top:1px solid var(--hair)}
+.mini{display:flex;gap:3px}.mini i{width:22px;height:44px;border-radius:5px}
+.li .t{flex:1}.li b{font-weight:700;font-size:15px;display:block;letter-spacing:-.2px}.li span{font-size:12.5px;color:var(--mute)}
+.li .pct{font:600 19px "Barlow Condensed";color:var(--mute)}
+/* review */
+.lg{padding:10px 20px 0}.lg h2{font-size:34px;font-weight:700;letter-spacing:-1.1px;line-height:1}.lg p{font-size:13.5px;color:var(--mute);margin-top:6px;max-width:240px}
+.sheet{margin:14px 14px 0;border-radius:22px;padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sheet .c{aspect-ratio:3/4;border-radius:7px;position:relative;overflow:hidden}
+.sheet .c.x:after{content:"";position:absolute;inset:0;background:rgba(246,245,242,.5)}
+.sheet .c svg{position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);z-index:2}
+.sheet .c.k{outline:2px solid var(--keep);outline-offset:-2px}
+.rbar{position:absolute;left:14px;right:14px;bottom:16px;border-radius:28px;padding:10px}
+.rbar .b{background:var(--del);color:#fff;height:54px;border-radius:19px;width:100%}
+.rbar small{display:block;text-align:center;font-size:12px;color:var(--mute);margin-bottom:8px}
+</style></head><body>
+<h1>Good Frames, if nothing were fixed</h1>
+<p class="lead">The idea: sorting photos is what a photographer does on a contact sheet. Circle the keepers, cross out the rest. The film strip under the photo is the one big move; everything else stays quiet. This is a picture only, nothing in the app has changed.</p>
+
+<div class="row">
+
+<div><div class="phone"><div class="sb"><span>9:41</span><span>5G</span></div>
+ <div class="hd"><h2>Albums</h2><div class="rb glass"><svg width="19" height="19" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg></div></div>
+ <div class="hero glass">
+  <div class="img ph s1"><span>Camera</span></div>
+  <div class="tx"><h3>Pick up where you stopped</h3><p>1,072 of 1,284 photos left in Camera</p>
+   <div class="ticks"><i class="k"></i><i class="k"></i><i class="d"></i><i class="k"></i><i class="k"></i><i class="k"></i><i class="d"></i><i class="k"></i><i class="k"></i><i class="k"></i><i class="d"></i><i class="k"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i></div>
+   <div class="cont">Continue sorting</div></div></div>
+ <div class="sec">Other albums</div>
+ <div class="list glass">
+  <div class="li"><div class="mini"><i class="ph s3"></i><i class="ph s6"></i><i class="ph s7"></i></div><div class="t"><b>Screenshots</b><span>412 photos</span></div><div class="pct">0%</div></div>
+  <div class="li"><div class="mini"><i class="ph s4"></i><i class="ph s8"></i><i class="ph s2"></i></div><div class="t"><b>WhatsApp Images</b><span>906 photos</span></div><div class="pct">38%</div></div>
+  <div class="li"><div class="mini"><i class="ph s5"></i><i class="ph s7"></i><i class="ph s3"></i></div><div class="t"><b>Downloads</b><span>57 photos</span></div><div class="pct">100%</div></div>
+ </div></div>
+ <div class="cap"><b>Albums.</b> One album gets the top spot: the one you're in the middle of. The ticks are your progress, one per photo (green kept, red deleted). Other albums are a plain list with three-frame previews, not a grid of identical cards.</div></div>
+
+<div><div class="phone"><div class="sb"><span>9:41</span><span>5G</span></div>
+ <div class="top"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#2D5BA6"><path d="M15 5l-7 7 7 7"/></svg><div class="t">Camera<small>November 2026</small></div><div class="n"><b>212</b> / 1,284</div></div>
+ <div class="stage"><div class="back"></div><div class="main ph s1"></div></div>
+ <div class="strip"><div class="frames">
+  <div class="fr sorted"><i class="ph s2"><svg viewBox="0 0 40 40" class="ok"><path d="M21 4C31 3 37 12 36 21S28 37 18 36 3 28 4 18 11 5 25 6"/></svg></i><em>208</em></div>
+  <div class="fr sorted"><i class="ph s3"><svg viewBox="0 0 40 40" class="no"><path d="M8 7C15 15 25 25 33 33M32 7C24 15 15 26 7 34"/></svg></i><em>209</em></div>
+  <div class="fr sorted"><i class="ph s4"><svg viewBox="0 0 40 40" class="ok"><path d="M20 4C30 4 37 11 36 22S27 37 17 36 4 27 4 17 10 5 24 5"/></svg></i><em>210</em></div>
+  <div class="fr sorted"><i class="ph s5"><svg viewBox="0 0 40 40" class="ok"><path d="M22 4C32 5 36 14 35 22S27 36 18 36 4 28 4 18 12 4 24 5"/></svg></i><em>211</em></div>
+  <div class="fr now"><i class="ph s1"></i><em>212</em></div>
+  <div class="fr next"><i class="ph s6"></i><em>213</em></div>
+  <div class="fr next"><i class="ph s7"></i><em>214</em></div>
+ </div></div>
+ <div class="ctl"><div class="later"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6"/></svg>Swipe up to decide later</div>
+  <div class="btns"><div class="b u glass"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/></svg></div><div class="b d glass"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Delete</div><div class="b k"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Keep</div></div></div></div>
+ <div class="cap"><b>Sort.</b> One line of header. The photo gets the screen, with the next print peeking from behind. Under it, a smoked-glass film strip: each sorted frame wears a grease-pencil circle (kept) or cross (deleted), the current frame is lit, and the amber numbers are its place in the album. It replaces the progress bar and the count chips.</div></div>
+
+<div><div class="phone"><div class="sb"><span>9:41</span><span>5G</span></div>
+ <div class="top"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#2D5BA6"><path d="M15 5l-7 7 7 7"/></svg></div>
+ <div class="lg"><h2>Review</h2><p>48 photos are crossed out. Tap one to keep it after all.</p></div>
+ <div class="sheet glass">
+  <div class="c ph s3 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s2 k"><svg viewBox="0 0 40 40" class="ok" style="inset:2px;width:calc(100% - 4px);height:calc(100% - 4px)"><path d="M10 21l8 8 14-17"/></svg></div>
+  <div class="c ph s6 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s7 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s5 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s8 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s4 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s1 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s2 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s7 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s3 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+  <div class="c ph s6 x"><svg viewBox="0 0 40 40" class="no"><path d="M5 5C14 15 26 26 35 35M35 5C26 14 14 26 5 35"/></svg></div>
+ </div>
+ <div class="rbar glass"><small>They go to your trash first, so you can bring them back.</small><div class="b"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Move 48 to trash</div></div></div>
+ <div class="cap"><b>Review.</b> A contact sheet. Crossed-out frames are faded, so a rescued one (green outline) stands out. The button says what happens, and the line above it says it can be undone.</div></div>
+
+<div><div class="phone dk"><div class="sb"><span>9:41</span><span>5G</span></div>
+ <div class="top"><svg width="22" height="22" viewBox="0 0 24 24" style="color:#8FB2EE"><path d="M15 5l-7 7 7 7"/></svg><div class="t">Camera<small>November 2026</small></div><div class="n"><b>212</b> / 1,284</div></div>
+ <div class="stage"><div class="back"></div><div class="main ph s1"></div></div>
+ <div class="strip"><div class="frames">
+  <div class="fr sorted"><i class="ph s2"><svg viewBox="0 0 40 40" class="ok"><path d="M21 4C31 3 37 12 36 21S28 37 18 36 3 28 4 18 11 5 25 6"/></svg></i><em>208</em></div>
+  <div class="fr sorted"><i class="ph s3"><svg viewBox="0 0 40 40" class="no"><path d="M8 7C15 15 25 25 33 33M32 7C24 15 15 26 7 34"/></svg></i><em>209</em></div>
+  <div class="fr sorted"><i class="ph s4"><svg viewBox="0 0 40 40" class="ok"><path d="M20 4C30 4 37 11 36 22S27 37 17 36 4 27 4 17 10 5 24 5"/></svg></i><em>210</em></div>
+  <div class="fr sorted"><i class="ph s5"><svg viewBox="0 0 40 40" class="ok"><path d="M22 4C32 5 36 14 35 22S27 36 18 36 4 28 4 18 12 4 24 5"/></svg></i><em>211</em></div>
+  <div class="fr now"><i class="ph s1"></i><em>212</em></div>
+  <div class="fr next"><i class="ph s6"></i><em>213</em></div>
+  <div class="fr next"><i class="ph s7"></i><em>214</em></div>
+ </div></div>
+ <div class="ctl"><div class="later"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6"/></svg>Swipe up to decide later</div>
+  <div class="btns"><div class="b u glass"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/></svg></div><div class="b d glass"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Delete</div><div class="b k"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Keep</div></div></div></div>
+ <div class="cap"><b>Sort, dark.</b> The strip is already dark, so it sits in the dark theme like it belongs there. Same layout, same marks.</div></div>
+
+</div></body></html>

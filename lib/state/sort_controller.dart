@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/album.dart';
+import 'package:photo_swipe/models/album_progress.dart';
 import 'package:photo_swipe/models/decision.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/models/photo_order.dart';
@@ -156,6 +157,39 @@ class SortController extends ChangeNotifier {
   /// Up to [count] photos waiting after [current], in order. Used to draw the
   /// card behind and to load images before the user reaches them.
   List<Photo> upcoming(int count) => _queue.skip(1).take(count).toList();
+
+  /// The photos for the film strip: up to [before] ahead of [current] in the
+  /// album, then [current], then the next [after] to come up. Each has its
+  /// place in the album, counting from 1. Once everything is sorted there is
+  /// no current photo, so it's the last few.
+  List<({Photo photo, int number, Decision? decision, bool isCurrent})>
+  stripFrames({int before = 4, int after = 2}) {
+    final shown = _shown.toList();
+    final numbers = {for (final (i, photo) in shown.indexed) photo.id: i + 1};
+    final now = current;
+    final at = now == null ? shown.length : numbers[now.id]! - 1;
+    ({Photo photo, int number, Decision? decision, bool isCurrent}) frame(
+      Photo photo, {
+      bool isCurrent = false,
+    }) => (
+      photo: photo,
+      number: numbers[photo.id]!,
+      decision: _decisions[photo.id],
+      isCurrent: isCurrent,
+    );
+    final frames = [
+      for (final photo in shown.sublist(max(0, at - before), at)) frame(photo),
+      if (now != null) frame(now, isCurrent: true),
+    ];
+    // Photos put off for later can come up again from earlier in the album,
+    // so skip any the strip already shows.
+    final shownIds = {for (final f in frames) f.photo.id};
+    return [
+      ...frames,
+      for (final photo in upcoming(after))
+        if (shownIds.add(photo.id)) frame(photo),
+    ];
+  }
 
   // Every photo still waiting for a decision, in the order they come up.
   Iterable<Photo> get _queue sync* {
@@ -505,7 +539,42 @@ class SortController extends ChangeNotifier {
   // The screen may close while a load or save is still running. Telling a
   // disposed controller's listeners about it would crash, so skip it.
   void _notify() {
-    if (!_disposed) notifyListeners();
+    if (_disposed) return;
+    notifyListeners();
+    _saveProgress();
+  }
+
+  // What was last saved, so nothing is written when nothing changed.
+  String? _savedProgress;
+
+  // Remembers how far through the album the user is, for the album list.
+  // Only once every photo has loaded, so the counts are for the whole album.
+  // It's a convenience, so if it can't be saved, nothing is said.
+  void _saveProgress() {
+    if (!isFullyLoaded || _loadError != null) return;
+    var kept = 0;
+    var deleted = 0;
+    for (final photo in _photos) {
+      switch (_decisions[photo.id]) {
+        case Decision.keep:
+          kept++;
+        case Decision.delete:
+          deleted++;
+        case null:
+      }
+    }
+    final key = '$kept,$deleted';
+    if (key == _savedProgress) return;
+    _savedProgress = key;
+    final progress = AlbumProgress(
+      sorted: kept + deleted,
+      kept: kept,
+      deleted: deleted,
+      openedAt: DateTime.now(),
+    );
+    store
+        .saveSetting(AlbumProgress.keyFor(album.id), progress.encode())
+        .catchError((Object _) {});
   }
 
   @override

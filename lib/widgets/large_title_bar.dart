@@ -140,8 +140,10 @@ class _Delegate extends SliverPersistentHeaderDelegate {
                   title,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontSize: 34,
-                    letterSpacing: -0.9,
+                    letterSpacing: -1.1,
                     height: 1.15,
+                    // The font's large-size drawing, finer at 34 points.
+                    fontVariations: const [FontVariation('opsz', 96)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

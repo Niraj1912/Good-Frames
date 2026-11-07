@@ -15,11 +15,12 @@ import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/theme/glass.dart';
+import 'package:photo_swipe/widgets/film_strip.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
 import 'package:photo_swipe/widgets/month_picker.dart';
 import 'package:photo_swipe/widgets/photo_card.dart';
-import 'package:photo_swipe/widgets/sort_progress.dart';
+
 import 'package:photo_swipe/widgets/swipe_card.dart';
 import 'package:photo_swipe/widgets/swipe_hint.dart';
 
@@ -322,18 +323,6 @@ class _SortScreenState extends State<SortScreen> {
     final photo = controller.current;
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-          child: Glass(
-            child: SortProgress(
-              sorted: controller.sortedCount,
-              total: controller.total,
-              kept: controller.keepCount,
-              deleted: controller.deleteCount,
-              later: controller.laterCount,
-            ),
-          ),
-        ),
         if (!controller.isFullyLoaded)
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -363,6 +352,20 @@ class _SortScreenState extends State<SortScreen> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildStrip() {
+    final controller = _controller;
+    final width = (120 * MediaQuery.devicePixelRatioOf(context)).round();
+    return FilmStrip(
+      frames: controller.stripFrames(),
+      imageFor: (photo) => widget.repository.imageFor(photo, width: width),
+      sorted: controller.sortedCount,
+      total: controller.total,
+      kept: controller.keepCount,
+      deleted: controller.deleteCount,
+      later: controller.laterCount,
     );
   }
 
@@ -456,6 +459,11 @@ class _SortScreenState extends State<SortScreen> {
               ],
             ),
           ),
+        ),
+        // Where you are in the album, as a strip of film.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+          child: _buildStrip(),
         ),
         // Undo and the swipe hint, on one slim pane of glass.
         Padding(

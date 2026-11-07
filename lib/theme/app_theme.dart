@@ -16,7 +16,7 @@ import 'package:photo_swipe/widgets/large_title_bar.dart';
 ///   glass, so they're always easy to read.
 /// * Quiet shapes: generous, soft corners and hairline edges instead of
 ///   shadows.
-/// * Apple-style structure: Inter type on an iPhone-like scale, a big title
+/// * Apple-style structure: Bricolage type on an iPhone-like scale, a big title
 ///   that shrinks into a blurred bar as lists scroll ([LargeTitleBar]),
 ///   grouped settings rows, sheets with a grab handle, and one capsule of
 ///   glass for a screen's top buttons.
@@ -77,6 +77,15 @@ abstract final class AppTheme {
     GlassColors.dark,
   );
 
+  /// Frame numbers and other small counts: condensed, like the print on the
+  /// edge of a film. Pass a size and colour with copyWith.
+  static const edgePrint = TextStyle(
+    fontFamily: 'BarlowCondensed',
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.4,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
   /// Digits all the same width, so counters don't wobble as they change.
   static const tabularFigures = [FontFeature.tabularFigures()];
 
@@ -90,7 +99,7 @@ abstract final class AppTheme {
     SortColors sort,
     GlassColors glass,
   ) {
-    final base = ThemeData(colorScheme: colors, fontFamily: 'Inter');
+    final base = ThemeData(colorScheme: colors, fontFamily: 'Bricolage');
     // An Apple-like scale: a big bold title, 17 for reading, 15 and 13 for
     // the smaller things, with the tighter spacing large type needs.
     final text = base.textTheme.copyWith(

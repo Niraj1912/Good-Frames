@@ -6,6 +6,7 @@ import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/grease_mark.dart';
 import 'package:photo_swipe/widgets/note_card.dart';
 
 /// The last stop before anything is deleted: a grid of every photo marked
@@ -145,7 +146,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final theme = Theme.of(context);
     final tileWidth =
         (MediaQuery.sizeOf(context).width /
-                3 *
+                4 *
                 MediaQuery.devicePixelRatioOf(context))
             .round();
 
@@ -179,9 +180,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       sliver: SliverGrid.builder(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 6,
+                              crossAxisSpacing: 6,
+                              childAspectRatio: 0.75,
                             ),
                         itemCount: _photos.length,
                         itemBuilder: (context, index) {
@@ -252,7 +254,9 @@ class _ReviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final sort = SortColors.of(context);
     // Screen readers announce what tapping will do, not just "image".
     return Semantics(
       button: true,
@@ -260,7 +264,7 @@ class _ReviewTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(9),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -272,31 +276,24 @@ class _ReviewTile extends StatelessWidget {
                   child: const Icon(Icons.broken_image_outlined),
                 ),
               ),
+              // A photo to be deleted fades back and is crossed out, as it
+              // would be on a contact sheet. A rescued one is circled, with
+              // an edge in the keep colour, so it stands out from the rest.
+              if (!rescued)
+                ColoredBox(color: colors.surface.withValues(alpha: 0.55)),
+              Padding(
+                padding: const EdgeInsets.all(5),
+                child: GreaseMark(
+                  decision: rescued ? Decision.keep : Decision.delete,
+                  colour: rescued ? sort.keep : sort.delete,
+                  strokeWidth: 3,
+                ),
+              ),
               if (rescued)
-                const ColoredBox(
-                  color: Colors.black54,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.favorite, color: Colors.white),
-                        Text('Keep', style: TextStyle(color: Colors.white)),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: colors.error,
-                    child: Icon(
-                      Icons.delete_outline,
-                      size: 14,
-                      color: colors.onError,
-                    ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: sort.keep, width: 2.5),
                   ),
                 ),
             ],
