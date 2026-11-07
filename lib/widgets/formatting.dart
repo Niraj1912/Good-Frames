@@ -23,6 +23,19 @@ String formatSize(int bytes) {
   return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 
+/// How long a stretch of time is, roughly, to follow "within": "a second",
+/// "40 seconds",
+/// "1 minute", "7 minutes".
+String formatSpan(Duration span) {
+  if (span.inSeconds < 1) return 'a second';
+  if (span.inSeconds < 60) {
+    final seconds = span.inSeconds;
+    return seconds == 1 ? '1 second' : '$seconds seconds';
+  }
+  final minutes = span.inMinutes;
+  return minutes == 1 ? '1 minute' : '$minutes minutes';
+}
+
 /// "March 2024".
 String formatMonth(DateTime month) =>
     '${_monthNames[month.month - 1]} ${month.year}';

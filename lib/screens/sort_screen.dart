@@ -10,6 +10,7 @@ import 'package:photo_swipe/models/keep_side.dart';
 import 'package:photo_swipe/models/photo.dart';
 import 'package:photo_swipe/screens/photo_viewer_screen.dart';
 import 'package:photo_swipe/screens/review_screen.dart';
+import 'package:photo_swipe/screens/similar_screen.dart';
 import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
@@ -180,6 +181,15 @@ class _SortScreenState extends State<SortScreen> {
     _controller.showMonth(month);
   }
 
+  void _openSimilar() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            SimilarPhotosScreen(controller: _controller, keepSide: _keepSide),
+      ),
+    );
+  }
+
   void _openReview() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -244,6 +254,12 @@ class _SortScreenState extends State<SortScreen> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Shots of the same thing, taken moments apart.
+                  IconButton(
+                    onPressed: ready ? _openSimilar : null,
+                    icon: const Icon(Icons.difference_outlined),
+                    tooltip: 'Find similar photos',
+                  ),
                   IconButton(
                     onPressed: count > 0 && ready ? _openReview : null,
                     icon: Badge(

@@ -1,5 +1,6 @@
 import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/models/decision.dart';
+import 'package:photo_swipe/models/fingerprint.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 
 /// A store whose disk is "full": loading works, saving always fails.
@@ -9,6 +10,10 @@ class BrokenStore implements DecisionStore {
 
   @override
   Future<void> record(String photoId, Decision decision) async =>
+      throw Exception('disk full');
+
+  @override
+  Future<void> recordAll(Map<String, Decision> decisions) async =>
       throw Exception('disk full');
 
   @override
@@ -39,6 +44,14 @@ class BrokenStore implements DecisionStore {
   @override
   Future<void> saveSetting(String key, String value) async =>
       throw Exception('disk full');
+
+  @override
+  Future<Map<String, SavedFingerprint>> loadFingerprints() async => {};
+
+  @override
+  Future<void> saveFingerprints(
+    Iterable<SavedFingerprint> fingerprints,
+  ) async => throw Exception('disk full');
 
   @override
   Future<void> close() async {}

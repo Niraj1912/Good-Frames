@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
 import 'package:photo_swipe/data/photo_repository.dart';
@@ -122,9 +123,19 @@ class FakePhotoRepository implements PhotoRepository {
   Future<List<Photo>> allPhotosIn(Album album) =>
       photosIn(album).expand((page) => page).toList();
 
+  /// Pictures for particular photos, by photo id, as PNG bytes. Any photo
+  /// without one shows a plain one-pixel picture, which is too small to
+  /// compare with anything.
+  final images = <String, Uint8List>{};
+
+  /// The photo ids [imageFor] was asked for, in order.
+  final imagesRequested = <String>[];
+
   @override
-  ImageProvider imageFor(Photo photo, {required int width}) =>
-      MemoryImage(_onePixelPng);
+  ImageProvider imageFor(Photo photo, {required int width}) {
+    imagesRequested.add(photo.id);
+    return MemoryImage(images[photo.id] ?? _onePixelPng);
+  }
 
   @override
   ImageProvider detailImageFor(Photo photo, {int maxSize = 4096}) =>

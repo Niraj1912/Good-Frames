@@ -1,4 +1,5 @@
 import 'package:photo_swipe/models/decision.dart';
+import 'package:photo_swipe/models/fingerprint.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -27,19 +28,27 @@ class DecisionStore {
     final db = await factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        // Version 1 had only decisions; version 2 added the trash table and
-        // version 3 the settings one. Whenever the tables change, bump the
-        // version and add a step to onUpgrade, so people who already use the
-        // app keep their data.
-        version: 3,
+        // Version 1 had only decisions; version 2 added the trash table,
+        // version 3 the settings one and version 5 the fingerprints (version
+        // 4 had them without colour, and was never released). Whenever the
+        // tables change, bump the version and add a step to onUpgrade, so
+        // people who already use the app keep their data.
+        version: 5,
         onCreate: (db, version) async {
           await db.execute(_createDecisionsTable);
           await db.execute(_createTrashTable);
           await db.execute(_createSettingsTable);
+          await db.execute(_createFingerprintsTable);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) await db.execute(_createTrashTable);
           if (oldVersion < 3) await db.execute(_createSettingsTable);
+          // Fingerprints are only a cache of what the photos look like, so
+          // when their shape changes, they're thrown away and made again.
+          if (oldVersion < 5) {
+            await db.execute('DROP TABLE IF EXISTS fingerprints');
+            await db.execute(_createFingerprintsTable);
+          }
         },
       ),
     );
@@ -65,6 +74,24 @@ class DecisionStore {
       'decision': decision.name,
       'decided_at': DateTime.now().microsecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Saves every decision in [decisions] (by photo id), in one transaction:
+  /// all of them are saved, or none. They keep the order of the map in the
+  /// undo history.
+  Future<void> recordAll(Map<String, Decision> decisions) async {
+    final batch = _db.batch();
+    // Microseconds, one apart, so the group stays in order even if the
+    // clock doesn't tick between them.
+    var when = DateTime.now().microsecondsSinceEpoch;
+    for (final MapEntry(key: photoId, value: decision) in decisions.entries) {
+      batch.insert('decisions', {
+        'photo_id': photoId,
+        'decision': decision.name,
+        'decided_at': when++,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
   }
 
   /// Changes the saved decision for [photoId] without moving it in the
@@ -164,6 +191,41 @@ class DecisionStore {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Every saved fingerprint, by photo id.
+  Future<Map<String, SavedFingerprint>> loadFingerprints() async {
+    final rows = await _db.query('fingerprints');
+    return {
+      for (final row in rows)
+        row['photo_id']! as String: SavedFingerprint(
+          row['photo_id']! as String,
+          row['stamp']! as int,
+          Fingerprint(
+            row['hash']! as int,
+            row['sharpness']! as double,
+            row['colour']! as int,
+          ),
+        ),
+    };
+  }
+
+  /// Saves [fingerprints], replacing earlier ones for the same photos, in
+  /// one transaction.
+  Future<void> saveFingerprints(Iterable<SavedFingerprint> fingerprints) async {
+    final batch = _db.batch();
+    for (final saved in fingerprints) {
+      batch.insert('fingerprints', {
+        'photo_id': saved.photoId,
+        'stamp': saved.stamp,
+        // A 64-bit whole number: SQLite's INTEGER holds one (signed), and so
+        // does a Dart int on Android and Windows.
+        'hash': saved.fingerprint.hash,
+        'sharpness': saved.fingerprint.sharpness,
+        'colour': saved.fingerprint.colour,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<void> close() => _db.close();
 }
 
@@ -192,5 +254,17 @@ const _createSettingsTable = '''
   CREATE TABLE settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
+  )
+''';
+
+// How each photo looks, to find look-alikes. Only ever worked out again for
+// a photo whose date no longer matches [stamp].
+const _createFingerprintsTable = '''
+  CREATE TABLE fingerprints (
+    photo_id  TEXT PRIMARY KEY,
+    stamp     INTEGER NOT NULL,
+    hash      INTEGER NOT NULL,
+    sharpness REAL NOT NULL,
+    colour    INTEGER NOT NULL
   )
 ''';

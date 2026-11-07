@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_swipe/data/decision_store.dart';
 import 'package:photo_swipe/models/decision.dart';
+import 'package:photo_swipe/models/fingerprint.dart';
 import 'package:photo_swipe/models/trashed_photo.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -207,6 +208,170 @@ void main() {
     expect((await upgraded.loadTrashed()).single.name, 'IMG_2.jpg');
     await upgraded.saveSetting('theme', 'dark');
     expect(await upgraded.loadSettings(), {'theme': 'dark'});
+  });
+
+  test('upgrades a version 3 database without losing anything', () async {
+    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    addTearDown(() => folder.delete(recursive: true));
+    final path = p.join(folder.path, 'decisions.db');
+
+    // As release 1.0.1 left it: decisions, the trash and settings.
+    final old = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 3,
+        onCreate: (db, version) async {
+          await db.execute('''
+            CREATE TABLE decisions (
+              photo_id   TEXT PRIMARY KEY,
+              decision   TEXT NOT NULL CHECK (decision IN ('keep', 'delete')),
+              decided_at INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE trash (
+              photo_id       TEXT PRIMARY KEY,
+              name           TEXT NOT NULL,
+              trashed_at     INTEGER NOT NULL,
+              thumbnail_path TEXT,
+              trash_path     TEXT,
+              size_bytes     INTEGER
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE settings (
+              key   TEXT PRIMARY KEY,
+              value TEXT NOT NULL
+            )
+          ''');
+          await db.insert('decisions', {
+            'photo_id': 'a',
+            'decision': 'keep',
+            'decided_at': 1,
+          });
+          await db.insert('settings', {'key': 'theme', 'value': 'dark'});
+        },
+      ),
+    );
+    await old.close();
+
+    final upgraded = await DecisionStore.open(
+      databaseFactoryFfiNoIsolate,
+      path,
+    );
+    addTearDown(upgraded.close);
+
+    expect((await upgraded.loadAll()).single.decision, Decision.keep);
+    expect(await upgraded.loadSettings(), {'theme': 'dark'});
+    // The new table is there, and empty.
+    expect(await upgraded.loadFingerprints(), isEmpty);
+  });
+
+  test('upgrades a version 4 database, starting the fingerprints afresh', () async {
+    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    addTearDown(() => folder.delete(recursive: true));
+    final path = p.join(folder.path, 'decisions.db');
+
+    // Version 4 was never released: it had fingerprints without a colour.
+    final old = await databaseFactoryFfiNoIsolate.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 4,
+        onCreate: (db, version) async {
+          await db.execute(
+            'CREATE TABLE decisions (photo_id TEXT PRIMARY KEY, '
+            "decision TEXT NOT NULL CHECK (decision IN ('keep', 'delete')), "
+            'decided_at INTEGER NOT NULL)',
+          );
+          await db.execute(
+            'CREATE TABLE trash (photo_id TEXT PRIMARY KEY, name TEXT NOT NULL, '
+            'trashed_at INTEGER NOT NULL, thumbnail_path TEXT, trash_path TEXT, '
+            'size_bytes INTEGER)',
+          );
+          await db.execute(
+            'CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+          );
+          await db.execute(
+            'CREATE TABLE fingerprints (photo_id TEXT PRIMARY KEY, '
+            'stamp INTEGER NOT NULL, hash INTEGER NOT NULL, '
+            'sharpness REAL NOT NULL)',
+          );
+          await db.insert('decisions', {
+            'photo_id': 'a',
+            'decision': 'keep',
+            'decided_at': 1,
+          });
+          await db.insert('fingerprints', {
+            'photo_id': 'a',
+            'stamp': 1,
+            'hash': 1,
+            'sharpness': 0.1,
+          });
+        },
+      ),
+    );
+    await old.close();
+
+    final upgraded = await DecisionStore.open(
+      databaseFactoryFfiNoIsolate,
+      path,
+    );
+    addTearDown(upgraded.close);
+
+    // What the user decided is kept; the cache starts empty and works.
+    expect((await upgraded.loadAll()).single.decision, Decision.keep);
+    expect(await upgraded.loadFingerprints(), isEmpty);
+    await upgraded.saveFingerprints([
+      const SavedFingerprint('a', 2, Fingerprint(2, 0.2, 0x102030)),
+    ]);
+    expect(
+      (await upgraded.loadFingerprints())['a']!.fingerprint.colour,
+      0x102030,
+    );
+  });
+
+  group('fingerprints', () {
+    test('are saved and loaded back exactly', () async {
+      // A hash with the top bit set is negative: it has to survive the trip.
+      const hash = -0x1234567890ABCDEF;
+      await store.saveFingerprints([
+        const SavedFingerprint('a', 100, Fingerprint(hash, 0.125, 0xC8140A)),
+        const SavedFingerprint('b', 200, Fingerprint(7, 0.5)),
+      ]);
+
+      final loaded = await store.loadFingerprints();
+      expect(loaded.keys, {'a', 'b'});
+      expect(
+        loaded['a']!.fingerprint,
+        const Fingerprint(hash, 0.125, 0xC8140A),
+      );
+      expect(loaded['a']!.stamp, 100);
+      expect(loaded['b']!.fingerprint.hash, 7);
+    });
+
+    test('saved again for the same photo, they replace the old one', () async {
+      await store.saveFingerprints([
+        const SavedFingerprint('a', 1, Fingerprint(1, 0.1)),
+      ]);
+      await store.saveFingerprints([
+        const SavedFingerprint('a', 2, Fingerprint(2, 0.2)),
+      ]);
+
+      final loaded = await store.loadFingerprints();
+      expect(loaded, hasLength(1));
+      expect(loaded['a']!.stamp, 2);
+      expect(loaded['a']!.fingerprint.hash, 2);
+    });
+
+    test('are not touched by forgetting decisions', () async {
+      await store.saveFingerprints([
+        const SavedFingerprint('a', 1, Fingerprint(1, 0.1)),
+      ]);
+      await store.record('a', Decision.keep);
+      await store.removeAll(['a']);
+
+      expect(await store.loadFingerprints(), isNotEmpty);
+    });
   });
 
   test('a setting saved again replaces the old value', () async {

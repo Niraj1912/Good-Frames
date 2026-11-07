@@ -28,4 +28,12 @@ void main() {
     expect(formatMonth(DateTime(2025, 12, 31, 23)), 'December 2025');
     expect(formatMonth(DateTime(2026)), 'January 2026');
   });
+
+  test('spans of time read roughly', () {
+    expect(formatSpan(const Duration(milliseconds: 400)), 'a second');
+    expect(formatSpan(const Duration(seconds: 1)), '1 second');
+    expect(formatSpan(const Duration(seconds: 40)), '40 seconds');
+    expect(formatSpan(const Duration(seconds: 61)), '1 minute');
+    expect(formatSpan(const Duration(minutes: 7, seconds: 30)), '7 minutes');
+  });
 }

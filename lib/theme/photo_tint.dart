@@ -1,11 +1,10 @@
-import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
+import 'package:photo_swipe/data/image_decoding.dart';
 
 /// Finds a photo's main colour, so the area around it can wear a soft tint
 /// of it: each album's name sits on a panel tinted from its cover. The
@@ -88,7 +87,7 @@ abstract final class PhotoTint {
 
   // The sample's pixels as 0xAARRGGBB, skipping see-through ones.
   static Future<Uint32List> _pixels(ImageProvider sample) async {
-    final image = await _decode(sample);
+    final image = await decodeImage(sample);
     try {
       final data = await image.toByteData(); // RGBA, 4 bytes a pixel
       if (data == null) return Uint32List(0);
@@ -104,26 +103,6 @@ abstract final class PhotoTint {
     } finally {
       image.dispose();
     }
-  }
-
-  // Decodes [provider] once, through Flutter's image cache.
-  static Future<ui.Image> _decode(ImageProvider provider) {
-    final completer = Completer<ui.Image>();
-    final stream = provider.resolve(ImageConfiguration.empty);
-    late final ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (info, _) {
-        stream.removeListener(listener);
-        if (!completer.isCompleted) completer.complete(info.image.clone());
-        info.dispose();
-      },
-      onError: (error, stackTrace) {
-        stream.removeListener(listener);
-        if (!completer.isCompleted) completer.completeError(error, stackTrace);
-      },
-    );
-    stream.addListener(listener);
-    return completer.future;
   }
 }
 

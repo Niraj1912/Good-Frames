@@ -398,6 +398,123 @@ void main() {
     });
   });
 
+  group('deciding a group together', () {
+    test('every photo in it is decided in one go', () async {
+      final controller = await openCamera();
+
+      await controller.decideMany({
+        'Camera/1': Decision.keep,
+        'Camera/2': Decision.delete,
+      });
+
+      expect(controller.keepCount, 1);
+      expect(controller.deleteCount, 1);
+      expect(controller.current?.name, 'IMG_3.jpg');
+      // Saved too: another visit to the album finds them decided.
+      final again = await openCamera();
+      expect(again.sortedCount, 2);
+    });
+
+    test('one undo takes back the whole group', () async {
+      final controller = await openCamera();
+      await controller.decide(Decision.keep); // IMG_1, on its own.
+      await controller.decideMany({
+        'Camera/2': Decision.keep,
+        'Camera/3': Decision.delete,
+      });
+      expect(controller.sortedCount, 3);
+
+      await controller.undo();
+
+      expect(controller.sortedCount, 1); // Only IMG_1 is left decided.
+      expect(controller.current?.name, 'IMG_2.jpg');
+      expect(controller.lastDecision, Decision.keep); // The earlier one.
+      // And it's forgotten for good, not just on screen.
+      final again = await openCamera();
+      expect(again.sortedCount, 1);
+    });
+
+    test('a group is not a single decision for the slide-in', () async {
+      final controller = await openCamera();
+      await controller.decideMany({
+        'Camera/1': Decision.keep,
+        'Camera/2': Decision.delete,
+      });
+
+      expect(controller.canUndo, isTrue);
+      expect(controller.lastDecision, isNull);
+    });
+
+    test('photos already decided, or not in the album, are left out', () async {
+      final controller = await openCamera();
+      await controller.decide(Decision.keep); // IMG_1.
+
+      await controller.decideMany({
+        'Camera/1': Decision.delete, // Already kept: not changed.
+        'Camera/2': Decision.delete,
+        'Elsewhere/9': Decision.delete, // Not here at all.
+      });
+
+      expect(controller.keepCount, 1);
+      expect(controller.deleteCount, 1);
+      expect(
+        controller.decisionFor(controller.markedForDelete.single)?.name,
+        'delete',
+      );
+    });
+
+    test('a group that cannot be saved is taken back', () async {
+      final controller = await openCamera(using: BrokenStore());
+      controller.putOff(); // IMG_1 is put off, so it can come back too.
+
+      await expectLater(
+        controller.decideMany({
+          'Camera/1': Decision.keep,
+          'Camera/2': Decision.delete,
+        }),
+        throwsException,
+      );
+
+      expect(controller.sortedCount, 0);
+      expect(controller.canUndo, isTrue); // Only the putting off.
+      expect(controller.laterCount, 1); // IMG_1 is still waiting for later.
+    });
+
+    test('a group is taken out of the later line', () async {
+      final controller = await openCamera();
+      controller.putOff(); // IMG_1.
+      expect(controller.laterCount, 1);
+
+      await controller.decideMany({'Camera/1': Decision.keep});
+
+      expect(controller.laterCount, 0);
+    });
+
+    test('only the month shown can be decided', () async {
+      final controller = await openMonths();
+      controller.showMonth(november); // IMG_2 and IMG_3.
+
+      await controller.decideMany({
+        'Camera/1': Decision.keep, // December: not in this month.
+        'Camera/2': Decision.keep,
+      });
+
+      controller.showMonth(null);
+      expect(controller.sortedCount, 1);
+      expect(controller.decisionFor(controller.unsortedPhotos.first), isNull);
+    });
+
+    test('lists the photos with no decision yet, in album order', () async {
+      final controller = await openCamera();
+      await controller.decide(Decision.keep); // IMG_1.
+
+      expect(names(controller.unsortedPhotos), ['IMG_2.jpg', 'IMG_3.jpg']);
+
+      controller.putOff(); // IMG_2 is put off but still unsorted.
+      expect(names(controller.unsortedPhotos), ['IMG_2.jpg', 'IMG_3.jpg']);
+    });
+  });
+
   group('decide later', () {
     test('a photo put off comes back once the rest are sorted', () async {
       final controller = await openCamera();
