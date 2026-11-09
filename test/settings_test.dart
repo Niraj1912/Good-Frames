@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/main.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/models/photo_order.dart';
-import 'package:photo_swipe/state/settings.dart';
-import 'package:photo_swipe/widgets/swipe_card.dart';
+import 'package:good_frames/main.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/models/photo_order.dart';
+import 'package:good_frames/state/settings.dart';
+import 'package:good_frames/widgets/swipe_card.dart';
 
 import 'fakes/fake_photo_repository.dart';
 import 'support/broken_store.dart';
@@ -72,7 +72,7 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(
+      GoodFramesApp(
         repository: FakePhotoRepository(photoCounts: {'Camera': 3}),
         store: store,
         settings: await Settings.load(store),
@@ -225,7 +225,7 @@ void main() {
   testWidgets('shows the version Android reports, and the licences', (
     tester,
   ) async {
-    const app = MethodChannel('swipesort/app');
+    const app = MethodChannel('goodframes/app');
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       app,
       (call) async => call.method == 'version' ? '1.0.0 (1)' : null,

@@ -4,11 +4,11 @@ import 'dart:math';
 import 'package:flutter/painting.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
-import 'package:photo_swipe/data/android_media.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/photo_order.dart';
+import 'package:good_frames/data/android_media.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/photo_order.dart';
 
 /// Reads the phone's whole gallery through Android's MediaStore, using the
 /// photo_manager plugin. The trash goes through the app's own Android code

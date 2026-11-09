@@ -6,15 +6,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 
 /// The app's own Android code (TrashRequests.kt and FolderAccess.kt),
 /// reached through platform channels: named pipes between Dart and Kotlin.
 abstract final class AndroidMedia {
-  static const _trash = MethodChannel('swipesort/trash');
-  static const _folders = MethodChannel('swipesort/folders');
+  static const _trash = MethodChannel('goodframes/trash');
+  static const _folders = MethodChannel('goodframes/folders');
 
   /// Asks Android to move photos (by MediaStore id) to its trash. Android
   /// shows one prompt for the batch; returns every id, or none if the user

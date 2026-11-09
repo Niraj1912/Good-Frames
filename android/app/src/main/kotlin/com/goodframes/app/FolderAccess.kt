@@ -1,4 +1,4 @@
-package com.photoswipe.photo_swipe
+package com.goodframes.app
 
 import android.app.Activity
 import android.content.ContentUris

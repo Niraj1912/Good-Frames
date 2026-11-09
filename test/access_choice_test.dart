@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/main.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/state/settings.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/main.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/state/settings.dart';
 
 import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
@@ -30,7 +30,7 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(
+      GoodFramesApp(
         repository: allPhotos,
         folders: folders,
         store: store,
@@ -143,7 +143,7 @@ void main() {
     expect(allPhotos.selectionChanged, isTrue);
   });
 
-  Future<void> openWhatSwipeSortSees(WidgetTester tester) async {
+  Future<void> openWhatGoodFramesSees(WidgetTester tester) async {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
     // Settings scrolls now, so bring the row into view first.
@@ -184,13 +184,13 @@ void main() {
     allPhotos.access = AccessStatus.granted;
     await startApp(tester);
 
-    await openWhatSwipeSortSees(tester);
+    await openWhatGoodFramesSees(tester);
     await tester.tap(find.byTooltip('Cancel'));
     await tester.pumpAndSettle();
     expect(find.text('Camera'), findsOneWidget);
 
     // Android's back gesture does the same, rather than closing the app.
-    await openWhatSwipeSortSees(tester);
+    await openWhatGoodFramesSees(tester);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.text('Camera'), findsOneWidget);

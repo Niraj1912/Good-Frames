@@ -1,5 +1,5 @@
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/chosen_folder.dart';
 
 import 'fake_photo_repository.dart';
 

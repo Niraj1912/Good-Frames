@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
-import 'package:photo_swipe/models/keep_side.dart';
+import 'package:good_frames/models/keep_side.dart';
 
 /// Which way a card was swiped. Left and right decide; up is for later.
 enum SwipeDirection { left, right, up }

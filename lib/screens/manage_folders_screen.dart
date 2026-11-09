@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/message_view.dart';
-import 'package:photo_swipe/widgets/skeleton.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/message_view.dart';
+import 'package:good_frames/widgets/skeleton.dart';
 
 /// The folders Good Frames may see: add more, stop sharing some, or switch to
 /// all photos instead.

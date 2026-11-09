@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/album_progress.dart';
-import 'package:photo_swipe/screens/recently_deleted_screen.dart';
-import 'package:photo_swipe/screens/settings_screen.dart';
-import 'package:photo_swipe/screens/sort_screen.dart';
-import 'package:photo_swipe/state/settings.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
-import 'package:photo_swipe/widgets/large_title_bar.dart';
-import 'package:photo_swipe/widgets/message_view.dart';
-import 'package:photo_swipe/widgets/skeleton.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/album_progress.dart';
+import 'package:good_frames/screens/recently_deleted_screen.dart';
+import 'package:good_frames/screens/settings_screen.dart';
+import 'package:good_frames/screens/sort_screen.dart';
+import 'package:good_frames/state/settings.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/formatting.dart';
+import 'package:good_frames/widgets/large_title_bar.dart';
+import 'package:good_frames/widgets/message_view.dart';
+import 'package:good_frames/widgets/skeleton.dart';
 
 /// Lists the albums so the user can pick which one to sort.
 class AlbumPickerScreen extends StatefulWidget {

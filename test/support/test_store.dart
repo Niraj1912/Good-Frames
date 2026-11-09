@@ -1,4 +1,4 @@
-import 'package:photo_swipe/data/decision_store.dart';
+import 'package:good_frames/data/decision_store.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// A real SQLite database that lives only in memory, so every test starts

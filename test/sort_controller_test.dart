@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/photo_order.dart';
-import 'package:photo_swipe/state/sort_controller.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/photo_order.dart';
+import 'package:good_frames/state/sort_controller.dart';
 
 import 'fakes/fake_photo_repository.dart';
 import 'support/broken_store.dart';

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/screens/photo_viewer_screen.dart';
-import 'package:photo_swipe/state/similar_controller.dart';
-import 'package:photo_swipe/state/sort_controller.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
-import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/screens/photo_viewer_screen.dart';
+import 'package:good_frames/state/similar_controller.dart';
+import 'package:good_frames/state/sort_controller.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/formatting.dart';
+import 'package:good_frames/widgets/message_view.dart';
 
 /// Photos that look alike, a group at a time: shots of the same thing taken
 /// moments apart. The one that looks sharpest is picked to keep; tap any to

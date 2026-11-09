@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/theme/app_theme.dart';
 
 /// Keep and Delete on the same sides as the swipe directions (Keep on the
 /// right unless the user swapped them), with Undo and Later between them.

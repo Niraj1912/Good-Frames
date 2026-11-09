@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/state/similarity.dart';
+import 'package:good_frames/state/similarity.dart';
 
 // How the limit of 12 bits (Similarity.maxBits) was chosen. Measured on the
 // Android emulator, with the final method, on real 1200 x 900 JPEGs of four

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/widgets/formatting.dart';
 
 /// How far through the album the user is: a bar, plus the counts.
 class SortProgress extends StatelessWidget {

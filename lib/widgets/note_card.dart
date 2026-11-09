@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/theme/glass.dart';
+import 'package:good_frames/theme/glass.dart';
 
 /// A short explanation at the top of a screen, on glass tinted with
 /// [colour] and an icon to match, so it reads as a note rather than as fine

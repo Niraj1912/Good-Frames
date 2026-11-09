@@ -1,9 +1,9 @@
 import 'package:flutter/painting.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/photo_order.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/photo_order.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 
 /// How much of the photo library the user lets the app see.
 enum AccessStatus {

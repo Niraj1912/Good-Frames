@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/screens/album_picker_screen.dart';
-import 'package:photo_swipe/screens/manage_folders_screen.dart';
-import 'package:photo_swipe/screens/settings_screen.dart';
-import 'package:photo_swipe/state/settings.dart';
-import 'package:photo_swipe/theme/glass.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/screens/album_picker_screen.dart';
+import 'package:good_frames/screens/manage_folders_screen.dart';
+import 'package:good_frames/screens/settings_screen.dart';
+import 'package:good_frames/state/settings.dart';
+import 'package:good_frames/theme/glass.dart';
 
 /// The first screen: gets access to photos, then shows the albums.
 ///

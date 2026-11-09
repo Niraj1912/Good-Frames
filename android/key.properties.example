@@ -6,8 +6,8 @@
 #
 # Use forward slashes in the path, even on Windows: in this file format a
 # backslash starts an escape code.
-storeFile=C:/Users/YOU/keys/swipesort-release.jks
+storeFile=C:/Users/YOU/keys/goodframes-release.jks
 storePassword=
-keyAlias=swipesort
+keyAlias=goodframes
 # Same as storePassword: keytool's default PKCS12 keystores use one password.
 keyPassword=

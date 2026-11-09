@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show ThemeMode;
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/models/photo_order.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/models/photo_order.dart';
 
 /// The user's choices from the Settings screen. Screens read them, and
 /// listen so they redraw when one changes (the theme changes at once).

@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/fingerprint.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/fingerprint.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/test_store.dart';
@@ -65,7 +65,7 @@ void main() {
   });
 
   test('decisions survive closing and reopening the database', () async {
-    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    final folder = await Directory.systemTemp.createTemp('goodframes_db_');
     addTearDown(() => folder.delete(recursive: true));
     final path = p.join(folder.path, 'decisions.db');
 
@@ -116,7 +116,7 @@ void main() {
   });
 
   test('upgrades a version 1 database without losing decisions', () async {
-    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    final folder = await Directory.systemTemp.createTemp('goodframes_db_');
     addTearDown(() => folder.delete(recursive: true));
     final path = p.join(folder.path, 'decisions.db');
 
@@ -156,7 +156,7 @@ void main() {
   });
 
   test('upgrades a version 2 database without losing anything', () async {
-    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    final folder = await Directory.systemTemp.createTemp('goodframes_db_');
     addTearDown(() => folder.delete(recursive: true));
     final path = p.join(folder.path, 'decisions.db');
 
@@ -211,7 +211,7 @@ void main() {
   });
 
   test('upgrades a version 3 database without losing anything', () async {
-    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    final folder = await Directory.systemTemp.createTemp('goodframes_db_');
     addTearDown(() => folder.delete(recursive: true));
     final path = p.join(folder.path, 'decisions.db');
 
@@ -268,7 +268,7 @@ void main() {
   });
 
   test('upgrades a version 4 database, starting the fingerprints afresh', () async {
-    final folder = await Directory.systemTemp.createTemp('swipesort_db_');
+    final folder = await Directory.systemTemp.createTemp('goodframes_db_');
     addTearDown(() => folder.delete(recursive: true));
     final path = p.join(folder.path, 'decisions.db');
 

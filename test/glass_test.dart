@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/theme/photo_tint.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/theme/photo_tint.dart';
 
 import 'support/contrast.dart';
 

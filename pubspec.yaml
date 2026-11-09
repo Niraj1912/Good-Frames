@@ -1,4 +1,4 @@
-name: photo_swipe
+name: good_frames
 description: "Good Frames: swipe through photos to keep or delete them."
 publish_to: 'none'
 version: 1.2.0+4

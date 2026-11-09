@@ -1,7 +1,7 @@
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/models/decision.dart';
+import 'package:good_frames/models/decision.dart';
 
 /// A mark drawn by hand, as a photographer marks a contact sheet with a
 /// grease pencil: a loose circle round a photo to keep, a cross through one

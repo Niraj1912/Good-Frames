@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/data/android_folder_photo_repository.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/data/android_folder_photo_repository.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 
 // Folder mode's Dart side, against a stand-in for the app's Android code:
 // the platform channels answer from the tables below instead of a phone.
@@ -13,8 +13,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-  const foldersChannel = MethodChannel('swipesort/folders');
-  const trashChannel = MethodChannel('swipesort/trash');
+  const foldersChannel = MethodChannel('goodframes/folders');
+  const trashChannel = MethodChannel('goodframes/trash');
 
   Map<String, Object?> photo(
     String uri,

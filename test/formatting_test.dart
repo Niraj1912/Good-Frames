@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
+import 'package:good_frames/widgets/formatting.dart';
 
 void main() {
   test('groups thousands with commas', () {

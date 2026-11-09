@@ -4,12 +4,12 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/painting.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/photo_order.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/photo_order.dart';
+import 'package:good_frames/models/trashed_photo.dart';
+import 'package:good_frames/widgets/formatting.dart';
 
 /// Reads photos from a folder on disk. The Windows build uses it, so most of
 /// the app can be developed and tested on a laptop.
@@ -33,7 +33,12 @@ class FolderPhotoRepository implements PhotoRepository {
   };
 
   /// Where trashed photos go. Never shown as photos.
-  static const trashFolderName = '_SwipeSort_Trash';
+  static const trashFolderName = '_GoodFrames_Trash';
+
+  /// The name this folder had before the app was renamed. It stays hidden
+  /// from scans, so a trash folder left by an older version isn't shown as
+  /// photos.
+  static const _oldTrashFolderName = '_SwipeSort_Trash';
 
   static const _allPhotosId = '*all*';
 
@@ -312,7 +317,10 @@ _Scan _scanFolder(String rootPath) {
       final name = p.basename(entry.path);
       if (name.startsWith('.')) continue;
       if (entry is Directory) {
-        if (name != FolderPhotoRepository.trashFolderName) folders.add(entry);
+        if (name != FolderPhotoRepository.trashFolderName &&
+            name != FolderPhotoRepository._oldTrashFolderName) {
+          folders.add(entry);
+        }
         continue;
       }
       if (entry is! File) continue;

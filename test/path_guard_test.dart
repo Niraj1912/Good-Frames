@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_swipe/data/folder_photo_repository.dart';
+import 'package:good_frames/data/folder_photo_repository.dart';
 
 void main() {
   late Directory temp;

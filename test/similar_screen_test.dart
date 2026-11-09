@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/main.dart';
-import 'package:photo_swipe/state/settings.dart';
+import 'package:good_frames/main.dart';
+import 'package:good_frames/state/settings.dart';
 
 import 'fakes/fake_photo_repository.dart';
 import 'support/test_images.dart';
@@ -41,7 +41,7 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(
+      GoodFramesApp(
         repository: repository,
         store: store,
         settings: await Settings.load(store),

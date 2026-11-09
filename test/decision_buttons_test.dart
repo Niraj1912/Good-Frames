@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/widgets/decision_buttons.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/widgets/decision_buttons.dart';
 
 import 'support/contrast.dart';
 

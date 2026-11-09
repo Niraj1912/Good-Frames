@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/theme/glass.dart';
+import 'package:good_frames/theme/glass.dart';
 
 /// Placeholders shaped like the content that is on its way, with a soft
 /// highlight sweeping across them. They replace spinners: the screen holds

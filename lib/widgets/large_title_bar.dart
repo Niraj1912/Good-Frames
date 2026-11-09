@@ -1,7 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/theme/glass.dart';
+import 'package:good_frames/theme/glass.dart';
 
 /// A screen's title the way an iPhone does it: big and bold at the top of the
 /// list, then, as the list scrolls up, shrinking into a small centred title

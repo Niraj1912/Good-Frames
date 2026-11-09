@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/state/sort_controller.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
+import 'package:good_frames/state/sort_controller.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/formatting.dart';
 
 /// The sort screen's title: the album's name, with the month being sorted
 /// under it ("All months"), which opens the month picker. Just the name

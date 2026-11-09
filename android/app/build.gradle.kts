@@ -42,7 +42,7 @@ gradle.taskGraph.whenReady {
 }
 
 android {
-    namespace = "com.photoswipe.photo_swipe"
+    namespace = "com.goodframes.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -53,7 +53,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.photoswipe.photo_swipe"
+        applicationId = "com.goodframes.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 30 // Android 11: first version with the MediaStore trash. See README.

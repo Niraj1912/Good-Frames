@@ -3,13 +3,13 @@ import 'dart:math';
 
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
-import 'package:photo_swipe/data/android_media.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/photo_order.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
+import 'package:good_frames/data/android_media.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/photo_order.dart';
+import 'package:good_frames/widgets/formatting.dart';
 
 /// Photos from folders the user picked with Android's folder picker, for
 /// people who'd rather not share their whole gallery. No photo permission

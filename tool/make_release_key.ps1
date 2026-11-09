@@ -8,7 +8,7 @@
 # line; it's written only into android\key.properties, which git ignores.
 
 $keytool = 'C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe'
-$keyFile = Join-Path $env:USERPROFILE 'keys\swipesort-release.jks'
+$keyFile = Join-Path $env:USERPROFILE 'keys\goodframes-release.jks'
 $propertiesFile = [IO.Path]::GetFullPath(
     (Join-Path $PSScriptRoot '..\android\key.properties'))
 
@@ -56,14 +56,14 @@ if ($password -notmatch '^[\x21-\x7E]+$' -or $password.Contains('\')) {
 New-Item -ItemType Directory -Force (Split-Path $keyFile) | Out-Null
 # Hand keytool the password in an environment variable rather than on its
 # command line, where other programs could read it.
-$env:SWIPESORT_KEY_PASSWORD = $password
+$env:GOODFRAMES_KEY_PASSWORD = $password
 try {
-    & $keytool -genkeypair -keystore $keyFile -alias swipesort `
+    & $keytool -genkeypair -keystore $keyFile -alias goodframes `
         -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=$name" `
-        -storepass:env SWIPESORT_KEY_PASSWORD -keypass:env SWIPESORT_KEY_PASSWORD
+        -storepass:env GOODFRAMES_KEY_PASSWORD -keypass:env GOODFRAMES_KEY_PASSWORD
     $made = $LASTEXITCODE -eq 0
 } finally {
-    Remove-Item Env:SWIPESORT_KEY_PASSWORD
+    Remove-Item Env:GOODFRAMES_KEY_PASSWORD
 }
 if (-not $made) { throw 'keytool failed (see above). Nothing was saved.' }
 
@@ -72,7 +72,7 @@ if (-not $made) { throw 'keytool failed (see above). Nothing was saved.' }
     '# Made by tool\make_release_key.ps1. Holds a password: never commit it.',
     "storeFile=$($keyFile.Replace('\', '/'))",
     "storePassword=$password",
-    'keyAlias=swipesort',
+    'keyAlias=goodframes',
     "keyPassword=$password"
 ))
 

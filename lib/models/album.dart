@@ -1,4 +1,4 @@
-import 'package:photo_swipe/models/photo.dart';
+import 'package:good_frames/models/photo.dart';
 
 /// A group of photos the user can pick to sort, such as "Camera" or
 /// "Screenshots". On Android these are the gallery's folders; on Windows,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/main.dart';
-import 'package:photo_swipe/models/chosen_folder.dart';
-import 'package:photo_swipe/state/settings.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/main.dart';
+import 'package:good_frames/models/chosen_folder.dart';
+import 'package:good_frames/state/settings.dart';
 
 import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
@@ -24,7 +24,7 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(
+      GoodFramesApp(
         // Two photos from different months, so the month picker shows.
         repository: FakePhotoRepository(
           photoCounts: {'Camera': 2},
@@ -101,7 +101,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      PhotoSwipeApp(
+      GoodFramesApp(
         repository: FakePhotoRepository(access: AccessStatus.denied),
         folders: folders,
         store: store,

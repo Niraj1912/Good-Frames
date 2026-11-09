@@ -5,7 +5,7 @@
 //
 // The default folder is E:\test-photos. --many adds a Bulk folder of N small
 // photos, for checking speed with a big library. The script only deletes a
-// folder it made itself (one holding a .swipesort-test-photos marker file),
+// folder it made itself (one holding a .goodframes-test-photos marker file),
 // so it can never wipe someone's real photos by mistake.
 
 import 'dart:io';
@@ -14,7 +14,7 @@ import 'dart:math';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
-const _marker = '.swipesort-test-photos';
+const _marker = '.goodframes-test-photos';
 
 Future<void> main(List<String> args) async {
   var folder = r'E:\test-photos';

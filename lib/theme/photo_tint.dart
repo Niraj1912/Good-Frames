@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
-import 'package:photo_swipe/data/image_decoding.dart';
+import 'package:good_frames/data/image_decoding.dart';
 
 /// Finds a photo's main colour, so the area around it can wear a soft tint
 /// of it: each album's name sits on a panel tinted from its cover. The

@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.photoswipe" "\0"
-            VALUE "FileDescription", "photo_swipe" "\0"
+            VALUE "CompanyName", "com.goodframes" "\0"
+            VALUE "FileDescription", "good_frames" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "photo_swipe" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.photoswipe. All rights reserved." "\0"
-            VALUE "OriginalFilename", "photo_swipe.exe" "\0"
-            VALUE "ProductName", "photo_swipe" "\0"
+            VALUE "InternalName", "good_frames" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.goodframes. All rights reserved." "\0"
+            VALUE "OriginalFilename", "good_frames.exe" "\0"
+            VALUE "ProductName", "good_frames" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

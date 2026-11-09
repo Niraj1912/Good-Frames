@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/widgets/photo_frame.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/widgets/photo_frame.dart';
 
 /// A photo as a card of its own shape: as large as fits, never cropped,
 /// with square corners and nothing around it. A portrait photo makes a

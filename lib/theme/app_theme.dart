@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/theme/photo_tint.dart';
-import 'package:photo_swipe/widgets/large_title_bar.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/theme/photo_tint.dart';
+import 'package:good_frames/widgets/large_title_bar.dart';
 
 /// Good Frames' look, in one place. The rules:
 ///

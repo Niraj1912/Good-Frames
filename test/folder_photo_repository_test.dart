@@ -2,16 +2,16 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_swipe/data/folder_photo_repository.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/data/folder_photo_repository.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 
 void main() {
   late Directory root;
   late FolderPhotoRepository repository;
 
   setUp(() async {
-    root = await Directory.systemTemp.createTemp('swipesort_test_');
+    root = await Directory.systemTemp.createTemp('goodframes_test_');
     repository = FolderPhotoRepository(rootPath: root.path);
     for (final path in [
       'loose.jpg',
@@ -136,22 +136,22 @@ void main() {
       expect(moved.map((photo) => photo.photoId), [camera.id, screenshot.id]);
       expect(
         moved.first.trashPath,
-        inRoot('_SwipeSort_Trash/Camera/IMG_0001.jpg'),
+        inRoot('_GoodFrames_Trash/Camera/IMG_0001.jpg'),
       );
       expect(File(camera.id).existsSync(), isFalse);
       expect(
-        File(inRoot('_SwipeSort_Trash/Camera/IMG_0001.jpg')).existsSync(),
+        File(inRoot('_GoodFrames_Trash/Camera/IMG_0001.jpg')).existsSync(),
         isTrue,
       );
       expect(
-        File(inRoot('_SwipeSort_Trash/Screenshots/IMG_0001.jpg')).existsSync(),
+        File(inRoot('_GoodFrames_Trash/Screenshots/IMG_0001.jpg')).existsSync(),
         isTrue,
       );
       expect(await allPhotoNames(), isNot(contains('IMG_0001.jpg')));
     });
 
     test('never overwrites a photo already in the trash', () async {
-      final earlier = File(inRoot('_SwipeSort_Trash/Camera/IMG_0001.jpg'));
+      final earlier = File(inRoot('_GoodFrames_Trash/Camera/IMG_0001.jpg'));
       await earlier.parent.create(recursive: true);
       await earlier.writeAsString('deleted last week');
 
@@ -159,7 +159,7 @@ void main() {
 
       expect(await earlier.readAsString(), 'deleted last week');
       expect(
-        File(inRoot('_SwipeSort_Trash/Camera/IMG_0001 (2).jpg')).existsSync(),
+        File(inRoot('_GoodFrames_Trash/Camera/IMG_0001 (2).jpg')).existsSync(),
         isTrue,
       );
     });

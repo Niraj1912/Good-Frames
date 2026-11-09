@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(420, 860);  // Phone-shaped window for testing on the laptop.
-  if (!window.Create(L"SwipeSort", origin, size)) {
+  if (!window.Create(L"Good Frames", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

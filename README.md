@@ -49,7 +49,7 @@ instead. The button at the bottom moves the rest to the trash in one go:
 
 - Android: the system trash. Android asks once for the whole batch, then keeps
   the photos for about 30 days before removing them for good.
-- Windows: a `_SwipeSort_Trash` folder inside the photo folder, keeping the
+- Windows: a `_GoodFrames_Trash` folder inside the photo folder, keeping the
   subfolders. The app asks first. Nothing is erased yet.
 
 Recently deleted (the trash-can button on the album list) shows everything
@@ -304,7 +304,7 @@ without uninstalling first, which wipes the app's saved decisions.
    ```
 
    It asks for your name and a password, then makes two files: the key,
-   `%USERPROFILE%\keys\swipesort-release.jks` (outside the project, so it
+   `%USERPROFILE%\keys\goodframes-release.jks` (outside the project, so it
    can't be committed), and `android\key.properties`, which tells the build
    where the key is and its password (git ignores it). It never replaces an
    existing key. `-ExecutionPolicy Bypass` lets this one script run without
@@ -348,7 +348,7 @@ The version is `version:` in `pubspec.yaml`: `1.0.0+1` means version name
 1.0.0 (what people see) and build number 1 (what Android compares; it must go
 up with every APK you share). The name follows major.minor.patch: the last
 number goes up for fixes (1.0.0 to 1.0.1), the middle one for new features
-(1.1.0, which added decide later, month chunks and the glass look). The app ID `com.photoswipe.photo_swipe` is
+(1.1.0, which added decide later, month chunks and the glass look). The app ID `com.goodframes.app` is
 permanent: change it and Android treats it as a different app.
 
 ### Test photos
@@ -361,12 +361,12 @@ photos at all. It only ever deletes a folder it made itself. Add
 `--many 10000` for a Bulk folder of 10,000 small photos, to test speed.
 
 To put them on the emulator (copy the photo folders only, not a
-`_SwipeSort_Trash` folder left by testing on Windows: Android would show it
+`_GoodFrames_Trash` folder left by testing on Windows: Android would show it
 as extra albums):
 
 ```bash
-adb shell mkdir -p /sdcard/Pictures/SwipeSortTest
-adb push E:\test-photos\Camera /sdcard/Pictures/SwipeSortTest/
+adb shell mkdir -p /sdcard/Pictures/GoodFramesTest
+adb push E:\test-photos\Camera /sdcard/Pictures/GoodFramesTest/
 adb shell content call --uri content://media --method scan_volume --arg external_primary
 ```
 
@@ -382,7 +382,7 @@ text). The schema is versioned (now version 3: version 2 added `trash`, and
 version 3 `settings`), and opening an older database upgrades it without
 losing anything.
 
-- Windows: `%APPDATA%\com.photoswipe\photo_swipe\decisions.db`
+- Windows: `%APPDATA%\com.goodframes\good_frames\decisions.db`
 - Android: the app's private storage, removed when the app is uninstalled
 
 The Start over button in an album forgets that album's decisions. It never
@@ -474,7 +474,7 @@ All on the phone, with no internet and no AI service.
   Each photo also keeps its average colour, and two photos only count as
   look-alikes if their share of red and of green agree (within 0.06): shares
   rather than brightness, so a brighter or darker copy still matches. This
-  came from a test on the emulator's SwipeSortBulk album (10,000 images made
+  came from a test on an emulator album (10,000 images made
   from one template, in random colours): by fingerprint alone it made 484
   groups of 20 distinct photos each, and "keep 1, mark 19 to delete" would be
   a dangerous default. With colour, it makes 515 groups, mostly of two. That

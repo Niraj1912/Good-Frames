@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/main.dart';
-import 'package:photo_swipe/state/settings.dart';
-import 'package:photo_swipe/screens/photo_viewer_screen.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/widgets/sort_progress.dart';
-import 'package:photo_swipe/widgets/swipe_card.dart';
+import 'package:good_frames/main.dart';
+import 'package:good_frames/state/settings.dart';
+import 'package:good_frames/screens/photo_viewer_screen.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/widgets/sort_progress.dart';
+import 'package:good_frames/widgets/swipe_card.dart';
 
 import 'fakes/fake_photo_repository.dart';
 import 'support/sort_actions.dart';
@@ -17,7 +17,7 @@ void main() {
     final store = await openTestStore();
     addTearDown(store.close);
     await tester.pumpWidget(
-      PhotoSwipeApp(
+      GoodFramesApp(
         repository: FakePhotoRepository(photoCounts: {'Camera': 3}),
         store: store,
         settings: await Settings.load(store),

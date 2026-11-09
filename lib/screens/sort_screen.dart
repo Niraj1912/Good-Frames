@@ -2,27 +2,27 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/screens/photo_viewer_screen.dart';
-import 'package:photo_swipe/screens/review_screen.dart';
-import 'package:photo_swipe/screens/similar_screen.dart';
-import 'package:photo_swipe/state/settings.dart';
-import 'package:photo_swipe/state/sort_controller.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
-import 'package:photo_swipe/widgets/message_view.dart';
-import 'package:photo_swipe/widgets/skeleton.dart';
-import 'package:photo_swipe/widgets/month_picker.dart';
-import 'package:photo_swipe/widgets/photo_card.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/screens/photo_viewer_screen.dart';
+import 'package:good_frames/screens/review_screen.dart';
+import 'package:good_frames/screens/similar_screen.dart';
+import 'package:good_frames/state/settings.dart';
+import 'package:good_frames/state/sort_controller.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/formatting.dart';
+import 'package:good_frames/widgets/message_view.dart';
+import 'package:good_frames/widgets/skeleton.dart';
+import 'package:good_frames/widgets/month_picker.dart';
+import 'package:good_frames/widgets/photo_card.dart';
 
-import 'package:photo_swipe/widgets/swipe_card.dart';
-import 'package:photo_swipe/widgets/swipe_hint.dart';
+import 'package:good_frames/widgets/swipe_card.dart';
+import 'package:good_frames/widgets/swipe_hint.dart';
 
 /// Shows an album's photos one at a time so the user can mark each one to
 /// keep or delete. Decisions are only recorded here; nothing is deleted.

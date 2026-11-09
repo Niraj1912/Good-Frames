@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_swipe/widgets/photo_card.dart';
+import 'package:good_frames/widgets/photo_card.dart';
 
 void main() {
   // A card in a 300 x 600 area, centred so it can take its own shape.

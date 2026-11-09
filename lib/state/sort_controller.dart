@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/album.dart';
-import 'package:photo_swipe/models/album_progress.dart';
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/models/photo_order.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/album.dart';
+import 'package:good_frames/models/album_progress.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/photo_order.dart';
 
 /// The state of sorting one album: which photo is next, what has been
 /// decided, and undo. Screens listen to it and redraw when it changes.

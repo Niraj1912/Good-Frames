@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/image_decoding.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/state/similarity.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/image_decoding.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/state/similarity.dart';
 
 /// Photos that look alike, with the one that looks best marked as the
 /// suggestion.

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/theme/app_theme.dart';
 
 /// The one row under the photo: a round Undo button, and three cues that say
 /// which way to swipe for what, each a small glass badge with an arrow.

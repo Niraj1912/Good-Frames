@@ -1,4 +1,4 @@
-package com.photoswipe.photo_swipe
+package com.goodframes.app
 
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -24,9 +24,9 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
-        MethodChannel(messenger, "swipesort/trash").setMethodCallHandler(trash)
-        MethodChannel(messenger, "swipesort/folders").setMethodCallHandler(folders)
-        MethodChannel(messenger, "swipesort/app").setMethodCallHandler { call, result ->
+        MethodChannel(messenger, "goodframes/trash").setMethodCallHandler(trash)
+        MethodChannel(messenger, "goodframes/folders").setMethodCallHandler(folders)
+        MethodChannel(messenger, "goodframes/app").setMethodCallHandler { call, result ->
             if (call.method == "version") {
                 val info = packageInfo()
                 // The name people see, then the number Android compares.

@@ -1,6 +1,6 @@
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/fingerprint.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/fingerprint.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// One saved decision.

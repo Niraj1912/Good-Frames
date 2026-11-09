@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:photo_swipe/models/fingerprint.dart';
+import 'package:good_frames/models/fingerprint.dart';
 
-export 'package:photo_swipe/models/fingerprint.dart';
+export 'package:good_frames/models/fingerprint.dart';
 
 /// Finding photos that look alike, by comparing fingerprints. All of it works
 /// on plain numbers, so none of it needs the phone, the screen or the

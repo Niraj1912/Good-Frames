@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/trashed_photo.dart';
 
 /// The state of the Recently deleted screen: photos this app moved to the
 /// trash, bringing them back, and erasing them for good.

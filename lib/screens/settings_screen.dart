@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/data/app_info.dart';
-import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/models/photo_order.dart';
-import 'package:photo_swipe/state/settings.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/large_title_bar.dart';
+import 'package:good_frames/data/app_info.dart';
+import 'package:good_frames/models/keep_side.dart';
+import 'package:good_frames/models/photo_order.dart';
+import 'package:good_frames/state/settings.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/large_title_bar.dart';
 
 /// What Good Frames can see, in a few words, and what to do to change it.
 typedef PhotoSource = ({String summary, VoidCallback change});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_swipe/widgets/swipe_card.dart';
+import 'package:good_frames/widgets/swipe_card.dart';
 
 const _face = Key('card face');
 

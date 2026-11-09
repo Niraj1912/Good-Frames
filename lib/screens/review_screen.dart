@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/models/decision.dart';
-import 'package:photo_swipe/models/photo.dart';
-import 'package:photo_swipe/state/sort_controller.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
-import 'package:photo_swipe/widgets/message_view.dart';
-import 'package:photo_swipe/widgets/grease_mark.dart';
-import 'package:photo_swipe/widgets/note_card.dart';
+import 'package:good_frames/models/decision.dart';
+import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/state/sort_controller.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/formatting.dart';
+import 'package:good_frames/widgets/message_view.dart';
+import 'package:good_frames/widgets/grease_mark.dart';
+import 'package:good_frames/widgets/note_card.dart';
 
 /// The last stop before anything is deleted: a grid of every photo marked
 /// Delete. Tapping one rescues it; the button moves the rest to the trash in

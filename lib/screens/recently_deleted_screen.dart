@@ -1,16 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:photo_swipe/data/decision_store.dart';
-import 'package:photo_swipe/data/photo_repository.dart';
-import 'package:photo_swipe/models/trashed_photo.dart';
-import 'package:photo_swipe/state/trash_controller.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
-import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/formatting.dart';
-import 'package:photo_swipe/widgets/message_view.dart';
-import 'package:photo_swipe/widgets/skeleton.dart';
-import 'package:photo_swipe/widgets/note_card.dart';
+import 'package:good_frames/data/decision_store.dart';
+import 'package:good_frames/data/photo_repository.dart';
+import 'package:good_frames/models/trashed_photo.dart';
+import 'package:good_frames/state/trash_controller.dart';
+import 'package:good_frames/theme/app_theme.dart';
+import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/formatting.dart';
+import 'package:good_frames/widgets/message_view.dart';
+import 'package:good_frames/widgets/skeleton.dart';
+import 'package:good_frames/widgets/note_card.dart';
 
 /// Photos Good Frames moved to the trash. Pick some and bring them back, or
 /// erase them for good. Erasing is the one thing in the app that can't be
