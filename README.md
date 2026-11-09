@@ -7,6 +7,9 @@ recoverable for about 30 days.
 
 Everything runs on the device. No server, no uploads, no paid services.
 
+**Platform:** Android 11 or newer. There is no iPhone version (see
+[Supported platforms](#supported-platforms)).
+
 ## Status
 
 Phase 3: swiping. Open an album and swipe each photo: right to keep, left to
@@ -268,6 +271,16 @@ page has loaded, so they always act on the whole album.
 |---|---|---|
 | Android | The real app, sorting the phone's gallery | Android 11 (API 30), the first version with the MediaStore trash |
 | Windows | Fast development and testing, sorting a folder of test photos | Windows 10 |
+
+**iPhone and iPad are not supported.** The trash and delete prompts use
+Android's MediaStore, and folder access uses Android's Storage Access
+Framework, both written in Kotlin (`android/app/src/main/kotlin/`). iOS has
+neither, so those parts would need rewriting on Apple's Photos framework.
+Most of the screens, the swipe logic and the database would carry over, since
+the app is built with Flutter. Building for iOS also needs a Mac, and
+installing on other people's iPhones or publishing needs Apple's US$99-a-year
+developer account, which doesn't fit this project's no-cost rule. It may come
+later.
 
 ## Running it
 
