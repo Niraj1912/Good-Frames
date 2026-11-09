@@ -14,6 +14,7 @@ import 'package:good_frames/state/settings.dart';
 import 'package:good_frames/state/sort_controller.dart';
 import 'package:good_frames/theme/app_theme.dart';
 import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/models/target_folder.dart';
 import 'package:good_frames/widgets/folder_picker.dart';
 import 'package:good_frames/widgets/formatting.dart';
 import 'package:good_frames/widgets/message_view.dart';
@@ -96,7 +97,8 @@ class _SortScreenState extends State<SortScreen> {
     if (_canFile) _swipe(SwipeDirection.down);
   }
 
-  Future<String?> _chooseFolder() => showFolderPicker(context, widget.settings);
+  Future<String?> _chooseFolder() =>
+      showFolderPicker(context, widget.settings, widget.repository);
 
   void _undo() {
     _enterFrom = _controller.lastWasPutOff
@@ -131,7 +133,7 @@ class _SortScreenState extends State<SortScreen> {
   // The word on the stamp while dragging down: the folder's name, short.
   static String _stampLabel(String? folder) {
     if (folder == null) return 'FILE';
-    final name = folder.toUpperCase();
+    final name = folderLabel(folder).toUpperCase();
     return name.length > 14 ? '${name.substring(0, 13)}…' : name;
   }
 
@@ -556,7 +558,7 @@ class _FolderChip extends StatelessWidget {
             button: true,
             label: folder == null
                 ? 'Choose a folder for swipes down'
-                : 'Swipes down go to $folder. Change folder',
+                : 'Swipes down go to ${folderLabel(folder)}. Change folder',
             excludeSemantics: true,
             child: InkWell(
               onTap: onTap,
@@ -579,7 +581,7 @@ class _FolderChip extends StatelessWidget {
                       child: Text(
                         folder == null
                             ? 'Choose a folder for swipes down'
-                            : 'Down → $folder',
+                            : 'Down → ${folderLabel(folder)}',
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: theme.colorScheme.primary,

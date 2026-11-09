@@ -141,6 +141,9 @@ class FolderPhotoRepository implements PhotoRepository {
   bool get canMoveToFolders => false;
 
   @override
+  Future<List<String>> existingFolders() async => [];
+
+  @override
   Future<Set<String>> moveToFolder(List<Photo> photos, String folder) async =>
       throw UnsupportedError('Moving into folders is Android-only.');
 

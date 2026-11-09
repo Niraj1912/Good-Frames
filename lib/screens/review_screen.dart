@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:good_frames/models/decision.dart';
 import 'package:good_frames/models/photo.dart';
+import 'package:good_frames/models/target_folder.dart';
 import 'package:good_frames/state/sort_controller.dart';
 import 'package:good_frames/theme/app_theme.dart';
 import 'package:good_frames/theme/glass.dart';
@@ -29,7 +30,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
   late List<Photo> _photos = _controller.markedForDelete;
   // The photos swiped down when the screen opened. Ones left out stay on
   // screen, dimmed, so a wrong tap can be fixed with another tap.
-  late final List<({Photo photo, String folder})> _filed = _controller.filedPhotos;
+  late final List<({Photo photo, String folder})> _filed =
+      _controller.filedPhotos;
   bool _working = false;
   bool _moving = false;
   // How far preparing a big batch has got, shown on the button.
@@ -76,7 +78,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     setState(() => _moving = false);
 
     final where = result.folders.length == 1
-        ? result.folders.single
+        ? folderLabel(result.folders.single)
         : '${result.folders.length} folders';
     if (result.cancelled) {
       _tell('Nothing was moved.');
@@ -210,7 +212,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
       builder: (context, _) {
         final count = _toDelete.length;
         final moveCount = _toMove.length;
-        final folderNames = {for (final entry in _toMove) entry.folder};
+        final folderNames = {
+          for (final entry in _toMove) folderLabel(entry.folder),
+        };
         return Scaffold(
           appBar: AppBar(title: const Text('Review')),
           // The explanation scrolls together with the grid, so with large
@@ -390,7 +394,7 @@ class _FileTile extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          '${photo.name}, ${queued ? 'will be moved into $folder' : 'will stay where it is'}',
+          '${photo.name}, ${queued ? 'will be moved into ${folderLabel(folder)}' : 'will stay where it is'}',
       child: GestureDetector(
         onTap: onTap,
         child: ClipRRect(

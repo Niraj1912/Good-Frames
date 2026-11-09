@@ -40,6 +40,7 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
                     ask(call, result, folder) { MediaStore.createWriteRequest(resolver, it) }
                 }
             }
+            "listFolders" -> listFolders(result)
             else -> result.notImplemented()
         }
     }
@@ -119,7 +120,7 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
     // without moving anything, so it is checked, and if the photo is still
     // where it was, it is copied into the folder and the original removed.
     private fun move(uri: Uri, folder: String): Boolean {
-        val target = "DCIM/MyAlbums/$folder/"
+        val target = targetPath(folder)
         try {
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.RELATIVE_PATH, target)
@@ -204,8 +205,50 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
         }
     }
 
-    // A single folder name directly inside MyAlbums: no slashes, no tricks.
-    private fun validFolder(name: String): Boolean =
+    // Where a folder goes. A plain name is a new (or same-named) album in
+    // DCIM/MyAlbums, where the gallery keeps the albums you make. An existing
+    // folder is given by its path, such as "Pictures/Screenshots".
+    private fun targetPath(folder: String): String =
+        if (folder.contains('/')) "$folder/" else "DCIM/MyAlbums/$folder/"
+
+    private fun validFolder(folder: String): Boolean {
+        if (!folder.contains('/')) return validName(folder)
+        // A path must stay inside DCIM or Pictures, with plain names only.
+        val parts = folder.split('/')
+        return parts.size in 2..5 &&
+            (parts[0] == "DCIM" || parts[0] == "Pictures") &&
+            parts.drop(1).all { validName(it) }
+    }
+
+    // The folders photos live in under DCIM and Pictures, as paths without
+    // the slash at the end, for the picker. Empty if the app can't see photos
+    // (folder mode has no photo permission).
+    private fun listFolders(result: MethodChannel.Result) {
+        Thread {
+            val folders = try {
+                val found = sortedSetOf<String>()
+                activity.contentResolver.query(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    arrayOf(MediaStore.MediaColumns.RELATIVE_PATH),
+                    null,
+                    null,
+                    null,
+                )?.use {
+                    while (it.moveToNext()) {
+                        val path = it.getString(0)?.trimEnd('/') ?: continue
+                        if (validFolder(path)) found.add(path)
+                    }
+                }
+                found.toList()
+            } catch (e: Exception) {
+                emptyList<String>()
+            }
+            activity.runOnUiThread { result.success(folders) }
+        }.start()
+    }
+
+    // A single plain name: no slashes, no tricks.
+    private fun validName(name: String): Boolean =
         name.isNotBlank() &&
             name == name.trim() &&
             name.length <= 64 &&

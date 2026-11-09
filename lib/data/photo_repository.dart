@@ -99,8 +99,12 @@ abstract interface class PhotoRepository {
   /// isn't, the app hides the swipe-down-to-file feature.
   bool get canMoveToFolders;
 
-  /// Moves [photos] into the gallery folder called [folder] (a plain name,
-  /// created if needed), never copying or deleting them. Returns the ids
+  /// The folders photos can be moved into, as paths like `Pictures/Trip`.
+  /// Empty where that isn't known.
+  Future<List<String>> existingFolders();
+
+  /// Moves [photos] into [folder]: a plain name (a new album, or the one
+  /// with that name) or the path of an existing folder. Returns the ids
   /// actually moved: all of them, some if others couldn't be, or none if the
   /// user cancelled. A moved photo keeps its id.
   Future<Set<String>> moveToFolder(List<Photo> photos, String folder);

@@ -49,6 +49,12 @@ abstract final class AndroidMedia {
     return {...?done};
   }
 
+  /// The folders photos are in under DCIM and Pictures, as paths like
+  /// `Pictures/Screenshots`. Empty if the app can't see photos.
+  static Future<List<String>> existingFolders() async => [
+    ...?await _trash.invokeListMethod<String>('listFolders'),
+  ];
+
   /// Opens Android's folder picker. Returns the folder, or null if the user
   /// backed out.
   static Future<ChosenFolder?> pickFolder() async {
@@ -293,6 +299,8 @@ mixin AndroidTrash {
   }
 
   bool get canMoveToFolders => true;
+
+  Future<List<String>> existingFolders() => AndroidMedia.existingFolders();
 
   Future<Set<String>> moveToFolder(List<Photo> photos, String folder) =>
       AndroidMedia.moveToFolder([for (final photo in photos) photo.id], folder);

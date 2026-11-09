@@ -12,3 +12,7 @@ String? cleanFolderName(String input) {
   if (RegExp(r'[\\/:*?"<>|\x00-\x1f]').hasMatch(name)) return null;
   return name;
 }
+
+/// What to show for a folder: its name, without the path in front. A new
+/// folder is already just a name; an existing one is `Pictures/Trip`.
+String folderLabel(String folder) => folder.split('/').last;

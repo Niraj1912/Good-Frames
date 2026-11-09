@@ -320,6 +320,29 @@ void main() {
       expect(repository.movedTo, hasLength(2));
     });
 
+    testWidgets('can use a folder that already exists on the phone', (
+      tester,
+    ) async {
+      repository.folders = ['Pictures/Screenshots', 'DCIM/MyAlbums/Goa'];
+      final settings = await Settings.load(store);
+      await tester.pumpWidget(
+        GoodFramesApp(repository: repository, store: store, settings: settings),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Camera'));
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(SwipeCard), const Offset(0, 400));
+      await tester.pumpAndSettle();
+      // Typing just the name finds the existing folder, whatever its case.
+      await tester.enterText(find.byType(TextField), 'screenshots');
+      await tester.tap(find.text('Use this folder'));
+      await tester.pumpAndSettle();
+
+      expect(settings.targetFolder, 'Pictures/Screenshots');
+      expect(find.text('Down → Screenshots'), findsOneWidget);
+    });
+
     testWidgets('closing the folder sheet brings the photo back', (
       tester,
     ) async {

@@ -40,6 +40,12 @@ class FakePhotoRepository implements PhotoRepository {
   bool selectionChanged = false;
   final Map<String, List<Photo>> _photos;
 
+  /// Folders the picker offers.
+  List<String> folders = [];
+
+  @override
+  Future<List<String>> existingFolders() async => folders;
+
   /// Plays the user tapping Cancel on the system's trash prompt.
   bool cancelTrash = false;
 
