@@ -92,29 +92,116 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
         return true
     }
 
-    // Allowed to change these photos: moves each into Pictures/<folder> by
-    // changing where MediaStore says it lives. Android moves the file, and
-    // the photo keeps its id. Done off the main thread, one photo at a time,
-    // so one that can't move (for instance a clash of names) doesn't stop
-    // the rest; only the ids that did move are reported back.
+    // Allowed to change these photos: moves each into Pictures/<folder>. Done
+    // off the main thread, one photo at a time, so one that can't move
+    // doesn't stop the rest; only the ids that did move are reported back.
     private fun moveInto(folder: String, ids: List<String>, result: MethodChannel.Result) {
         Thread {
             val moved = ids.filter { id ->
                 try {
-                    val uri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        id.toLong(),
+                    move(
+                        ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            id.toLong(),
+                        ),
+                        folder,
                     )
-                    val values = ContentValues().apply {
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$folder/")
-                    }
-                    activity.contentResolver.update(uri, values, null, null) > 0
                 } catch (e: Exception) {
                     false
                 }
             }
             activity.runOnUiThread { result.success(moved) }
         }.start()
+    }
+
+    // First the clean way: tell MediaStore the photo now lives in the folder,
+    // and Android moves the file. Some phones (ColorOS, for one) accept that
+    // without moving anything, so it is checked, and if the photo is still
+    // where it was, it is copied into the folder and the original removed.
+    private fun move(uri: Uri, folder: String): Boolean {
+        val target = "Pictures/$folder/"
+        try {
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, target)
+            }
+            activity.contentResolver.update(uri, values, null, null)
+        } catch (e: Exception) {
+            // Fall through to the copy.
+        }
+        if (relativePathOf(uri).equals(target, ignoreCase = true)) return true
+        return copyInto(uri, target)
+    }
+
+    private fun relativePathOf(uri: Uri): String? = try {
+        activity.contentResolver.query(
+            uri,
+            arrayOf(MediaStore.MediaColumns.RELATIVE_PATH),
+            null,
+            null,
+            null,
+        )?.use { if (it.moveToFirst()) it.getString(0) else null }
+    } catch (e: Exception) {
+        null
+    }
+
+    private fun copyInto(uri: Uri, target: String): Boolean {
+        val resolver = activity.contentResolver
+        var name = "photo.jpg"
+        var mime = "image/jpeg"
+        var taken = 0L
+        resolver.query(
+            uri,
+            arrayOf(
+                MediaStore.MediaColumns.DISPLAY_NAME,
+                MediaStore.MediaColumns.MIME_TYPE,
+                MediaStore.Images.ImageColumns.DATE_TAKEN,
+            ),
+            null,
+            null,
+            null,
+        )?.use {
+            if (it.moveToFirst()) {
+                it.getString(0)?.let { value -> name = value }
+                it.getString(1)?.let { value -> mime = value }
+                taken = it.getLong(2)
+            }
+        }
+        val copy = resolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, target)
+                if (taken > 0) put(MediaStore.Images.ImageColumns.DATE_TAKEN, taken)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            },
+        ) ?: return false
+        try {
+            val copied = resolver.openInputStream(uri)?.use { input ->
+                resolver.openOutputStream(copy)?.use { output ->
+                    input.copyTo(output)
+                    true
+                }
+            } ?: false
+            if (!copied) throw IllegalStateException("Could not copy.")
+            resolver.update(
+                copy,
+                ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) },
+                null,
+                null,
+            )
+            // The copy is in place; only now is the original removed.
+            if (resolver.delete(uri, null, null) <= 0) {
+                throw IllegalStateException("Could not remove the original.")
+            }
+            return true
+        } catch (e: Exception) {
+            try {
+                resolver.delete(copy, null, null)
+            } catch (_: Exception) {
+            }
+            return false
+        }
     }
 
     // A single folder name directly inside Pictures: no slashes, no tricks.
