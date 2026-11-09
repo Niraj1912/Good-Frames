@@ -67,18 +67,16 @@ asks again with its own prompt showing the photos. photo_manager can't erase
 trashed photos (it looks each one up first, and Android hides trashed photos
 from lookups), so the app does it with its own Android code (below).
 
-Folder mode: on first launch, Android users choose what Good Frames sees:
+Access: on first launch the app asks Android for photo access straight
+away. Android's own prompt lets the user share every photo or, on Android
+14+, just some ("Allow limited access"). If they refuse, the app explains and
+offers to open Settings, or to choose a folder instead.
 
-- **Choose a folder**: Android's folder picker. Good Frames then sees that
-  folder and the folders inside it, and nothing else; each folder holding
-  photos is an album. No photo permission is involved at all: picking the
-  folder is the permission (the Storage Access Framework). Android's own
-  photo prompt can't do this: it offers every photo, or photos picked one
-  by one.
-- **All photos, or some**: Android's photo permission, as before. On
-  Android 14+ its prompt also offers "Allow limited access", for picking
-  photos one by one. The app can't open that picker directly, so the card
-  says "or some" to show the way to it.
+Folder mode: Android's folder picker (the Storage Access Framework). Good
+Frames then sees that folder and the folders inside it, and nothing else;
+each folder holding photos is an album. No photo permission is involved at
+all: picking the folder is the permission. It is offered when access is
+refused, and from Settings ("What Good Frames sees") at any time.
 
 Folders can be added or removed later (Folders, on the album list), and
 either mode can switch to the other. Both identify photos by Android's

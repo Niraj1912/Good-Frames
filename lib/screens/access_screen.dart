@@ -10,9 +10,10 @@ import 'package:good_frames/theme/glass.dart';
 
 /// The first screen: gets access to photos, then shows the albums.
 ///
-/// Where there's a choice (Android), it first asks what Good Frames should
-/// see: folders the user picks, or every photo. Elsewhere it just asks for
-/// access, and explains if the user refuses.
+/// It asks Android for photo access straight away: Android's own prompt lets
+/// the user share every photo, or just some. If they refuse, it explains, and
+/// on Android offers a folder instead, which needs no permission. The choice
+/// between folders and photos is also in Settings, for switching later.
 class AccessScreen extends StatefulWidget {
   const AccessScreen({
     super.key,
@@ -83,9 +84,10 @@ class _AccessScreenState extends State<AccessScreen>
       _chosen = chosen;
       return _show(_Showing.folders);
     }
-    // Someone who already allowed access goes straight to their albums.
+    // Someone who already allowed access goes straight to their albums;
+    // anyone else gets Android's prompt.
     final status = await widget.repository.checkAccess();
-    if (status == AccessStatus.denied) return _show(_Showing.choice);
+    if (status == AccessStatus.denied) return _askForAllPhotos();
     _status = status;
     _show(_Showing.allPhotos);
   }
@@ -106,9 +108,11 @@ class _AccessScreenState extends State<AccessScreen>
       if (status != AccessStatus.denied) {
         _showing = _Showing.allPhotos;
         _cancelTo = null;
-      } else if (widget.folders == null) {
+      } else if (_cancelTo == null) {
+        // First launch, or no photos to go back to: explain.
         _showing = _Showing.denied;
       } else {
+        // Switching from Settings: back on the choice, with a note.
         _showing = _Showing.choice;
         _refused = true;
       }
@@ -184,6 +188,7 @@ class _AccessScreenState extends State<AccessScreen>
       _Showing.denied => _AccessDeniedView(
         onAllow: _askForAllPhotos,
         onOpenSettings: _openSettings,
+        onChooseFolder: widget.folders == null ? null : _chooseFolder,
       ),
       _Showing.choice => _ChoiceView(
         refused: _refused,
@@ -218,7 +223,8 @@ class _AccessScreenState extends State<AccessScreen>
   }
 }
 
-/// What should Good Frames see: a folder, or every photo?
+/// What should Good Frames see: a folder, or photos? Shown from Settings, to
+/// switch; first launch goes straight to Android's own prompt instead.
 class _ChoiceView extends StatelessWidget {
   const _ChoiceView({
     required this.refused,
@@ -288,16 +294,12 @@ class _ChoiceView extends StatelessWidget {
                       onTap: onChooseFolder,
                     ),
                     const SizedBox(height: 12),
-                    // Says "or some" because Android's own prompt, behind this
-                    // card, also offers picking photos one by one (Android 14+).
-                    // The app can't open that picker directly, so this card is
-                    // the way to it.
+                    // Android's own prompt, behind this card, decides what's offered:
+                    // every photo, or (on newer versions) just some.
                     _ChoiceCard(
                       icon: Icons.photo_library_outlined,
                       title: 'All photos, or some',
-                      description:
-                          'Every photo on this phone. On Android 14 and newer '
-                          'you can also pick just some.',
+                      description: 'Android asks which photos to share with Good Frames.',
                       onTap: onAllPhotos,
                     ),
                     if (refused) ...[
@@ -411,46 +413,58 @@ class _AccessDeniedView extends StatelessWidget {
   const _AccessDeniedView({
     required this.onAllow,
     required this.onOpenSettings,
+    this.onChooseFolder,
   });
 
   final VoidCallback onAllow;
   final VoidCallback onOpenSettings;
 
+  /// A way in that needs no permission. Null where there are no folders.
+  final VoidCallback? onChooseFolder;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.photo_library_outlined, size: 64),
-              const SizedBox(height: 24),
-              Text(
-                'Good Frames needs your photos',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'It shows them to you one at a time so you can decide what '
-                'to keep. Your photos never leave this device.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              FilledButton(
-                onPressed: onAllow,
-                child: const Text('Allow access'),
-              ),
-              const SizedBox(height: 8),
-              // After two refusals Android stops showing its prompt, so
-              // Settings is the only way left to allow access.
-              TextButton(
-                onPressed: onOpenSettings,
-                child: const Text('Open settings'),
-              ),
-            ],
+        // Scrolls, so large text on a small phone still reaches every button.
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.photo_library_outlined, size: 64),
+                const SizedBox(height: 24),
+                Text(
+                  'Good Frames needs your photos',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'It shows them to you one at a time so you can decide what '
+                  'to keep. Your photos never leave this device.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                FilledButton(
+                  onPressed: onAllow,
+                  child: const Text('Allow access'),
+                ),
+                const SizedBox(height: 8),
+                // After two refusals Android stops showing its prompt, so
+                // Settings is the only way left to allow access.
+                TextButton(
+                  onPressed: onOpenSettings,
+                  child: const Text('Open settings'),
+                ),
+                if (onChooseFolder != null)
+                  TextButton(
+                    onPressed: onChooseFolder,
+                    child: const Text('Choose a folder instead'),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

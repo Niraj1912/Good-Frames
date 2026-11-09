@@ -84,7 +84,7 @@ void main() {
     expect(find.text('Left keeps, right deletes'), findsOneWidget);
   });
 
-  testWidgets('the folder-or-all-photos choice fits too', (tester) async {
+  testWidgets('the first screen, with its folder fallback, fits too', (tester) async {
     tester.view.physicalSize = const Size(360, 640) * 3;
     tester.view.devicePixelRatio = 3;
     tester.platformDispatcher.textScaleFactorTestValue = 2;
@@ -109,13 +109,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('What should Good Frames see?'), findsOneWidget);
+    expect(find.text('Good Frames needs your photos'), findsOneWidget);
 
     // The folders screen, from the album list's note.
     // With text this big the choices run below the fold, so scroll first.
-    await tester.ensureVisible(find.text('Choose a folder'));
+    await tester.ensureVisible(find.text('Choose a folder instead'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Choose a folder'));
+    await tester.tap(find.text('Choose a folder instead'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Folders'));
     await tester.pumpAndSettle();

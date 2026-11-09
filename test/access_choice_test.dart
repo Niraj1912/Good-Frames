@@ -8,7 +8,8 @@ import 'fakes/fake_chosen_folders_repository.dart';
 import 'fakes/fake_photo_repository.dart';
 import 'support/test_store.dart';
 
-// The first-run choice on Android: one folder, or every photo. The fake
+// First run on Android: Android's own prompt comes first; a folder is the way
+// in if it is refused, and a switch in Settings later. The fake
 // "all photos" source has a Camera album and the fake folder a Holiday one,
 // so each test can tell which it's looking at.
 void main() {
@@ -40,16 +41,27 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('with nothing shared yet, asks what Good Frames should see', (
+  testWidgets('with nothing shared yet, asks Android straight away', (
+    tester,
+  ) async {
+    await startApp(tester); // allPhotos.access stays denied: the user refuses.
+
+    // No screen of choices first, and no folder card.
+    expect(find.text('What should Good Frames see?'), findsNothing);
+    expect(find.text('Choose a folder'), findsNothing);
+    expect(find.text('Good Frames needs your photos'), findsOneWidget);
+    expect(find.text('Allow access'), findsOneWidget);
+  });
+
+  testWidgets('refusing explains, and offers Settings or a folder', (
     tester,
   ) async {
     await startApp(tester);
 
-    expect(find.text('What should Good Frames see?'), findsOneWidget);
-    expect(find.text('Choose a folder'), findsOneWidget);
-    expect(find.text('All photos, or some'), findsOneWidget);
-    // Nothing to go back to on first launch.
-    expect(find.byTooltip('Cancel'), findsNothing);
+    expect(find.text('Open settings'), findsOneWidget);
+    expect(find.text('Choose a folder instead'), findsOneWidget);
+    await tester.tap(find.text('Open settings'));
+    expect(allPhotos.settingsOpened, isTrue);
   });
 
   testWidgets('choosing a folder shows only its albums, with a note', (
@@ -58,7 +70,7 @@ void main() {
     folders.nextPick = holiday;
     await startApp(tester);
 
-    await tester.tap(find.text('Choose a folder'));
+    await tester.tap(find.text('Choose a folder instead'));
     await tester.pumpAndSettle();
 
     expect(find.text('Holiday'), findsOneWidget);
@@ -69,15 +81,15 @@ void main() {
     );
   });
 
-  testWidgets('backing out of the folder picker stays on the choice', (
+  testWidgets('backing out of the folder picker stays on the explanation', (
     tester,
   ) async {
     await startApp(tester); // nextPick is null: the user backs out.
 
-    await tester.tap(find.text('Choose a folder'));
+    await tester.tap(find.text('Choose a folder instead'));
     await tester.pumpAndSettle();
 
-    expect(find.text('What should Good Frames see?'), findsOneWidget);
+    expect(find.text('Good Frames needs your photos'), findsOneWidget);
   });
 
   testWidgets('a shared folder is remembered: the app opens straight on it', (
@@ -90,7 +102,7 @@ void main() {
     expect(find.text('What should Good Frames see?'), findsNothing);
   });
 
-  testWidgets('removing the last folder goes back to the choice', (
+  testWidgets('removing the last folder asks Android for photos again', (
     tester,
   ) async {
     folders.chosen.add(holiday);
@@ -107,21 +119,21 @@ void main() {
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('What should Good Frames see?'), findsOneWidget);
+    expect(find.text('Good Frames needs your photos'), findsOneWidget);
   });
 
   testWidgets('all photos, once allowed, shows every album', (tester) async {
     await startApp(tester);
     allPhotos.access = AccessStatus.granted; // The user taps Allow.
 
-    await tester.tap(find.text('All photos, or some'));
+    await tester.tap(find.text('Allow access'));
     await tester.pumpAndSettle();
 
     expect(find.text('Camera'), findsOneWidget);
     expect(find.textContaining('can only see'), findsNothing);
   });
 
-  testWidgets('picking just some photos goes through the same card', (
+  testWidgets('picking just some photos goes through the same prompt', (
     tester,
   ) async {
     await startApp(tester);
@@ -129,7 +141,7 @@ void main() {
     // few photos.
     allPhotos.access = AccessStatus.limited;
 
-    await tester.tap(find.text('All photos, or some'));
+    await tester.tap(find.text('Allow access'));
     await tester.pumpAndSettle();
 
     expect(find.text('Camera'), findsOneWidget);
@@ -226,11 +238,14 @@ void main() {
     expect(find.text('Pictures/Holiday'), findsOneWidget);
   });
 
-  testWidgets('refusing all photos explains, and offers a folder or Settings', (
+  testWidgets('refusing when switching from Settings explains on the choice', (
     tester,
   ) async {
-    await startApp(tester); // allPhotos.access stays denied: the user refuses.
+    allPhotos.access = AccessStatus.granted;
+    await startApp(tester);
+    await openWhatGoodFramesSees(tester);
 
+    allPhotos.access = AccessStatus.denied; // The user refuses this time.
     await tester.tap(find.text('All photos, or some'));
     await tester.pumpAndSettle();
 
@@ -244,6 +259,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open settings'));
     expect(allPhotos.settingsOpened, isTrue);
+  });
+
+  testWidgets('the choice no longer mentions Android 14', (tester) async {
+    allPhotos.access = AccessStatus.granted;
+    await startApp(tester);
+    await openWhatGoodFramesSees(tester);
+
+    expect(find.textContaining('Android 14'), findsNothing);
   });
 
   testWidgets('someone who already allowed all photos skips the choice', (
