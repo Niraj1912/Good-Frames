@@ -9,6 +9,7 @@ import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/skeleton.dart';
 import 'package:photo_swipe/widgets/note_card.dart';
 
 /// Photos Good Frames moved to the trash. Pick some and bring them back, or
@@ -239,7 +240,7 @@ class _RecentlyDeletedScreenState extends State<RecentlyDeletedScreen> {
 
   Widget _buildBody(BuildContext context, List<TrashedPhoto> photos) {
     if (_controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const PhotoGridSkeleton();
     }
     if (_controller.loadError case final error?) {
       return MessageView('Could not load the trash.\n$error');

@@ -3,6 +3,7 @@ import 'package:photo_swipe/data/photo_repository.dart';
 import 'package:photo_swipe/models/chosen_folder.dart';
 import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/skeleton.dart';
 
 /// The folders Good Frames may see: add more, stop sharing some, or switch to
 /// all photos instead.
@@ -70,7 +71,7 @@ class _ManageFoldersScreenState extends State<ManageFoldersScreen> {
           }
           final folders = snapshot.data;
           if (folders == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton();
           }
           if (folders.isEmpty) {
             return const MessageView(

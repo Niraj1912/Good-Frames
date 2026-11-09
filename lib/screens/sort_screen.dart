@@ -15,9 +15,9 @@ import 'package:photo_swipe/state/settings.dart';
 import 'package:photo_swipe/state/sort_controller.dart';
 import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/theme/glass.dart';
-import 'package:photo_swipe/widgets/film_strip.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/skeleton.dart';
 import 'package:photo_swipe/widgets/month_picker.dart';
 import 'package:photo_swipe/widgets/photo_card.dart';
 
@@ -311,7 +311,7 @@ class _SortScreenState extends State<SortScreen> {
   Widget _buildBody(BuildContext context) {
     final controller = _controller;
     if (controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SortSkeleton();
     }
     if (controller.loadError case final error?) {
       return MessageView('Could not load photos.\n$error');
@@ -337,9 +337,7 @@ class _SortScreenState extends State<SortScreen> {
           child: switch (photo) {
             final photo? => _buildPhoto(context, photo),
             // Sorted everything loaded so far; more pages are on the way.
-            null when !controller.isFullyLoaded => const Center(
-              child: CircularProgressIndicator(),
-            ),
+            null when !controller.isFullyLoaded => const SortSkeleton(),
             null => _DoneView(
               kept: controller.keepCount,
               deleted: controller.deleteCount,
@@ -352,20 +350,6 @@ class _SortScreenState extends State<SortScreen> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildStrip() {
-    final controller = _controller;
-    final width = (120 * MediaQuery.devicePixelRatioOf(context)).round();
-    return FilmStrip(
-      frames: controller.stripFrames(),
-      imageFor: (photo) => widget.repository.imageFor(photo, width: width),
-      sorted: controller.sortedCount,
-      total: controller.total,
-      kept: controller.keepCount,
-      deleted: controller.deleteCount,
-      later: controller.laterCount,
     );
   }
 
@@ -460,10 +444,10 @@ class _SortScreenState extends State<SortScreen> {
             ),
           ),
         ),
-        // Where you are in the album, as a strip of film.
+        // Just the counts, so the controls sit right under the photo.
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-          child: _buildStrip(),
+          padding: const EdgeInsets.only(top: 10),
+          child: _ProgressLine(controller: _controller),
         ),
         // Undo and the swipe hint, on one slim pane of glass.
         Padding(
@@ -501,6 +485,61 @@ class _SortScreenState extends State<SortScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// "2 / 40 sorted" with the kept and deleted counts beside it: a single quiet
+/// line in place of a panel, so the buttons stay close to the photo.
+class _ProgressLine extends StatelessWidget {
+  const _ProgressLine({required this.controller});
+
+  final SortController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colours = SortColors.of(context);
+    final quiet = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontFeatures: AppTheme.tabularFigures,
+    );
+
+    Widget tally(String label, int count, IconData icon, Color colour) =>
+        Semantics(
+          label: '$label ${formatCount(count)}',
+          excludeSemantics: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: colour),
+              const SizedBox(width: 3),
+              Text(formatCount(count), style: quiet),
+            ],
+          ),
+        );
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 14,
+      runSpacing: 2,
+      children: [
+        Text(
+          '${formatCount(controller.sortedCount)} / '
+          '${formatCount(controller.total)} sorted',
+          style: quiet,
+        ),
+        tally('Keep', controller.keepCount, Icons.check, colours.keep),
+        tally('Delete', controller.deleteCount, Icons.close, colours.delete),
+        if (controller.laterCount > 0)
+          tally(
+            'Later',
+            controller.laterCount,
+            Icons.schedule,
+            theme.colorScheme.onSurfaceVariant,
+          ),
       ],
     );
   }

@@ -12,6 +12,7 @@ import 'package:photo_swipe/theme/glass.dart';
 import 'package:photo_swipe/widgets/formatting.dart';
 import 'package:photo_swipe/widgets/large_title_bar.dart';
 import 'package:photo_swipe/widgets/message_view.dart';
+import 'package:photo_swipe/widgets/skeleton.dart';
 
 /// Lists the albums so the user can pick which one to sort.
 class AlbumPickerScreen extends StatefulWidget {
@@ -185,10 +186,7 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
             );
           }
           if (!snapshot.hasData) {
-            return const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const SliverToBoxAdapter(child: AlbumListSkeleton());
           }
           final (:albums, :progress) = snapshot.data!;
           if (albums.isEmpty) {
