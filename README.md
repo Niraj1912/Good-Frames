@@ -33,15 +33,17 @@ Decisions are the same either way, so a photo sorted in its month counts
 as sorted in the whole album too. Albums whose photos are all from one
 month don't show the picker.
 
-Several shots of the same thing? The top bar's "Find similar photos" icon
-looks through the album (or the month shown) for photos that look alike and
-were taken within ten minutes of each other. It shows them a group at a time:
-the sharpest looking one is picked to keep, and you tap to change that, or to
-keep two, then confirm "Keep 1, mark 7 to delete". Press and hold a photo to
-look closer. Only photos with no decision yet are offered, so it never
-overrides one you've made, and a group can't be confirmed with nothing kept.
-Like everything else it only marks photos; deleting still happens on the
-Review screen. One Undo takes back a whole group.
+Sorting photos into a folder? Swipe a photo down (or tap Move) and it counts
+as a Keep and is queued for a gallery folder you create or pick; the chip
+under the photo shows which one ("Down -> Trip to Goa") and changes it. Nothing
+moves until you press Move on the Review screen, where Android asks once for
+the whole batch. The folder appears in the gallery as Pictures/name, and the
+queue is saved, so closing the app loses nothing. Undo takes a swipe back.
+Android only; the Windows build hides it.
+
+Need to send a photo to someone? The top bar's Share icon opens Android's
+share sheet for the photo on show (the zoom view has one too). Sharing
+doesn't change the sort.
 
 Decisions are saved as you go, so you can close the app and pick up where you
 stopped.
@@ -452,65 +454,6 @@ interface, which has one implementation per environment:
 - `AndroidPhotoRepository`: the phone's whole gallery, via MediaStore
 - `AndroidFolderPhotoRepository`: only folders the user chose (folder mode)
 
-## How similar photos works
-
-All on the phone, with no internet and no AI service.
-
-- **A fingerprint per photo** (a "difference hash", dHash): shrink the photo
-  to a 9 x 8 grid of grey squares, and for each square record one bit: is it
-  brighter than the square on its right (by more than a small margin)? The
-  64 bits are the fingerprint. Shots of the same scene, even slightly
-  brighter, moved or blurred, keep nearly the same pattern of brighter and
-  darker, so their fingerprints differ in only a few bits. The number of
-  differing bits is the Hamming distance. Alongside it, a sharpness score
-  (the root of the average squared change in brightness between
-  neighbouring pixels) picks the suggested keeper.
-- **The limit is 12 bits**, measured on real photos, on a phone, rather than
-  guessed: a brighter or slightly moved copy came out 0 bits apart, a
-  heavily blurred retake 8, a second scene moved and brighter 6, and
-  unrelated scenes 27 to 43. So 12 sits above the blurred retake with
-  headroom, and well below the closest unrelated pair.
-  `test/similarity_test.dart` has the numbers.
-- **The margin matters.** Without it, flat areas (a clear sky) flip their
-  bits with the slightest change in light or compression, and Android's own
-  thumbnails differ from Flutter's. Before the margin was added, a plain
-  brighter copy came out 11 bits away on the phone (0 on Windows) and the
-  blurred retake 15 to 16, over the limit. A bit now counts only if a square
-  is brighter than its neighbour by more than 2 of 255 brightness levels.
-  The sharpness score was fixed too: it was the plain average change in
-  brightness, which rated a blurred photo higher (blur spreads an edge
-  without changing its total height).
-- **Colour has to match too.** A fingerprint sees only light and dark, so a
-  red screenshot and a blue one laid out the same have the same fingerprint.
-  Each photo also keeps its average colour, and two photos only count as
-  look-alikes if their share of red and of green agree (within 0.06): shares
-  rather than brightness, so a brighter or darker copy still matches. This
-  came from a test on an emulator album (10,000 images made
-  from one template, in random colours): by fingerprint alone it made 484
-  groups of 20 distinct photos each, and "keep 1, mark 19 to delete" would be
-  a dangerous default. With colour, it makes 515 groups, mostly of two. That
-  album is a worst case of my own making (real photos aren't all one
-  template), but it's the case of a burst of similar screenshots, which are
-  much more alike in layout than most photos.
-- **Only photos taken close in time are compared**: each against the next 30
-  within ten minutes. That is fast (no comparing every pair, and sorting
-  fingerprints doesn't work: two that differ in the top bit are far apart as
-  numbers), and it keeps unrelated look-alikes apart, such as a white wall in
-  March and another in June. A photo with no other photo within ten minutes
-  is never even opened. Chains of near matches become one group (union-find),
-  and a chain longer than 20 is split again.
-- **Cheap and remembered:** a 128-pixel copy of each photo is fetched eight
-  at a time, fingerprinted and dropped from Flutter's image cache (which is
-  limited by count, and would otherwise lose the sort screen's prepared
-  photos). Fingerprints are saved in the database (version 5, a new
-  `fingerprints` table), so the next search of the same photos is quick. A
-  saved fingerprint carries a stamp of the photo's date and the method's
-  version, so an edited photo, or a change to the method, is fingerprinted
-  again.
-- **Deciding a group is one step:** `SortController.decideMany` saves all of
-  them in one database transaction, rolls back if saving fails, takes them
-  out of the "later" line, and goes into the undo history as one step.
-
 ## Roadmap
 
 - [x] Phase 0: setup
@@ -532,7 +475,7 @@ All on the phone, with no internet and no AI service.
 - [x] Decide later: swipe up to put a photo off until the rest are sorted
 - [x] One month at a time: pick a month of a big album to sort
 - [x] Glass look: frosted panels over a still background of soft colour
-- [x] Similar photos: find shots of the same thing and keep the best
+- [x] Similar photos (added in 1.2.0, removed in 1.2.2)
 
 ## Safety rules
 

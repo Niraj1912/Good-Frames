@@ -10,16 +10,17 @@ import 'package:good_frames/models/keep_side.dart';
 import 'package:good_frames/models/photo.dart';
 import 'package:good_frames/screens/photo_viewer_screen.dart';
 import 'package:good_frames/screens/review_screen.dart';
-import 'package:good_frames/screens/similar_screen.dart';
 import 'package:good_frames/state/settings.dart';
 import 'package:good_frames/state/sort_controller.dart';
 import 'package:good_frames/theme/app_theme.dart';
 import 'package:good_frames/theme/glass.dart';
+import 'package:good_frames/widgets/folder_picker.dart';
 import 'package:good_frames/widgets/formatting.dart';
 import 'package:good_frames/widgets/message_view.dart';
 import 'package:good_frames/widgets/skeleton.dart';
 import 'package:good_frames/widgets/month_picker.dart';
 import 'package:good_frames/widgets/photo_card.dart';
+import 'package:good_frames/widgets/share_photo.dart';
 
 import 'package:good_frames/widgets/swipe_card.dart';
 import 'package:good_frames/widgets/swipe_hint.dart';
@@ -56,6 +57,7 @@ class _SortScreenState extends State<SortScreen> {
   final _cardKey = GlobalKey<SwipeCardState>();
   final _dragProgress = ValueNotifier(0.0);
   final _upProgress = ValueNotifier(0.0);
+  final _downProgress = ValueNotifier(0.0);
   // After an undo, the side the photo comes back from: the side it left on.
   SwipeDirection? _enterFrom;
 
@@ -64,6 +66,7 @@ class _SortScreenState extends State<SortScreen> {
     _controller.dispose();
     _dragProgress.dispose();
     _upProgress.dispose();
+    _downProgress.dispose();
     super.dispose();
   }
 
@@ -86,9 +89,20 @@ class _SortScreenState extends State<SortScreen> {
       _cardKey.currentState?.swipe(direction);
   void _later() => _swipe(SwipeDirection.up);
 
+  // Swiping down files the photo into the chosen folder, where that's
+  // possible.
+  bool get _canFile => widget.repository.canMoveToFolders;
+  void _fileDown() {
+    if (_canFile) _swipe(SwipeDirection.down);
+  }
+
+  Future<String?> _chooseFolder() => showFolderPicker(context, widget.settings);
+
   void _undo() {
     _enterFrom = _controller.lastWasPutOff
         ? SwipeDirection.up
+        : _controller.lastWasFiled
+        ? SwipeDirection.down
         : switch (_controller.lastDecision) {
             final decision? => _directionFor(decision),
             null => null,
@@ -114,10 +128,33 @@ class _SortScreenState extends State<SortScreen> {
     _swipe(_directionFor(decision));
   }
 
+  // The word on the stamp while dragging down: the folder's name, short.
+  static String _stampLabel(String? folder) {
+    if (folder == null) return 'FILE';
+    final name = folder.toUpperCase();
+    return name.length > 14 ? '${name.substring(0, 13)}…' : name;
+  }
+
   static Object _heroTag(Photo photo) => 'photo-${photo.id}';
 
   Future<void> _onSwiped(SwipeDirection direction) async {
     _enterFrom = null; // The next photo just appears behind.
+    if (direction == SwipeDirection.down) {
+      // The first time, there's no folder yet: ask, and if the user closes
+      // the sheet, the photo simply comes back.
+      var folder = widget.settings.targetFolder;
+      folder ??= await _chooseFolder();
+      if (folder == null || !mounted) {
+        _cardKey.currentState?.comeBack();
+        return;
+      }
+      final chosen = folder;
+      final saved = await _run(
+        () => _controller.decide(Decision.keep, folder: chosen),
+      );
+      if (!saved) _cardKey.currentState?.comeBack();
+      return;
+    }
     if (direction == SwipeDirection.up) {
       // With nothing else left to sort, the same photo is next again, so
       // bring the card straight back.
@@ -177,15 +214,6 @@ class _SortScreenState extends State<SortScreen> {
   void _showMonth(DateTime? month) {
     _enterFrom = null;
     _controller.showMonth(month);
-  }
-
-  void _openSimilar() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            SimilarPhotosScreen(controller: _controller, keepSide: _keepSide),
-      ),
-    );
   }
 
   void _openReview() {
@@ -250,15 +278,21 @@ class _SortScreenState extends State<SortScreen> {
           ListenableBuilder(
             listenable: _controller,
             builder: (context, _) {
-              final count = _controller.deleteCount;
+              final count = _controller.deleteCount + _controller.filedCount;
               final ready = _controller.isFullyLoaded;
               return GlassCapsule(
                 children: [
-                  // Shots of the same thing, taken moments apart.
+                  // Send the photo on show to someone, then carry on sorting.
                   IconButton(
-                    onPressed: ready ? _openSimilar : null,
-                    icon: const Icon(Icons.difference_outlined),
-                    tooltip: 'Find similar photos',
+                    onPressed: _controller.current == null
+                        ? null
+                        : () => sharePhoto(
+                            context,
+                            widget.repository,
+                            _controller.current!,
+                          ),
+                    icon: const Icon(Icons.share),
+                    tooltip: 'Share photo',
                   ),
                   IconButton(
                     onPressed: count > 0 && ready ? _openReview : null,
@@ -267,7 +301,9 @@ class _SortScreenState extends State<SortScreen> {
                       label: Text('$count'),
                       child: const Icon(Icons.delete_sweep_outlined),
                     ),
-                    tooltip: 'Review photos to delete',
+                    tooltip: _controller.filedCount > 0
+                        ? 'Review photos to delete or move'
+                        : 'Review photos to delete',
                   ),
                   IconButton(
                     onPressed: ready ? _confirmStartOver : null,
@@ -291,6 +327,7 @@ class _SortScreenState extends State<SortScreen> {
           const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
               _swipe(SwipeDirection.right),
           const SingleActivator(LogicalKeyboardKey.arrowUp): _later,
+          const SingleActivator(LogicalKeyboardKey.arrowDown): _fileDown,
           const SingleActivator(LogicalKeyboardKey.keyZ): _undo,
           const SingleActivator(LogicalKeyboardKey.keyZ, control: true): _undo,
           const SingleActivator(LogicalKeyboardKey.backspace): _undo,
@@ -341,6 +378,7 @@ class _SortScreenState extends State<SortScreen> {
             null => _DoneView(
               kept: controller.keepCount,
               deleted: controller.deleteCount,
+              filed: controller.filedCount,
               month: controller.month,
               nextMonth: controller.nextMonth,
               onShowMonth: _showMonth,
@@ -416,6 +454,9 @@ class _SortScreenState extends State<SortScreen> {
                   cardId: photo.id,
                   dragProgress: _dragProgress,
                   upProgress: _upProgress,
+                  downProgress: _downProgress,
+                  canSwipeDown: _canFile,
+                  downLabel: _stampLabel(widget.settings.targetFolder),
                   enterFrom: _enterFrom,
                   keepSide: _keepSide,
                   vibration: widget.settings.vibration,
@@ -465,7 +506,11 @@ class _SortScreenState extends State<SortScreen> {
                   onRight: () => _swipe(SwipeDirection.right),
                   dragProgress: _dragProgress,
                   upProgress: _upProgress,
+                  onDown: _canFile ? _fileDown : null,
+                  downProgress: _downProgress,
                 ),
+                if (_canFile)
+                  _FolderChip(settings: widget.settings, onTap: _chooseFolder),
                 if (isDesktop) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -486,6 +531,73 @@ class _SortScreenState extends State<SortScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "Down → Trip to Goa": which folder a swipe down files into. Tapping it
+/// chooses another.
+class _FolderChip extends StatelessWidget {
+  const _FolderChip({required this.settings, required this.onTap});
+
+  final Settings settings;
+  final Future<String?> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) {
+        final folder = settings.targetFolder;
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Semantics(
+            button: true,
+            label: folder == null
+                ? 'Choose a folder for swipes down'
+                : 'Swipes down go to $folder. Change folder',
+            excludeSemantics: true,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.folder_outlined,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        folder == null
+                            ? 'Choose a folder for swipes down'
+                            : 'Down → $folder',
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -572,6 +684,7 @@ class _DoneView extends StatelessWidget {
   const _DoneView({
     required this.kept,
     required this.deleted,
+    required this.filed,
     required this.month,
     required this.nextMonth,
     required this.onShowMonth,
@@ -581,6 +694,9 @@ class _DoneView extends StatelessWidget {
 
   final int kept;
   final int deleted;
+
+  /// How many of the kept photos are waiting to be moved into folders.
+  final int filed;
 
   /// The month just finished, or null for the whole album.
   final DateTime? month;
@@ -642,10 +758,12 @@ class _DoneView extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (deleted > 0) ...[
+                if (deleted > 0 || filed > 0) ...[
                   const SizedBox(height: 20),
                   Text(
-                    'Nothing is deleted until you review them.',
+                    filed > 0
+                        ? 'Nothing is deleted or moved until you review them.'
+                        : 'Nothing is deleted until you review them.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -657,7 +775,9 @@ class _DoneView extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: onReview,
                       icon: const Icon(Icons.delete_sweep_outlined),
-                      label: Text('Review ${formatCount(deleted)} to delete'),
+                      label: Text(
+                        'Review ${[if (deleted > 0) '${formatCount(deleted)} to delete', if (filed > 0) '${formatCount(filed)} to move'].join(', ')}',
+                      ),
                     ),
                   ),
                 ],

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:good_frames/data/decision_store.dart';
@@ -18,7 +20,9 @@ class Settings extends ChangeNotifier {
         PhotoOrder.newestFirst,
       ),
       _vibration = saved[_vibrationKey] != 'off',
-      _theme = _byName(ThemeMode.values, saved[_themeKey], ThemeMode.system);
+      _theme = _byName(ThemeMode.values, saved[_themeKey], ThemeMode.system),
+      _targetFolder = saved[_targetFolderKey],
+      _recentFolders = _decodeList(saved[_recentFoldersKey]);
 
   /// Loads the saved settings. One that was never changed, or that this
   /// version of the app doesn't understand, gets its default.
@@ -33,11 +37,16 @@ class Settings extends ChangeNotifier {
   static const _orderKey = 'order';
   static const _vibrationKey = 'vibration';
   static const _themeKey = 'theme';
+  static const _targetFolderKey = 'targetFolder';
+  static const _recentFoldersKey = 'recentFolders';
+  static const _maxRecent = 6;
 
   KeepSide _keepSide;
   PhotoOrder _order;
   bool _vibration;
   ThemeMode _theme;
+  String? _targetFolder;
+  List<String> _recentFolders;
 
   /// Which way a swipe keeps a photo.
   KeepSide get keepSide => _keepSide;
@@ -50,6 +59,13 @@ class Settings extends ChangeNotifier {
 
   /// Light, dark, or the same as the phone.
   ThemeMode get theme => _theme;
+
+  /// The gallery folder a swipe down files photos into, or null if none has
+  /// been chosen yet.
+  String? get targetFolder => _targetFolder;
+
+  /// Folders used before, most recent first, to pick from again.
+  List<String> get recentFolders => List.unmodifiable(_recentFolders);
 
   // Each setter throws if saving fails. The choice still applies until the
   // app closes, so the caller only has to tell the user.
@@ -64,6 +80,28 @@ class Settings extends ChangeNotifier {
 
   Future<void> setTheme(ThemeMode value) =>
       _change(() => _theme = value, _themeKey, value.name);
+
+  /// Makes [folder] (an already cleaned name) the one swipes down file into,
+  /// and the first of the recent ones.
+  Future<void> setTargetFolder(String folder) async {
+    _targetFolder = folder;
+    _recentFolders = [
+      folder,
+      ..._recentFolders.where((name) => name != folder),
+    ].take(_maxRecent).toList();
+    notifyListeners();
+    await _store.saveSetting(_targetFolderKey, folder);
+    await _store.saveSetting(_recentFoldersKey, jsonEncode(_recentFolders));
+  }
+
+  static List<String> _decodeList(String? saved) {
+    if (saved == null) return [];
+    try {
+      return [for (final item in jsonDecode(saved) as List) item as String];
+    } catch (_) {
+      return [];
+    }
+  }
 
   Future<void> _change(VoidCallback apply, String key, String saved) async {
     apply();

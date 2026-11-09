@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:good_frames/data/android_media.dart';
 import 'package:good_frames/data/photo_repository.dart';
 import 'package:good_frames/models/album.dart';
@@ -179,6 +181,23 @@ class AndroidFolderPhotoRepository
         maxHeight: maxSize,
         quality: 92,
       );
+
+  // Chosen-folder photos are only reachable through Android's document
+  // access, so sharing writes a large high-quality JPEG copy to a temporary
+  // file.
+  @override
+  Future<File?> fileForSharing(Photo photo) async {
+    final bytes = await AndroidMedia.image(
+      _uris[photo.id]!,
+      maxWidth: 8192,
+      maxHeight: 8192,
+      quality: 95,
+    );
+    if (bytes == null || bytes.isEmpty) return null;
+    final folder = await getTemporaryDirectory();
+    final file = File(p.join(folder.path, 'share_${photo.id}.jpg'));
+    return file.writeAsBytes(bytes, flush: true);
+  }
 
   @override
   Future<List<int>?> trashThumbnail(Photo photo) => AndroidMedia.image(

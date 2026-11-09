@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
@@ -140,6 +141,43 @@ class FakePhotoRepository implements PhotoRepository {
   @override
   ImageProvider detailImageFor(Photo photo, {int maxSize = 4096}) =>
       MemoryImage(_onePixelPng);
+
+  /// Whether the fake offers filing into folders. Off by default, so only
+  /// the tests about it see the feature.
+  bool canMove = false;
+
+  @override
+  bool get canMoveToFolders => canMove;
+
+  /// Plays the user tapping Cancel on the system's "move these?" prompt.
+  bool cancelMove = false;
+
+  /// Photo ids that refuse to move, like a name already taken in the folder.
+  Set<String> unmovableIds = {};
+
+  /// Where moved photos went: photo id to folder.
+  final movedTo = <String, String>{};
+
+  @override
+  Future<Set<String>> moveToFolder(List<Photo> photos, String folder) async {
+    if (cancelMove) return {};
+    final moved = <String>{};
+    for (final photo in photos) {
+      if (unmovableIds.contains(photo.id)) continue;
+      movedTo[photo.id] = folder;
+      moved.add(photo.id);
+    }
+    return moved;
+  }
+
+  /// Photo ids that were offered for sharing, in order.
+  final shared = <String>[];
+
+  @override
+  Future<File?> fileForSharing(Photo photo) async {
+    shared.add(photo.id);
+    return null;
+  }
 
   // No system prompt here, so the app shows its own, which tests can tap.
   @override

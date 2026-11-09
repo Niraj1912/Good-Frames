@@ -167,6 +167,10 @@ class AndroidPhotoRepository with AndroidTrash implements PhotoRepository {
     );
   }
 
+  // The original file, at full quality, for sharing.
+  @override
+  Future<File?> fileForSharing(Photo photo) => _assets[photo.id]!.originFile;
+
   // The small copy kept for the Recently deleted screen, made by Android.
   @override
   Future<List<int>?> trashThumbnail(Photo photo) => _assets[photo.id]!

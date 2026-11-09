@@ -130,6 +130,21 @@ class FolderPhotoRepository implements PhotoRepository {
       );
 
   @override
+  Future<File?> fileForSharing(Photo photo) async {
+    final file = File(photo.id);
+    return await file.exists() ? file : null;
+  }
+
+  // The Windows build is only for development; filing into gallery folders
+  // is an Android feature.
+  @override
+  bool get canMoveToFolders => false;
+
+  @override
+  Future<Set<String>> moveToFolder(List<Photo> photos, String folder) async =>
+      throw UnsupportedError('Moving into folders is Android-only.');
+
+  @override
   bool get confirmsTrashItself => false;
 
   @override

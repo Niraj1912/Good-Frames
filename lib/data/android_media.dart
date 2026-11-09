@@ -34,6 +34,21 @@ abstract final class AndroidMedia {
     return {...?done};
   }
 
+  /// Asks Android for permission to change [ids], then moves them into
+  /// Pictures/[folder]. One prompt for the batch; returns the ids that
+  /// moved, or none if the user said no.
+  static Future<Set<String>> moveToFolder(
+    List<String> ids,
+    String folder,
+  ) async {
+    if (ids.isEmpty) return {};
+    final done = await _trash.invokeListMethod<String>('moveToFolder', {
+      'ids': ids,
+      'folder': folder,
+    });
+    return {...?done};
+  }
+
   /// Opens Android's folder picker. Returns the folder, or null if the user
   /// backed out.
   static Future<ChosenFolder?> pickFolder() async {
@@ -276,6 +291,11 @@ mixin AndroidTrash {
     ]);
     return deleted;
   }
+
+  bool get canMoveToFolders => true;
+
+  Future<Set<String>> moveToFolder(List<Photo> photos, String folder) =>
+      AndroidMedia.moveToFolder([for (final photo in photos) photo.id], folder);
 
   Future<void> forgetTrashed(List<TrashedPhoto> photos) async {
     for (final photo in photos) {

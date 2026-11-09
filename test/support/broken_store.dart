@@ -17,6 +17,17 @@ class BrokenStore implements DecisionStore {
       throw Exception('disk full');
 
   @override
+  Future<void> recordFiled(String photoId, String folder) async =>
+      throw Exception('disk full');
+
+  @override
+  Future<Map<String, String>> loadPendingMoves() async => {};
+
+  @override
+  Future<void> clearPendingMoves(Iterable<String> photoIds) async =>
+      throw Exception('disk full');
+
+  @override
   Future<void> update(String photoId, Decision decision) async =>
       throw Exception('disk full');
 

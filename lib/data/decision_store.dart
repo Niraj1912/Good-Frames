@@ -30,15 +30,17 @@ class DecisionStore {
       options: OpenDatabaseOptions(
         // Version 1 had only decisions; version 2 added the trash table,
         // version 3 the settings one and version 5 the fingerprints (version
-        // 4 had them without colour, and was never released). Whenever the
+        // 4 had them without colour, and was never released) and version 6
+        // the photos waiting to be moved into a folder. Whenever the
         // tables change, bump the version and add a step to onUpgrade, so
         // people who already use the app keep their data.
-        version: 5,
+        version: 6,
         onCreate: (db, version) async {
           await db.execute(_createDecisionsTable);
           await db.execute(_createTrashTable);
           await db.execute(_createSettingsTable);
           await db.execute(_createFingerprintsTable);
+          await db.execute(_createPendingMovesTable);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) await db.execute(_createTrashTable);
@@ -49,6 +51,8 @@ class DecisionStore {
             await db.execute('DROP TABLE IF EXISTS fingerprints');
             await db.execute(_createFingerprintsTable);
           }
+          // Only adds a table: every decision is left exactly as it was.
+          if (oldVersion < 6) await db.execute(_createPendingMovesTable);
         },
       ),
     );
@@ -74,6 +78,45 @@ class DecisionStore {
       'decision': decision.name,
       'decided_at': DateTime.now().microsecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Saves a Keep for [photoId] and queues it to be moved into [folder], in
+  /// one transaction so the two never disagree.
+  Future<void> recordFiled(String photoId, String folder) async {
+    final batch = _db.batch();
+    batch.insert('decisions', {
+      'photo_id': photoId,
+      'decision': Decision.keep.name,
+      'decided_at': DateTime.now().microsecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    batch.insert('pending_moves', {
+      'photo_id': photoId,
+      'folder': folder,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await batch.commit(noResult: true);
+  }
+
+  /// The photos waiting to be moved, by photo id, with their folder.
+  Future<Map<String, String>> loadPendingMoves() async {
+    final rows = await _db.query('pending_moves');
+    return {
+      for (final row in rows)
+        row['photo_id']! as String: row['folder']! as String,
+    };
+  }
+
+  /// Stops waiting to move [photoIds]: they were moved, or the user changed
+  /// their mind. Their Keep decisions stay.
+  Future<void> clearPendingMoves(Iterable<String> photoIds) async {
+    final batch = _db.batch();
+    for (final photoId in photoIds) {
+      batch.delete(
+        'pending_moves',
+        where: 'photo_id = ?',
+        whereArgs: [photoId],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   /// Saves every decision in [decisions] (by photo id), in one transaction:
@@ -109,7 +152,10 @@ class DecisionStore {
   Future<void> remove(String photoId) async {
     // `?` placeholders, never string interpolation: the database inserts the
     // value safely, so a strange file name can't change the SQL.
-    await _db.delete('decisions', where: 'photo_id = ?', whereArgs: [photoId]);
+    final batch = _db.batch();
+    batch.delete('decisions', where: 'photo_id = ?', whereArgs: [photoId]);
+    batch.delete('pending_moves', where: 'photo_id = ?', whereArgs: [photoId]);
+    await batch.commit(noResult: true);
   }
 
   /// Forgets the decisions for all of [photoIds], in one transaction.
@@ -117,6 +163,11 @@ class DecisionStore {
     final batch = _db.batch();
     for (final photoId in photoIds) {
       batch.delete('decisions', where: 'photo_id = ?', whereArgs: [photoId]);
+      batch.delete(
+        'pending_moves',
+        where: 'photo_id = ?',
+        whereArgs: [photoId],
+      );
     }
     await batch.commit(noResult: true);
   }
@@ -128,6 +179,11 @@ class DecisionStore {
     for (final photo in photos) {
       batch.delete(
         'decisions',
+        where: 'photo_id = ?',
+        whereArgs: [photo.photoId],
+      );
+      batch.delete(
+        'pending_moves',
         where: 'photo_id = ?',
         whereArgs: [photo.photoId],
       );
@@ -266,5 +322,15 @@ const _createFingerprintsTable = '''
     hash      INTEGER NOT NULL,
     sharpness REAL NOT NULL,
     colour    INTEGER NOT NULL
+  )
+''';
+
+// Photos swiped down, waiting to be moved into a gallery folder. The folder
+// is kept per photo, so choosing a different one later doesn't send photos
+// already swiped somewhere else. Their decision (Keep) is in `decisions`.
+const _createPendingMovesTable = '''
+  CREATE TABLE pending_moves (
+    photo_id TEXT PRIMARY KEY,
+    folder   TEXT NOT NULL
   )
 ''';

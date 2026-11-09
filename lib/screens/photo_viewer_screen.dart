@@ -9,6 +9,7 @@ import 'package:good_frames/models/photo.dart';
 import 'package:good_frames/theme/app_theme.dart';
 import 'package:good_frames/widgets/decision_buttons.dart';
 import 'package:good_frames/widgets/formatting.dart';
+import 'package:good_frames/widgets/share_photo.dart';
 
 /// One photo, full screen and zoomable, for checking whether it's sharp
 /// before deciding. Pinch or double-tap to zoom (double-tap jumps to 100%:
@@ -161,6 +162,14 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          IconButton(
+            onPressed: () =>
+                sharePhoto(context, widget.repository, widget.photo),
+            icon: const Icon(Icons.share),
+            tooltip: 'Share photo',
+          ),
+        ],
       ),
       body: CallbackShortcuts(
         bindings: {

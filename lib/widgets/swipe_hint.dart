@@ -21,6 +21,8 @@ class SwipeHint extends StatelessWidget {
     required this.onRight,
     this.dragProgress,
     this.upProgress,
+    this.onDown,
+    this.downProgress,
   });
 
   final KeepSide keepSide;
@@ -41,20 +43,35 @@ class SwipeHint extends StatelessWidget {
   /// How far the photo is dragged up, from 0 to 1.
   final ValueListenable<double>? upProgress;
 
+  /// Files the photo into the chosen folder. Null hides the cue, where
+  /// filing isn't possible (the Windows build).
+  final VoidCallback? onDown;
+
+  /// How far the photo is dragged down, from 0 to 1.
+  final ValueListenable<double>? downProgress;
+
   @override
   Widget build(BuildContext context) {
     final sideways = dragProgress;
     final up = upProgress;
-    if (sideways == null && up == null) return _row(context, 0, 0);
+    final down = downProgress;
+    if (sideways == null && up == null && down == null) {
+      return _row(context, 0, 0, 0);
+    }
     // Only this row rebuilds as the drag moves, not the whole screen.
     return ListenableBuilder(
-      listenable: Listenable.merge([sideways, up]),
+      listenable: Listenable.merge([sideways, up, down]),
       builder: (context, _) =>
-          _row(context, sideways?.value ?? 0, up?.value ?? 0),
+          _row(context, sideways?.value ?? 0, up?.value ?? 0, down?.value ?? 0),
     );
   }
 
-  Widget _row(BuildContext context, double progress, double upPull) {
+  Widget _row(
+    BuildContext context,
+    double progress,
+    double upPull,
+    double downPull,
+  ) {
     final colors = SortColors.of(context);
     final scheme = Theme.of(context).colorScheme;
 
@@ -95,6 +112,16 @@ class SwipeHint extends StatelessWidget {
                   hint: 'swipe up',
                   onTap: onUp,
                 ),
+                if (onDown case final onDown?)
+                  _Cue(
+                    icon: Icons.arrow_downward_rounded,
+                    label: 'Move',
+                    color: const Color(0xFF38BDF8),
+                    pull: downPull.clamp(0.0, 1.0),
+                    iconFirst: true,
+                    hint: 'swipe down, to move into your folder',
+                    onTap: onDown,
+                  ),
                 _Cue(
                   icon: Icons.arrow_forward_rounded,
                   label: right.label,

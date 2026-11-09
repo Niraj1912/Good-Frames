@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/painting.dart';
 import 'package:good_frames/models/album.dart';
 import 'package:good_frames/models/chosen_folder.dart';
@@ -59,6 +61,11 @@ abstract interface class PhotoRepository {
   /// memory than [imageFor], so only for one photo at a time.
   ImageProvider detailImageFor(Photo photo, {int maxSize = 4096});
 
+  /// A file holding [photo], for handing to another app (sharing). Null if
+  /// one can't be made. May be a temporary copy, so it must not be deleted
+  /// or changed by the caller.
+  Future<File?> fileForSharing(Photo photo);
+
   /// True if the system shows its own "are you sure?" prompt when photos are
   /// moved to the trash, as Android does. Otherwise the app has to ask.
   bool get confirmsTrashItself;
@@ -87,6 +94,16 @@ abstract interface class PhotoRepository {
   /// the app has warned them. Returns the ids of those erased, or none if
   /// the user cancelled.
   Future<Set<String>> deleteForever(List<TrashedPhoto> photos);
+
+  /// True if photos can be moved into gallery folders (Android). Where it
+  /// isn't, the app hides the swipe-down-to-file feature.
+  bool get canMoveToFolders;
+
+  /// Moves [photos] into the gallery folder called [folder] (a plain name,
+  /// created if needed), never copying or deleting them. Returns the ids
+  /// actually moved: all of them, some if others couldn't be, or none if the
+  /// user cancelled. A moved photo keeps its id.
+  Future<Set<String>> moveToFolder(List<Photo> photos, String folder);
 
   /// Frees anything kept only to show [photos], once they can no longer be
   /// restored.

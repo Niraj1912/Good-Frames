@@ -6,8 +6,9 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:good_frames/models/keep_side.dart';
 
-/// Which way a card was swiped. Left and right decide; up is for later.
-enum SwipeDirection { left, right, up }
+/// Which way a card was swiped. Left and right decide; up is for later;
+/// down (only when the card allows it) files the photo into a folder.
+enum SwipeDirection { left, right, up, down }
 
 /// A card the user drags left, right or up. Let go past the threshold, or
 /// flick it, and it flies off screen and reports the direction. Otherwise it
@@ -24,11 +25,25 @@ class SwipeCard extends StatefulWidget {
     required this.child,
     this.dragProgress,
     this.upProgress,
+    this.downProgress,
+    this.canSwipeDown = false,
+    this.downLabel = 'MOVE',
     this.enterFrom,
     this.onTap,
     this.keepSide = KeepSide.right,
     this.vibration = true,
   });
+
+  /// Whether dragging down counts as a swipe (filing into a folder). When
+  /// false, a downward drag just springs back.
+  final bool canSwipeDown;
+
+  /// The word on the stamp while dragging down, such as the folder's name.
+  final String downLabel;
+
+  /// Updated from 0 to 1 (dragged down far enough to count), and 0 while the
+  /// drag is heading any other way.
+  final ValueNotifier<double>? downProgress;
 
   /// Which way keeps, so dragging that way shows the keep colour.
   final KeepSide keepSide;
@@ -158,7 +173,10 @@ class SwipeCardState extends State<SwipeCard>
     if (direction == null) {
       _springBack(velocity: velocity);
     } else {
-      final speed = direction == SwipeDirection.up ? -velocity.dy : velocity.dx;
+      final speed = switch (direction) {
+        SwipeDirection.up || SwipeDirection.down => velocity.dy,
+        _ => velocity.dx,
+      };
       _flyOut(direction, speed: speed.abs());
     }
   }
@@ -166,6 +184,9 @@ class SwipeCardState extends State<SwipeCard>
   // Up when the card has moved up more than sideways; otherwise left or
   // right. Null if it hasn't gone far enough that way to count.
   SwipeDirection? _heading(Offset offset) {
+    if (_isDown(offset)) {
+      return offset.dy > _threshold ? SwipeDirection.down : null;
+    }
     if (_isUp(offset)) {
       return -offset.dy > _threshold ? SwipeDirection.up : null;
     }
@@ -175,6 +196,9 @@ class SwipeCardState extends State<SwipeCard>
 
   // A fast flick counts even if short, again in its main direction.
   SwipeDirection? _flick(Offset velocity) {
+    if (_isDown(velocity)) {
+      return velocity.dy > _flickSpeed ? SwipeDirection.down : null;
+    }
     if (_isUp(velocity)) {
       return -velocity.dy > _flickSpeed ? SwipeDirection.up : null;
     }
@@ -183,6 +207,11 @@ class SwipeCardState extends State<SwipeCard>
   }
 
   static bool _isUp(Offset offset) => -offset.dy > offset.dx.abs();
+
+  // Only a swipe when the card allows it; otherwise a downward drag is
+  // treated like any other and, being mostly vertical, never counts.
+  bool _isDown(Offset offset) =>
+      widget.canSwipeDown && offset.dy > offset.dx.abs();
 
   // Leaves at the speed of the flick, so the card feels thrown rather than
   // played back. Buttons and keys (no speed) use a brisk default.
@@ -194,6 +223,7 @@ class SwipeCardState extends State<SwipeCard>
       SwipeDirection.right => Offset(_size.width * 1.4, _offset.dy),
       SwipeDirection.left => Offset(-_size.width * 1.4, _offset.dy),
       SwipeDirection.up => Offset(_offset.dx, -_size.height * 1.4),
+      SwipeDirection.down => Offset(_offset.dx, _size.height * 1.4),
     };
     final distance = (target - _offset).distance;
     final seconds = (distance / math.max(speed, 2400)).clamp(0.12, 0.28);
@@ -211,6 +241,7 @@ class SwipeCardState extends State<SwipeCard>
           if (!mounted) return;
           widget.dragProgress?.value = 0;
           widget.upProgress?.value = 0;
+          widget.downProgress?.value = 0;
           widget.onSwiped(direction);
         });
   }
@@ -238,6 +269,7 @@ class SwipeCardState extends State<SwipeCard>
       SwipeDirection.right => Offset(_size.width * 1.2, 0),
       SwipeDirection.left => Offset(-_size.width * 1.2, 0),
       SwipeDirection.up => Offset(0, -_size.height * 1.2),
+      SwipeDirection.down => Offset(0, _size.height * 1.2),
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -258,22 +290,31 @@ class SwipeCardState extends State<SwipeCard>
 
   void _setOffset(Offset offset) {
     setState(() => _offset = offset);
-    final (sideways, up) = _progress(offset);
+    final (sideways, up, down) = _progress(offset);
     widget.dragProgress?.value = sideways;
     widget.upProgress?.value = up;
+    widget.downProgress?.value = down;
   }
 
-  // How far towards counting the card has moved: sideways (-1 to 1) or up
-  // (0 to 1). Only the main direction shows, so the stamps and buttons
-  // always say what letting go would do.
-  (double, double) _progress(Offset offset) => _isUp(offset)
-      ? (0.0, (-offset.dy / _threshold).clamp(0.0, 1.0))
-      : ((offset.dx / _threshold).clamp(-1.0, 1.0), 0.0);
+  // How far towards counting the card has moved: sideways (-1 to 1), up
+  // (0 to 1) or down (0 to 1). Only the main direction shows, so the stamps
+  // and buttons always say what letting go would do.
+  (double, double, double) _progress(Offset offset) {
+    if (_isDown(offset)) {
+      return (0.0, 0.0, (offset.dy / _threshold).clamp(0.0, 1.0));
+    }
+    if (_isUp(offset)) {
+      return (0.0, (-offset.dy / _threshold).clamp(0.0, 1.0), 0.0);
+    }
+    return ((offset.dx / _threshold).clamp(-1.0, 1.0), 0.0, 0.0);
+  }
 
   @override
   Widget build(BuildContext context) {
     // Grey: putting off isn't keep or delete.
     const later = Color(0xFF9AA7B2);
+    // Sky blue: filing into a folder is a kind of keep, but its own thing.
+    const file = Color(0xFF38BDF8);
     // Brighter than the text colours: these sit on photos.
     const keep = (
       label: 'KEEP',
@@ -300,7 +341,7 @@ class SwipeCardState extends State<SwipeCard>
           _pendingEntry = null;
           _slideIn(from);
         }
-        final (progress, up) = _progress(_offset);
+        final (progress, up, down) = _progress(_offset);
         final tilt =
             _maxTilt * (_offset.dx / math.max(_size.width, 1)).clamp(-1.0, 1.0);
 
@@ -355,6 +396,16 @@ class SwipeCardState extends State<SwipeCard>
                         strength: up,
                       ),
                     ),
+                    if (widget.canSwipeDown)
+                      Positioned.fill(
+                        child: SwipeWash(
+                          label: widget.downLabel,
+                          color: file,
+                          icon: Icons.folder_rounded,
+                          from: Alignment.bottomCenter,
+                          strength: down,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -403,7 +454,7 @@ class SwipeWash extends StatelessWidget {
           CustomPaint(painter: _BloomPainter(color, from, opacity)),
           if (icon != null)
             Align(
-              alignment: Alignment(from.x * 0.9, -0.9),
+              alignment: Alignment(from.x * 0.9, from.y * 0.9),
               child: Opacity(
                 opacity: opacity,
                 child: Transform.scale(

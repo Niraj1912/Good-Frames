@@ -42,6 +42,10 @@ class SortController extends ChangeNotifier {
   // The number of the last set of decisions made together (see
   // decideMany); 0 is never used, as it means "on its own".
   int _lastGroup = 0;
+  // Photos swiped down, by id: the gallery folder each will be moved into.
+  // Each is also a Keep in [_decisions]. Saved, so a swipe survives the app
+  // being closed before the move.
+  final _filing = <String, String>{};
   // Photos put off for later, in the order they were put off (a map keeps
   // the order things were added). Not saved: only for this visit.
   final _later = <String, Photo>{};
@@ -89,6 +93,19 @@ class SortController extends ChangeNotifier {
   int get keepCount =>
       _shown.where((photo) => _decisions[photo.id] == Decision.keep).length;
   int get deleteCount => sortedCount - keepCount;
+
+  /// Photos swiped down that are still waiting to be moved to their folder.
+  int get filedCount => _shown.where((p) => _filing.containsKey(p.id)).length;
+
+  /// Those photos, in album order, with the folder each is going to.
+  List<({Photo photo, String folder})> get filedPhotos => [
+    for (final photo in _shown)
+      if (_filing[photo.id] case final folder?) (photo: photo, folder: folder),
+  ];
+
+  /// The folder [photo] is waiting to be moved to, or null.
+  String? folderFor(Photo photo) => _filing[photo.id];
+
   bool get canUndo => _history.any((step) => _isShown(step.photoId));
 
   /// Photos put off for later that are still waiting to come back.
@@ -233,6 +250,7 @@ class SortController extends ChangeNotifier {
         _decisions[record.photoId] = record.decision;
         _history.add((photoId: record.photoId, later: false, group: 0));
       }
+      _filing.addAll(await store.loadPendingMoves());
       await for (final page in repository.photosIn(album, order: order)) {
         for (final photo in page) {
           // Skip repeats, in case the album changed while it was loading.
@@ -252,21 +270,30 @@ class SortController extends ChangeNotifier {
   }
 
   /// Records [decision] for the current photo and moves on to the next one.
-  Future<void> decide(Decision decision) async {
+  /// With a [folder] (only for Keep), the photo is also queued to be moved
+  /// into that gallery folder later, from the review screen.
+  Future<void> decide(Decision decision, {String? folder}) async {
     final photo = current;
     if (photo == null) return;
+    final filing = decision == Decision.keep ? folder : null;
 
     // Update the screen first so fast sorting feels instant, then save. If
     // saving fails, put everything back and let the caller show an error.
     final step = (photoId: photo.id, later: false, group: 0);
     final wasLater = _later.remove(photo.id) != null;
     _decisions[photo.id] = decision;
+    if (filing != null) _filing[photo.id] = filing;
     _history.add(step);
     _notify();
     try {
-      await store.record(photo.id, decision);
+      if (filing == null) {
+        await store.record(photo.id, decision);
+      } else {
+        await store.recordFiled(photo.id, filing);
+      }
     } catch (_) {
       _decisions.remove(photo.id);
+      _filing.remove(photo.id);
       _history.remove(step);
       if (wasLater) _later[photo.id] = photo;
       _undone = photo;
@@ -339,6 +366,13 @@ class SortController extends ChangeNotifier {
     _ => null,
   };
 
+  /// Whether [undo] would take back a photo swiped down into a folder, so
+  /// it can come back from below.
+  bool get lastWasFiled => switch (_lastStep) {
+    (:final photoId, later: false, group: 0) => _filing.containsKey(photoId),
+    _ => false,
+  };
+
   /// Whether [undo] would bring back a photo that was put off for later.
   bool get lastWasPutOff => _lastStep?.later ?? false;
 
@@ -375,11 +409,13 @@ class SortController extends ChangeNotifier {
     }
 
     final decision = _decisions.remove(photo.id)!;
+    final folder = _filing.remove(photo.id);
     _notify();
     try {
       await store.remove(photo.id);
     } catch (_) {
       _decisions[photo.id] = decision;
+      if (folder != null) _filing[photo.id] = folder;
       _history.insert(index, step);
       _undone = previous;
       _notify();
@@ -437,6 +473,70 @@ class SortController extends ChangeNotifier {
       _notify();
       rethrow;
     }
+  }
+
+  /// Stops waiting to move [photo]: it stays a Keep, where it is.
+  Future<void> unfile(Photo photo) async {
+    final folder = _filing.remove(photo.id);
+    if (folder == null) return;
+    _notify();
+    try {
+      await store.clearPendingMoves([photo.id]);
+    } catch (_) {
+      _filing[photo.id] = folder;
+      _notify();
+      rethrow;
+    }
+  }
+
+  /// Queues [photo] again for [folder], after [unfile] on the review screen.
+  Future<void> refile(Photo photo, String folder) async {
+    if (!_byId.containsKey(photo.id) || _filing.containsKey(photo.id)) return;
+    _filing[photo.id] = folder;
+    _notify();
+    try {
+      await store.recordFiled(photo.id, folder);
+    } catch (_) {
+      _filing.remove(photo.id);
+      _notify();
+      rethrow;
+    }
+  }
+
+  /// Moves every photo swiped down into its gallery folder. Photos that
+  /// couldn't be moved stay queued, so the user can try again. Moved photos
+  /// stay Keeps with the same id, so nothing about them is lost.
+  Future<MoveResult> moveFiled() async {
+    await _fullyLoaded.future; // Every queued photo, not just those loaded.
+    final byFolder = <String, List<Photo>>{};
+    for (final (:photo, :folder) in filedPhotos) {
+      (byFolder[folder] ??= []).add(photo);
+    }
+    final requested = byFolder.values.fold(0, (sum, list) => sum + list.length);
+    if (requested == 0) return const MoveResult(requested: 0, moved: 0);
+
+    final movedIds = <String>{};
+    final folders = <String>{};
+    for (final MapEntry(key: folder, value: photos) in byFolder.entries) {
+      final moved = await repository.moveToFolder(photos, folder);
+      // Nothing moved: the user said no (or nothing could move), so don't
+      // ask again for the next folder.
+      if (moved.isEmpty) break;
+      movedIds.addAll(moved);
+      folders.add(folder);
+    }
+    _filing.removeWhere((id, _) => movedIds.contains(id));
+    _notify();
+    // If this fails, the photos have still moved; the leftover rows are
+    // harmless, as moving a photo to where it already is changes nothing.
+    try {
+      await store.clearPendingMoves(movedIds);
+    } catch (_) {}
+    return MoveResult(
+      requested: requested,
+      moved: movedIds.length,
+      folders: folders,
+    );
   }
 
   /// Moves every photo marked for deletion to the trash. Photos that weren't
@@ -518,6 +618,7 @@ class SortController extends ChangeNotifier {
   // putting off.
   void _forget(Set<String> ids) {
     _decisions.removeWhere((id, _) => ids.contains(id));
+    _filing.removeWhere((id, _) => ids.contains(id));
     _history.removeWhere((step) => ids.contains(step.photoId));
     _later.removeWhere((id, _) => ids.contains(id));
   }
@@ -592,6 +693,27 @@ typedef _Step = ({String photoId, bool later, int group});
 /// A month of an album, for choosing which month to sort: its first day,
 /// how many photos were taken in it, and how many of those are sorted.
 typedef MonthCount = ({DateTime month, int photos, int sorted});
+
+/// What happened when the photos swiped down were moved into folders.
+class MoveResult {
+  const MoveResult({
+    required this.requested,
+    required this.moved,
+    this.folders = const {},
+  });
+
+  final int requested;
+  final int moved;
+
+  /// The folders that received photos.
+  final Set<String> folders;
+
+  /// Photos that stayed queued: couldn't be moved, or the user said no.
+  int get failed => requested - moved;
+
+  /// The user said no, so nothing was moved.
+  bool get cancelled => requested > 0 && moved == 0;
+}
 
 /// What happened when the marked photos were moved to the trash.
 class TrashResult {
