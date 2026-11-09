@@ -39,24 +39,35 @@ class FolderAccess(private val activity: Activity) : MethodChannel.MethodCallHan
             "pick" -> pick(result)
             "list" -> inBackground(result) { chosenFolders() }
             "forget" -> inBackground(result) {
-                forget(Uri.parse(call.argument<String>("uri")!!))
+                forget(Uri.parse(call.text("uri")))
                 null // Nothing to answer; Kotlin's Unit can't cross to Dart.
             }
-            "scan" -> inBackground(result) { scan(Uri.parse(call.argument<String>("uri")!!)) }
+            "scan" -> inBackground(result) { scan(Uri.parse(call.text("uri"))) }
             "mediaIds" -> inBackground(result) {
-                call.argument<List<String>>("uris")!!.map { mediaId(Uri.parse(it)) }
+                call.texts("uris").map { mediaId(Uri.parse(it)) }
             }
             "image" -> inBackground(result) {
                 image(
-                    Uri.parse(call.argument<String>("uri")!!),
-                    call.argument<Int>("maxWidth")!!,
-                    call.argument<Int>("maxHeight")!!,
-                    call.argument<Int>("quality")!!,
+                    Uri.parse(call.text("uri")),
+                    call.number("maxWidth"),
+                    call.number("maxHeight"),
+                    call.number("quality"),
                 )
             }
             else -> result.notImplemented()
         }
     }
+
+    // Arguments come over a channel, so check them rather than trust them: a
+    // missing or wrong-typed one becomes a clear error for Dart, not a crash.
+    private fun MethodCall.text(name: String): String =
+        argument<String>(name) ?: throw IllegalArgumentException("Missing '$name'.")
+
+    private fun MethodCall.texts(name: String): List<String> =
+        argument<List<String>>(name) ?: throw IllegalArgumentException("Missing '$name'.")
+
+    private fun MethodCall.number(name: String): Int =
+        argument<Int>(name) ?: throw IllegalArgumentException("Missing '$name'.")
 
     private fun pick(result: MethodChannel.Result) {
         if (pendingPick != null) {

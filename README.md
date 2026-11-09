@@ -323,9 +323,18 @@ without uninstalling first, which wipes the app's saved decisions.
    the processor's number to the build number (arm64's is 2), so after an
    arm64 APK, a universal one counts as older and Android refuses it.
 
-Without `android/key.properties`, release builds still work but are signed
-with Flutter's shared debug key, which is fine for testing and not for
-sharing.
+Without a signing key the release build stops with an error, on purpose: an
+APK signed with Flutter's shared debug key could be forged by anyone. Besides
+`android/key.properties`, the key can come from the environment variables
+`GOODFRAMES_STORE_FILE`, `GOODFRAMES_STORE_PASSWORD`, `GOODFRAMES_KEY_ALIAS`
+and `GOODFRAMES_KEY_PASSWORD`, which keeps the passwords out of any file.
+Release builds are shrunk and renamed by R8; to also scramble the Dart code,
+add `--obfuscate --split-debug-info=build/symbols` and keep that folder, as
+it is what turns crash traces readable again.
+
+Backups are off (`allowBackup="false"` plus data-extraction rules), so sort
+history never leaves the phone through Android's cloud backup or a phone
+transfer.
 
 The release APK asks only for photo access. Unlike debug builds, which need
 internet access to talk to the laptop's debugger, it has no internet

@@ -6,14 +6,40 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// The release signing key's location and passwords, from android/key.properties.
-// That file is never committed (see .gitignore); key.properties.example shows
-// what goes in it, and the README how to make the key.
-val releaseKey = Properties().apply {
+// The release signing key's location and passwords. Each comes from an
+// environment variable if set (so the passwords can stay out of any file), else
+// from android/key.properties. That file is never committed (see .gitignore);
+// key.properties.example shows what goes in it, and the README how to make the
+// key.
+val fileKey = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
-val hasReleaseKey = !releaseKey.isEmpty
+fun keySetting(property: String, env: String): String? =
+    System.getenv(env)?.takeIf { it.isNotBlank() } ?: fileKey.getProperty(property)
+
+val keyStorePath = keySetting("storeFile", "GOODFRAMES_STORE_FILE")
+val keyStorePassword = keySetting("storePassword", "GOODFRAMES_STORE_PASSWORD")
+val keyAliasName = keySetting("keyAlias", "GOODFRAMES_KEY_ALIAS")
+val keyPasswordValue = keySetting("keyPassword", "GOODFRAMES_KEY_PASSWORD")
+val hasReleaseKey = listOf(keyStorePath, keyStorePassword, keyAliasName, keyPasswordValue)
+    .all { it != null }
+
+// A release build without the real key would be signed with the debug key,
+// which anyone can forge. Stop the build instead of producing it.
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any {
+        it.name.matches(Regex("(assemble|bundle|package)Release"))
+    }
+    if (buildingRelease && !hasReleaseKey) {
+        throw GradleException(
+            "No release signing key. Create android/key.properties (see " +
+                "key.properties.example) or set the GOODFRAMES_STORE_FILE, " +
+                "GOODFRAMES_STORE_PASSWORD, GOODFRAMES_KEY_ALIAS and " +
+                "GOODFRAMES_KEY_PASSWORD environment variables."
+        )
+    }
+}
 
 android {
     namespace = "com.photoswipe.photo_swipe"
@@ -43,21 +69,27 @@ android {
     signingConfigs {
         if (hasReleaseKey) {
             create("release") {
-                storeFile = file(releaseKey.getProperty("storeFile"))
-                storePassword = releaseKey.getProperty("storePassword")
-                keyAlias = releaseKey.getProperty("keyAlias")
-                keyPassword = releaseKey.getProperty("keyPassword")
+                storeFile = file(keyStorePath!!)
+                storePassword = keyStorePassword
+                keyAlias = keyAliasName
+                keyPassword = keyPasswordValue
             }
         }
     }
 
     buildTypes {
         release {
-            // Without key.properties (a fresh clone, say) release builds still
-            // work, signed with the debug key. Such an APK can't update one
-            // signed with the real key, so only share real-key builds.
-            signingConfig = signingConfigs.getByName(
-                if (hasReleaseKey) "release" else "debug"
+            // Only ever the real key; the check above stops the build if it
+            // is missing.
+            if (hasReleaseKey) signingConfig = signingConfigs.getByName("release")
+            // R8 removes unused code and shortens names, making the app
+            // smaller and harder to read. Rules for what it must keep are in
+            // proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
             )
         }
     }

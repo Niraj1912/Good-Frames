@@ -39,7 +39,8 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
             return
         }
         try {
-            val ids = call.argument<List<String>>("ids")!!
+            val ids = call.argument<List<String>>("ids")
+                ?: throw IllegalArgumentException("Missing 'ids'.")
             val uris = ids.map {
                 ContentUris.withAppendedId(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,

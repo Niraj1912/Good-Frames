@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/painting.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_swipe/data/photo_repository.dart';
@@ -149,10 +150,35 @@ class FolderPhotoRepository implements PhotoRepository {
     return moved;
   }
 
+  /// Whether [path] is really inside [root]. [p.isWithin] reads the text of
+  /// the paths only, so a shortcut (symbolic link) inside the folder that
+  /// points somewhere else would pass it. This also follows links and compares
+  /// where they truly lead. A file that isn't there yet passes on the text
+  /// check alone, since there is nothing to follow.
+  @visibleForTesting
+  static bool isInside(String root, String path) {
+    if (!p.isWithin(root, path)) return false;
+    try {
+      if (FileSystemEntity.typeSync(path, followLinks: false) ==
+          FileSystemEntityType.notFound) {
+        return true;
+      }
+      final realRoot = Directory(root).resolveSymbolicLinksSync();
+      final real = FileSystemEntity.isDirectorySync(path)
+          ? Directory(path).resolveSymbolicLinksSync()
+          : File(path).resolveSymbolicLinksSync();
+      return p.isWithin(realRoot, real);
+    } on FileSystemException {
+      return false;
+    }
+  }
+
+  bool _isInside(String root, String path) => isInside(root, path);
+
   Future<TrashedPhoto?> _moveOneToTrash(Photo photo) async {
     // A photo id is a path, so check it really is inside our folder before
     // touching it. Code that moves files must never trust a path blindly.
-    if (!p.isWithin(rootPath, photo.id)) return null;
+    if (!_isInside(rootPath, photo.id)) return null;
 
     // Keep the folders inside the trash, so Camera/IMG_0001.jpg and
     // Screenshots/IMG_0001.jpg can't collide there.
@@ -189,8 +215,8 @@ class FolderPhotoRepository implements PhotoRepository {
       // The same rule as trashing: only move files from where we put them,
       // back to somewhere inside our folder.
       if (from == null ||
-          !p.isWithin(trashFolder, from) ||
-          !p.isWithin(rootPath, photo.photoId)) {
+          !_isInside(trashFolder, from) ||
+          !_isInside(rootPath, photo.photoId)) {
         continue;
       }
       // Something new may have taken the old name since; don't overwrite it.
@@ -215,7 +241,7 @@ class FolderPhotoRepository implements PhotoRepository {
       final path = photo.trashPath;
       // Only ever erase files inside our own trash folder, never a photo
       // still in the library, whatever the database says.
-      if (path == null || !p.isWithin(trashFolder, path)) continue;
+      if (path == null || !_isInside(trashFolder, path)) continue;
       try {
         await File(path).delete();
         deleted.add(photo.photoId);
