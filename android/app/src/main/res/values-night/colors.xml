@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The dark theme's surface, so the splash matches the app in dark mode. -->
-    <color name="splash_background">#131313</color>
+    <!-- The dark theme background (Midnight), so the splash matches the app in dark mode. -->
+    <color name="splash_background">#101820</color>
 </resources>

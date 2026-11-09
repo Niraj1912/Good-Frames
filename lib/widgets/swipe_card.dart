@@ -1,10 +1,10 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_swipe/models/keep_side.dart';
-import 'package:photo_swipe/theme/app_theme.dart';
 
 /// Which way a card was swiped. Left and right decide; up is for later.
 enum SwipeDirection { left, right, up }
@@ -30,7 +30,7 @@ class SwipeCard extends StatefulWidget {
     this.vibration = true,
   });
 
-  /// Which way keeps, so dragging that way shows the KEEP stamp.
+  /// Which way keeps, so dragging that way shows the keep colour.
   final KeepSide keepSide;
 
   /// Buzz softly when letting go would count, and when the card leaves.
@@ -272,10 +272,19 @@ class SwipeCardState extends State<SwipeCard>
 
   @override
   Widget build(BuildContext context) {
-    final colors = SortColors.of(context);
-    final accent = Theme.of(context).colorScheme.primary;
-    final keep = (label: 'KEEP', color: colors.keep);
-    final delete = (label: 'DELETE', color: colors.delete);
+    // Grey: putting off isn't keep or delete.
+    const later = Color(0xFF9AA7B2);
+    // Brighter than the text colours: these sit on photos.
+    const keep = (
+      label: 'KEEP',
+      color: Color(0xFF34D399),
+      icon: Icons.check_rounded,
+    );
+    const delete = (
+      label: 'DELETE',
+      color: Color(0xFFFF5A6A),
+      icon: Icons.close_rounded,
+    );
     // Each stamp sits on the side the card is leaving from, like a label
     // being revealed: dragging right shows the top-left one.
     final (right, left) = switch (widget.keepSide) {
@@ -317,39 +326,33 @@ class SwipeCardState extends State<SwipeCard>
                   clipBehavior: Clip.none,
                   children: [
                     widget.child,
-                    Positioned(
-                      top: 20,
-                      left: 20,
-                      child: _Stamp(
+                    // Colour washes in from the corner the card is heading
+                    // for, about half way across: green to keep, red to
+                    // delete, grey to put off.
+                    Positioned.fill(
+                      child: SwipeWash(
                         label: right.label,
                         color: right.color,
-                        angle: -0.12,
+                        icon: right.icon,
+                        from: Alignment.topRight,
                         strength: progress.clamp(0.0, 1.0),
                       ),
                     ),
-                    Positioned(
-                      top: 20,
-                      right: 20,
-                      child: _Stamp(
+                    Positioned.fill(
+                      child: SwipeWash(
                         label: left.label,
                         color: left.color,
-                        angle: 0.12,
+                        icon: left.icon,
+                        from: Alignment.topLeft,
                         strength: (-progress).clamp(0.0, 1.0),
                       ),
                     ),
-                    // Going up, the label shows along the bottom edge. In
-                    // the accent blue: putting off isn't keep or delete.
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 20,
-                      child: Center(
-                        child: _Stamp(
-                          label: 'LATER',
-                          color: accent,
-                          angle: 0,
-                          strength: up,
-                        ),
+                    Positioned.fill(
+                      child: SwipeWash(
+                        label: 'LATER',
+                        color: later,
+                        from: Alignment.topCenter,
+                        strength: up,
                       ),
                     ),
                   ],
@@ -363,56 +366,144 @@ class SwipeCardState extends State<SwipeCard>
   }
 }
 
-/// The KEEP / DELETE / LATER label that appears while dragging. [strength] runs
-/// from 0 (hidden) to 1 (past the threshold): it fades in and settles from
-/// slightly larger to its final size, like being pressed down.
-class _Stamp extends StatelessWidget {
-  const _Stamp({
+/// What shows while dragging: a soft round bloom of [color] spilling in
+/// from the corner the card is heading for, blended into the photo so its
+/// detail still shows, and (with a [word]) a pill of frosted glass holding
+/// an icon and the word. [strength] runs from 0 (hidden) to 1 (past the
+/// threshold).
+@visibleForTesting
+class SwipeWash extends StatelessWidget {
+  SwipeWash({
     required this.label,
     required this.color,
-    required this.angle,
+    required this.from,
     required this.strength,
-  });
+    this.icon,
+  }) : super(key: ValueKey(label));
 
   final String label;
   final Color color;
-  final double angle;
+  final Alignment from;
   final double strength;
+
+  /// Set to show the glass pill; without it, only the bloom shows.
+  final IconData? icon;
+
+  /// Fully bright by half way to the threshold, so it never looks faint.
+  double get opacity => (strength * 2).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: strength,
-      child: Transform.scale(
-        scale: 1.15 - 0.15 * strength,
-        child: Transform.rotate(
-          angle: angle,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              // Paper tinted with the stamp's own colour (dark in dark
-              // mode), so the label reads clearly on any photo.
-              color: Color.alphaBlend(
-                color.withValues(alpha: 0.2),
-                Theme.of(context).colorScheme.surface,
-              ).withValues(alpha: 0.94),
-              border: Border.all(color: color, width: 2.5),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 3,
+    final icon = this.icon;
+    if (opacity <= 0) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(painter: _BloomPainter(color, from, opacity)),
+          if (icon != null)
+            Align(
+              alignment: Alignment(from.x * 0.9, -0.9),
+              child: Opacity(
+                opacity: opacity,
+                child: Transform.scale(
+                  scale: 1.12 - 0.12 * strength,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0x66101820),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: const Color(0x59FFFFFF)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 7, 16, 7),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(icon, size: 18, color: Colors.white),
+                              const SizedBox(width: 6),
+                              Text(
+                                label,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
+}
+
+/// A radial bloom from a corner or edge, easing out to nothing. Drawn with
+/// over a dark pool, so it looks the same on any photo.
+class _BloomPainter extends CustomPainter {
+  const _BloomPainter(this.color, this.from, this.opacity);
+
+  final Color color;
+  final Alignment from;
+  final double opacity;
+
+  // Many small steps along a smooth curve, so the eye finds no ring where
+  // the colour changes pace.
+  static const _steps = 16;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final colors = <Color>[];
+    final stops = <double>[];
+    for (var i = 0; i <= _steps; i++) {
+      final t = i / _steps;
+      colors.add(color.withValues(alpha: opacity * 0.9 * (1 - _ease(t))));
+      stops.add(t);
+    }
+    final rect = Offset.zero & size;
+    // A soft dark pool under the colour first, so the colour looks the same
+    // on a white sky as on a black night, and the pill's white reads on it.
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: from,
+          radius: 1.3,
+          colors: [
+            for (var i = 0; i <= _steps; i++)
+              Colors.black.withValues(
+                alpha: opacity * 0.5 * (1 - _ease(i / _steps)),
+              ),
+          ],
+          stops: [for (var i = 0; i <= _steps; i++) i / _steps],
+        ).createShader(rect),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: from,
+          radius: 1.15,
+          colors: colors,
+          stops: stops,
+        ).createShader(rect),
+    );
+  }
+
+  static double _ease(double t) => t * t * t * (t * (t * 6 - 15) + 10);
+
+  @override
+  bool shouldRepaint(_BloomPainter old) =>
+      old.color != color || old.from != from || old.opacity != opacity;
 }

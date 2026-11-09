@@ -24,26 +24,26 @@ abstract final class AppTheme {
   static final light = _build(
     const ColorScheme(
       brightness: Brightness.light,
-      primary: Color(0xFF2D5BA6), // Ink blue, the one accent
+      primary: Color(0xFF36766D), // Eucalyptus teal, the one accent
       onPrimary: Color(0xFFFFFFFF),
-      primaryContainer: Color(0xFFDCE4F5), // Behind icons that mark a choice
-      onPrimaryContainer: Color(0xFF173A73),
-      secondary: Color(0xFF5E5D59),
-      onSecondary: Color(0xFFF7F6F3),
-      error: Color(0xFFB3372B), // Brick red, the delete colour
+      primaryContainer: Color(0xFFE0EEEA), // Behind icons that mark a choice
+      onPrimaryContainer: Color(0xFF285F58),
+      secondary: Color(0xFF53666D),
+      onSecondary: Color(0xFFFFFFFF),
+      error: Color(0xFFB6404A), // The delete colour
       onError: Color(0xFFFFFFFF),
-      errorContainer: Color(0xFFF5DFDB),
-      onErrorContainer: Color(0xFF5C1710),
-      surface: Color(0xFFF7F6F3), // Warm paper
-      onSurface: Color(0xFF1B1B1A),
-      onSurfaceVariant: Color(0xFF5E5D59),
+      errorContainer: Color(0xFFF6E4E5),
+      onErrorContainer: Color(0xFF6B1F26),
+      surface: Color(0xFFF2F5F4), // Daylight
+      onSurface: Color(0xFF17242A),
+      onSurfaceVariant: Color(0xFF53666D),
       surfaceContainerLowest: Color(0xFFFFFFFF),
-      surfaceContainerLow: Color(0xFFF1F0EC),
-      surfaceContainer: Color(0xFFECEBE6),
-      surfaceContainerHigh: Color(0xFFE6E4DF),
-      surfaceContainerHighest: Color(0xFFDEDCD6),
-      outline: Color(0xFFC6C4BE),
-      outlineVariant: Color(0xFFE1DFD9),
+      surfaceContainerLow: Color(0xFFEEF3F2),
+      surfaceContainer: Color(0xFFEAF0EF),
+      surfaceContainerHigh: Color(0xFFE7ECEB),
+      surfaceContainerHighest: Color(0xFFE1EAE8),
+      outline: Color(0xFFBCCBC8),
+      outlineVariant: Color(0xFFDDE5E3),
     ),
     SortColors.light,
     GlassColors.light,
@@ -52,26 +52,26 @@ abstract final class AppTheme {
   static final dark = _build(
     const ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF8FB2EE),
-      onPrimary: Color(0xFF0E1A2E),
-      primaryContainer: Color(0xFF223A61),
-      onPrimaryContainer: Color(0xFFD6E2F8),
-      secondary: Color(0xFFA6A49F),
-      onSecondary: Color(0xFF131313),
-      error: Color(0xFFE2705F),
-      onError: Color(0xFF2A0905),
-      errorContainer: Color(0xFF4A1A14),
-      onErrorContainer: Color(0xFFF5DFDB),
-      surface: Color(0xFF131313), // Neutral, not blue-black
-      onSurface: Color(0xFFEDECE8),
-      onSurfaceVariant: Color(0xFFA6A49F),
-      surfaceContainerLowest: Color(0xFF0D0D0D),
-      surfaceContainerLow: Color(0xFF1A1A1A),
-      surfaceContainer: Color(0xFF1F1F1F),
-      surfaceContainerHigh: Color(0xFF262626),
-      surfaceContainerHighest: Color(0xFF2E2E2D),
-      outline: Color(0xFF4B4A47),
-      outlineVariant: Color(0xFF2E2D2B),
+      primary: Color(0xFF82C8BC),
+      onPrimary: Color(0xFF10201F),
+      primaryContainer: Color(0xFF1D393A),
+      onPrimaryContainer: Color(0xFF95D4CA),
+      secondary: Color(0xFFB4C2C6),
+      onSecondary: Color(0xFF101820),
+      error: Color(0xFFF08B91),
+      onError: Color(0xFF281316),
+      errorContainer: Color(0xFF3A1D21),
+      onErrorContainer: Color(0xFFF6D3D5),
+      surface: Color(0xFF101820), // Midnight
+      onSurface: Color(0xFFE8EFF0),
+      onSurfaceVariant: Color(0xFFB4C2C6),
+      surfaceContainerLowest: Color(0xFF0B1117),
+      surfaceContainerLow: Color(0xFF192630),
+      surfaceContainer: Color(0xFF1C2B34),
+      surfaceContainerHigh: Color(0xFF21323D),
+      surfaceContainerHighest: Color(0xFF263B47),
+      outline: Color(0xFF344954),
+      outlineVariant: Color(0x16FFFFFF),
     ),
     SortColors.dark,
     GlassColors.dark,
@@ -186,12 +186,16 @@ abstract final class AppTheme {
         ),
       ),
       listTileTheme: ListTileThemeData(iconColor: colors.onSurfaceVariant),
-      // Green when on, with a white thumb, like an iPhone's.
+      // The accent when on, like an iPhone's green.
       switchTheme: SwitchThemeData(
-        thumbColor: const WidgetStatePropertyAll(Colors.white),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? colors.onPrimary
+              : Colors.white,
+        ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? sort.keep
+              ? colors.primary
               : colors.onSurface.withValues(alpha: 0.18),
         ),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -208,7 +212,9 @@ abstract final class AppTheme {
         shape: corners,
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: colors.surfaceContainerLow,
+        backgroundColor: colors.brightness == Brightness.light
+            ? colors.surfaceContainerLowest
+            : colors.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(28)),
@@ -247,17 +253,17 @@ class SortColors extends ThemeExtension<SortColors> {
 
   // Deep enough to read as text on its own soft wash too (4.5:1 or more).
   static const light = SortColors(
-    keep: Color(0xFF2A7347),
-    delete: Color(0xFFB3372B),
-    photoMatte: Color(0xFFE9E7E2),
-    frame: Color(0xFF1C1C1B),
+    keep: Color(0xFF267B59),
+    delete: Color(0xFFB6404A),
+    photoMatte: Color(0xFFE1EAE8),
+    frame: Color(0xFF0F181D),
   );
 
   static const dark = SortColors(
-    keep: Color(0xFF63B482),
-    delete: Color(0xFFE2705F),
-    photoMatte: Color(0xFF0D0D0D),
-    frame: Color(0xFF0A0A0A),
+    keep: Color(0xFF48B58A),
+    delete: Color(0xFFF08B91),
+    photoMatte: Color(0xFF0B1117),
+    frame: Color(0xFF0A0F14),
   );
 
   final Color keep;

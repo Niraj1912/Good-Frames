@@ -18,39 +18,38 @@ class GlassColors extends ThemeExtension<GlassColors> {
     required this.edge,
   });
 
-  // Each colour is as vivid as it can be while the app's grey and blue
-  // text still reads on it at 4.5:1 (the lightness decides that, so they
-  // sit at the same lightness and differ in hue).
+  // Daylight: a soft eucalyptus-tinted paper with faint fields of the
+  // palette's own greens and blue-greys, and milky white glass over it. Kept
+  // light enough that the teal accent still reads on it at 4.5:1.
   static const light = GlassColors(
-    base: Color(0xFFF7F6F3),
+    base: Color(0xFFE6EFEC),
     blobs: [
-      Color(0xFFFFCDB2), // Coral
-      Color(0xFFBCDCFF), // Sky, near the accent blue
-      Color(0xFF9EEBD3), // Teal
-      Color(0xFFFFD877), // Amber
+      Color(0xFFDEF2EC), // Eucalyptus
+      Color(0xFFE8F1F6), // Blue-grey
+      Color(0xFFE3F2E9), // Sage
+      Color(0xFFE3F1F3), // Mist
     ],
-    sheen: Color(0x8CFFFFFF),
-    fill: Color(0x40FFFFFF),
+    sheen: Color(0xB3FFFFFF),
+    fill: Color(0x66FFFFFF),
     shine: Color(0x40FFFFFF),
-    overPhotos: Color(0xDBFFFFFF),
-    edge: Color(0xE6FFFFFF),
+    overPhotos: Color(0xF5FFFFFF),
+    edge: Color(0xFFFFFFFF),
   );
 
-  // Deep shades at half strength, and only a faint shine, so the light
-  // grey text still reads on the brightest part.
+  // Midnight: blue-black with deep teal and slate glows, and slate glass.
   static const dark = GlassColors(
-    base: Color(0xFF131313),
+    base: Color(0xFF101820),
     blobs: [
-      Color(0x80712B13),
-      Color(0x800C447C),
-      Color(0x80085041),
-      Color(0x80633806),
+      Color(0x99245A58), // Eucalyptus
+      Color(0x80284A66), // Slate blue
+      Color(0x80204C48), // Deep sage
+      Color(0x80263F5C), // Midnight blue
     ],
-    sheen: Color(0x10FFFFFF),
-    fill: Color(0x06FFFFFF),
-    shine: Color(0x05FFFFFF),
-    overPhotos: Color(0xE0131313),
-    edge: Color(0x29FFFFFF),
+    sheen: Color(0xCC24343F),
+    fill: Color(0xB3192630),
+    shine: Color(0x0AFFFFFF),
+    overPhotos: Color(0xE6192630),
+    edge: Color(0x38FFFFFF),
   );
 
   /// The paper (or near-black) under everything.
@@ -149,8 +148,8 @@ class _Blobs extends CustomPainter {
   final GlassColors colors;
 
   // Where each field sits, as shares of the screen, and how far it
-  // spreads, as a share of the shorter side: coral top left, sky right,
-  // amber left, teal bottom right.
+  // spreads, as a share of the shorter side: top left, right,
+  // left, bottom right.
   static const _places = [
     (x: 0.0, y: 0.02, spread: 0.85),
     (x: 1.0, y: 0.3, spread: 0.7),

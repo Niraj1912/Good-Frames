@@ -98,11 +98,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // Back from Settings to the album list, then into Camera.
+  // Back from Settings to the album list, then into Camera: its row, or the
+  // "pick up where you stopped" card once it's half sorted.
   Future<void> openCamera(WidgetTester tester) async {
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Camera'));
+    await tester.tap(find.textContaining('Camera').first);
     await tester.pumpAndSettle();
   }
 

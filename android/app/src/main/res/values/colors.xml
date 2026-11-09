@@ -3,7 +3,7 @@
      They match lib/theme/app_theme.dart; change both together. -->
 <resources>
     <!-- The logo tile's own dark body colour, behind and round the artwork. -->
-    <color name="ic_launcher_background">#11171F</color>
-    <!-- Warm paper, the light theme's surface. values-night has the dark one. -->
-    <color name="splash_background">#F7F6F3</color>
+    <color name="ic_launcher_background">#101820</color>
+    <!-- The light theme background (Daylight). values-night has the dark one. -->
+    <color name="splash_background">#F2F5F4</color>
 </resources>

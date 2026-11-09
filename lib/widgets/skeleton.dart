@@ -166,8 +166,8 @@ class SortSkeleton extends StatelessWidget {
 }
 
 /// The albums screen while it loads: the "pick up where you stopped" card
-/// with its big cover, a row of ticks and a button, then the glass list of
-/// albums, each with a cover, a name and a count.
+/// (a full-bleed cover with a glass pane), then the glass list of albums,
+/// each with a cover, a name and a count.
 class AlbumListSkeleton extends StatelessWidget {
   const AlbumListSkeleton({super.key, this.rows = 5});
 
@@ -182,36 +182,38 @@ class AlbumListSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Glass(
-              borderRadius: const BorderRadius.all(Radius.circular(28)),
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            // The "pick up" card: a full-bleed cover with a glass pane on it.
+            const SizedBox(
+              height: 264,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  const SkeletonBox(height: 150, radius: 20),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 14, 8, 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SkeletonBox(width: 200, height: 20),
-                        const SizedBox(height: 8),
-                        const SkeletonBox(width: 150, height: 12),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            for (var i = 0; i < 36; i++)
-                              const Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 1),
-                                  child: SkeletonBox(height: 22, radius: 2),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        const SkeletonBox(height: 48, radius: 16),
-                      ],
+                  SkeletonBox(radius: 28),
+                  Positioned(
+                    left: 8,
+                    right: 8,
+                    bottom: 8,
+                    child: Glass(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      padding: EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SkeletonBox(width: 130, height: 11),
+                                SizedBox(height: 8),
+                                SkeletonBox(width: 110, height: 20),
+                                SizedBox(height: 8),
+                                SkeletonBox(width: 150, height: 11),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          SkeletonBox(width: 88, height: 40, radius: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ],

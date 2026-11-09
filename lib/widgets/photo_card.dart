@@ -3,7 +3,7 @@ import 'package:photo_swipe/theme/app_theme.dart';
 import 'package:photo_swipe/widgets/photo_frame.dart';
 
 /// A photo as a card of its own shape: as large as fits, never cropped,
-/// with rounded corners and nothing around it. A portrait photo makes a
+/// with square corners and nothing around it. A portrait photo makes a
 /// tall card and a landscape one a wide card, like a print.
 ///
 /// It needs loose constraints (inside a Center, say) to take the photo's
@@ -22,7 +22,7 @@ class PhotoCard extends StatefulWidget {
 }
 
 class _PhotoCardState extends State<PhotoCard> {
-  static const _radius = BorderRadius.all(Radius.circular(16));
+  static const _radius = BorderRadius.zero;
 
   // Width over height of the photo being shown.
   double _aspectRatio = 3 / 4;

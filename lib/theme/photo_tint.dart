@@ -41,7 +41,7 @@ abstract final class PhotoTint {
   /// text in dark mode.
   static Color panel(Color seed, Brightness brightness) =>
       brightness == Brightness.light
-      ? _atTone(seed, tone: 88, maxChroma: 24)
+      ? _atTone(seed, tone: 90, maxChroma: 24)
       : _atTone(seed, tone: 24, maxChroma: 18);
 
   // The seed's hue at [tone], no more colourful than [maxChroma]: a vivid

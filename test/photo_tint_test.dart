@@ -56,7 +56,7 @@ void main() {
       PhotoTint.panel(vivid, Brightness.light).toARGB32(),
     );
     expect(tint.chroma, lessThanOrEqualTo(25));
-    expect(tint.tone, closeTo(88, 1));
+    expect(tint.tone, closeTo(90, 1));
   });
 
   test('the counts above the photo are readable on their soft washes', () {
@@ -72,7 +72,7 @@ void main() {
       ]) {
         // As the counts above the photo draw them.
         final wash = Color.alphaBlend(
-          colour.withValues(alpha: 0.10),
+          colour.withValues(alpha: 0.03),
           theme.colorScheme.surface,
         );
         expect(

@@ -310,9 +310,10 @@ class _AlbumPickerScreenState extends State<AlbumPickerScreen> {
 /// The albums, and what's known of the user's progress in each.
 typedef _Loaded = ({List<Album> albums, Map<String, AlbumProgress> progress});
 
-/// The album the user was in the middle of: its newest photo, how many are
-/// left, a row of ticks for the share kept, deleted and still to do, and the
-/// way back in.
+/// The album the user was in the middle of, drawn as a print being
+/// developed: the part of the cover that's been sorted is in full colour, the
+/// rest is dimmed and grey, and the seam between them glows in the accent. A pane of frosted glass at the bottom
+/// holds how many are left and the way back in.
 class _ContinueCard extends StatelessWidget {
   const _ContinueCard({
     required this.album,
@@ -326,118 +327,132 @@ class _ContinueCard extends StatelessWidget {
   final ImageProvider? cover;
   final VoidCallback onTap;
 
+  static const _height = 264.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sort = SortColors.of(context);
+    final glass = GlassColors.of(context);
     final left = (album.photoCount - progress.sorted).clamp(
       0,
       album.photoCount,
     );
-    return Glass(
-      borderRadius: const BorderRadius.all(Radius.circular(28)),
-      padding: const EdgeInsets.all(8),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: 150,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ColoredBox(color: sort.photoMatte),
-                      if (cover case final image?)
-                        Image(
-                          image: image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox.shrink(),
-                        ),
-                      Positioned(
-                        left: 10,
-                        bottom: 10,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: const Color(0x9E121315),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              album.name,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+    final share = progress.shareOf(album.photoCount);
+    final percent = (share * 100).floor();
+    // The seam never touches an edge, so it and its tag stay in view.
+    final seamAt = share.clamp(0.08, 0.92);
+    final still = MediaQuery.disableAnimationsOf(context);
+    final bigText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+
+    final texts = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Pick up where you stopped',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          '${formatCount(left)} left',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFeatures: AppTheme.tabularFigures,
+          ),
+        ),
+        Text(
+          'in ${album.name} · ${formatCount(progress.kept)} kept · '
+          '${formatCount(progress.deleted)} deleted',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontFeatures: AppTheme.tabularFigures,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+    // Looks like a button; the whole card is the tap target.
+    final button = DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        child: Text(
+          'Continue',
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onPrimary,
+          ),
+        ),
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      label:
+          'Continue sorting ${album.name}. ${formatCount(left)} photos left, '
+          '$percent% sorted',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              height: _height,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ColoredBox(color: sort.photoMatte),
+                  // The seam sweeps out from the left edge once, as the card
+                  // arrives, to show how far you've got.
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: still ? seamAt : 0, end: seamAt),
+                    duration: const Duration(milliseconds: 1100),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, at, _) => _Developing(
+                      cover: cover,
+                      at: at,
+                      percent: at / seamAt * percent,
+                    ),
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pick up where you stopped',
-                      style: theme.textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${formatCount(left)} of ${photoCount(album.photoCount)} '
-                      'left in ${album.name}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _Ticks(
-                      kept: progress.kept,
-                      deleted: progress.deleted,
-                      total: album.photoCount,
-                      keepColour: sort.keep,
-                      deleteColour: sort.delete,
-                      emptyColour: theme.colorScheme.onSurface.withValues(
-                        alpha: 0.16,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Looks like a button; the whole card is the tap target.
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurface,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: SizedBox(
-                        height: 48,
-                        child: Center(
-                          child: Text(
-                            'Continue sorting',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.surface,
+                  Positioned(
+                    left: 8,
+                    right: 8,
+                    bottom: 8,
+                    child: Glass(
+                      blur: true,
+                      tint: glass.overPhotos,
+                      borderRadius: BorderRadius.circular(20),
+                      padding: const EdgeInsets.all(12),
+                      child: bigText
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                texts,
+                                const SizedBox(height: 10),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: button,
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                Expanded(child: texts),
+                                const SizedBox(width: 8),
+                                button,
+                              ],
                             ),
-                          ),
-                        ),
-                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -445,61 +460,134 @@ class _ContinueCard extends StatelessWidget {
   }
 }
 
-/// A row of upright ticks: green for the share kept, red for the share
-/// deleted, then grey for what's left. Like the marks along a ruler, it says
-/// how far through at a glance.
-class _Ticks extends StatelessWidget {
-  const _Ticks({
-    required this.kept,
-    required this.deleted,
-    required this.total,
-    required this.keepColour,
-    required this.deleteColour,
-    required this.emptyColour,
+/// The cover split at [at] (0 to 1 across): colour to the left, dimmed grey
+/// to the right, with a glowing seam and a percentage tag where they meet.
+class _Developing extends StatelessWidget {
+  const _Developing({
+    required this.cover,
+    required this.at,
+    required this.percent,
   });
 
-  final int kept;
-  final int deleted;
-  final int total;
-  final Color keepColour;
-  final Color deleteColour;
-  final Color emptyColour;
+  final ImageProvider? cover;
+  final double at;
+  final double percent;
 
-  static const _count = 36;
+  // The accent teal, in its light form: fixed in both themes, because the
+  // seam sits on a photo, not on paper.
+  static const _seam = [Color(0xFF82C8BC), Color(0xFF82C8BC)];
+
+  // Grey, and a little under half as bright.
+  static const _grey = ColorFilter.matrix(<double>[
+    0.12, 0.39, 0.04, 0, 0, //
+    0.12, 0.39, 0.04, 0, 0,
+    0.12, 0.39, 0.04, 0, 0,
+    0, 0, 0, 1, 0,
+  ]);
 
   @override
   Widget build(BuildContext context) {
-    final keptTicks = total == 0 ? 0 : (kept / total * _count).round();
-    final deletedTicks = total == 0 ? 0 : (deleted / total * _count).round();
-    return ExcludeSemantics(
-      child: SizedBox(
-        height: 16,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+    final image = cover;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final x = box.maxWidth * at;
+        Widget photo() => Image(
+          image: image!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+        );
+        return Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.none,
           children: [
-            for (var i = 0; i < _count; i++) ...[
-              if (i > 0) const SizedBox(width: 2),
-              Expanded(
-                child: FractionallySizedBox(
-                  heightFactor: i < keptTicks + deletedTicks ? 1 : 0.55,
+            if (image != null) ...[
+              photo(),
+              ClipRect(
+                clipper: _RightOf(at),
+                child: ColorFiltered(colorFilter: _grey, child: photo()),
+              ),
+            ],
+            // The glow: the accent, fading out to either side of the seam.
+            Positioned(
+              left: x - 30,
+              width: 60,
+              top: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0x00FFFFFF),
+                      Color(0xF2FFFFFF),
+                      Color(0x00FFFFFF),
+                    ],
+                  ).createShader(bounds),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: i < keptTicks
-                          ? keepColour
-                          : i < keptTicks + deletedTicks
-                          ? deleteColour
-                          : emptyColour,
-                      borderRadius: BorderRadius.circular(1),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: _seam,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
+            Positioned(
+              left: x - 0.75,
+              width: 1.5,
+              top: 0,
+              bottom: 0,
+              child: const ColoredBox(color: Color(0xFF82C8BC)),
+            ),
+            Positioned(
+              left: x,
+              top: 14,
+              child: FractionalTranslation(
+                translation: const Offset(-0.5, 0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xE6FFFFFF),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: const Color(0xC9FFFFFF)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 3,
+                    ),
+                    child: Text(
+                      '${percent.round()}%',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: const Color(0xFF17242A),
+                        fontFeatures: AppTheme.tabularFigures,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
+}
+
+/// Keeps what's right of [at] (0 to 1 across) and cuts the rest.
+class _RightOf extends CustomClipper<Rect> {
+  const _RightOf(this.at);
+
+  final double at;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(size.width * at, 0, size.width, size.height);
+
+  @override
+  bool shouldReclip(_RightOf oldClipper) => oldClipper.at != at;
 }
 
 /// One album on the list: a small cover, its name and size, and how much of

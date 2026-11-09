@@ -127,7 +127,7 @@ class _CountChip extends StatelessWidget {
         decoration: BoxDecoration(
           // Faint enough that the coloured number on it stays readable.
           color: Color.alphaBlend(
-            colour.withValues(alpha: 0.10),
+            colour.withValues(alpha: 0.03),
             theme.colorScheme.surface,
           ),
           borderRadius: BorderRadius.circular(8),

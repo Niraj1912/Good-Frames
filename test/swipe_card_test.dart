@@ -41,11 +41,8 @@ void main() {
   Offset cardCorner(WidgetTester tester) =>
       tester.getTopLeft(find.byKey(_face));
 
-  double stampOpacity(WidgetTester tester, String label) => tester
-      .widget<Opacity>(
-        find.ancestor(of: find.text(label), matching: find.byType(Opacity)),
-      )
-      .opacity;
+  double stampOpacity(WidgetTester tester, String label) =>
+      tester.widget<SwipeWash>(find.byKey(ValueKey(label))).opacity;
 
   testWidgets('a long drag swipes in that direction', (tester) async {
     await showCard(tester);
