@@ -106,7 +106,7 @@ class _FolderSheetState extends State<_FolderSheet> {
                 onSubmitted: (_) => _submitNew(),
                 decoration: InputDecoration(
                   labelText: 'New or existing folder name',
-                  helperText: 'Found in your gallery as Pictures/name',
+                  helperText: 'Found in your gallery and file manager as an album',
                   errorText: _error,
                   errorMaxLines: 3,
                   prefixIcon: const Icon(Icons.create_new_folder_outlined),

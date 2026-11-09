@@ -37,7 +37,7 @@ Sorting photos into a folder? Swipe a photo down (or tap Move) and it counts
 as a Keep and is queued for a gallery folder you create or pick; the chip
 under the photo shows which one ("Down -> Trip to Goa") and changes it. Nothing
 moves until you press Move on the Review screen, where Android asks once for
-the whole batch. The folder appears in the gallery as Pictures/name, and the
+the whole batch. The folder appears in the gallery and the file manager as DCIM/MyAlbums/name, and the
 queue is saved, so closing the app loses nothing. Undo takes a swipe back.
 Android only; the Windows build hides it.
 

@@ -1,7 +1,7 @@
 /// Checks a folder name typed by the user, for photos to be moved into.
 /// Returns the cleaned name, or null if it can't be used.
 ///
-/// The folder becomes `Pictures/name` in the gallery, so it must be one plain
+/// The folder becomes `DCIM/MyAlbums/name`, where the gallery keeps its albums, so it must be one plain
 /// name: no slashes (which would reach into other folders), no `..`, nothing
 /// Android's file system refuses, and nothing starting with a dot (which
 /// would hide it from the gallery).

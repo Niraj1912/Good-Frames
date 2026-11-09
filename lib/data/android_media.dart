@@ -35,7 +35,7 @@ abstract final class AndroidMedia {
   }
 
   /// Asks Android for permission to change [ids], then moves them into
-  /// Pictures/[folder]. One prompt for the batch; returns the ids that
+  /// DCIM/MyAlbums/[folder]. One prompt for the batch; returns the ids that
   /// moved, or none if the user said no.
   static Future<Set<String>> moveToFolder(
     List<String> ids,

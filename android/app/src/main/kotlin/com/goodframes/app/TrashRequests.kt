@@ -92,7 +92,7 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
         return true
     }
 
-    // Allowed to change these photos: moves each into Pictures/<folder>. Done
+    // Allowed to change these photos: moves each into DCIM/MyAlbums/<folder>, where the gallery keeps the albums you make, so the file manager lists it too. Done
     // off the main thread, one photo at a time, so one that can't move
     // doesn't stop the rest; only the ids that did move are reported back.
     private fun moveInto(folder: String, ids: List<String>, result: MethodChannel.Result) {
@@ -119,7 +119,7 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
     // without moving anything, so it is checked, and if the photo is still
     // where it was, it is copied into the folder and the original removed.
     private fun move(uri: Uri, folder: String): Boolean {
-        val target = "Pictures/$folder/"
+        val target = "DCIM/MyAlbums/$folder/"
         try {
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.RELATIVE_PATH, target)
@@ -204,7 +204,7 @@ class TrashRequests(private val activity: Activity) : MethodChannel.MethodCallHa
         }
     }
 
-    // A single folder name directly inside Pictures: no slashes, no tricks.
+    // A single folder name directly inside MyAlbums: no slashes, no tricks.
     private fun validFolder(name: String): Boolean =
         name.isNotBlank() &&
             name == name.trim() &&
