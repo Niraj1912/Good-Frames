@@ -7,7 +7,6 @@ import 'package:good_frames/widgets/swipe_card.dart';
 // right, swipeRight keeps).
 Future<void> swipeRight(WidgetTester tester) => _swipe(tester, 400, 0);
 Future<void> swipeLeft(WidgetTester tester) => _swipe(tester, -400, 0);
-Future<void> swipeUp(WidgetTester tester) => _swipe(tester, 0, -400);
 
 Future<void> _swipe(WidgetTester tester, double dx, double dy) async {
   await tester.drag(find.byType(SwipeCard), Offset(dx, dy));

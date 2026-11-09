@@ -146,7 +146,6 @@ void main() {
 
     expect(find.text('IMG_1.jpg'), findsNothing);
     expect(find.text('Delete'), findsOneWidget);
-    expect(find.text('Later'), findsOneWidget);
     expect(find.text('Keep'), findsOneWidget);
     expect(find.byType(FilledButton), findsNothing);
 
@@ -168,20 +167,15 @@ void main() {
   testWidgets('tapping the cues sorts like swiping', (tester) async {
     await openCamera(tester);
 
-    await tester.tap(find.text('Later'));
-    await tester.pumpAndSettle();
-    expect(countChip('Later 1'), findsOneWidget);
-    expect(showing('IMG_2.jpg'), findsOneWidget);
-
     await tester.tap(find.text('Keep'));
     await tester.pumpAndSettle();
     expect(countChip('Keep 1'), findsOneWidget);
-    expect(showing('IMG_3.jpg'), findsOneWidget);
+    expect(showing('IMG_2.jpg'), findsOneWidget);
 
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(countChip('Delete 1'), findsOneWidget);
-    expect(showing('IMG_1.jpg'), findsOneWidget); // The one put off.
+    expect(showing('IMG_3.jpg'), findsOneWidget);
   });
 
   testWidgets('the next photo stays hidden until the card is dragged', (
@@ -214,59 +208,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(showing('IMG_2.jpg'), findsOneWidget);
     expect(behindOpacity(), 0);
-  });
-
-  testWidgets('a photo put off comes back once the rest are sorted', (
-    tester,
-  ) async {
-    await openCamera(tester);
-
-    // The button puts it off, and Undo brings it straight back.
-    await swipeUp(tester);
-    await tester.pumpAndSettle();
-    expect(showing('IMG_2.jpg'), findsOneWidget);
-    expect(countChip('Later 1'), findsOneWidget);
-    await tester.tap(find.byTooltip('Undo'));
-    await tester.pumpAndSettle();
-    expect(showing('IMG_1.jpg'), findsOneWidget);
-    expect(countChip('Later 1'), findsNothing);
-
-    // Swiping up and the up arrow do the same.
-    await tester.drag(find.byType(SwipeCard), const Offset(0, -400));
-    await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-    await tester.pumpAndSettle();
-    expect(showing('IMG_3.jpg'), findsOneWidget);
-    expect(countChip('Later 2'), findsOneWidget);
-    expect(find.text('0 / 3 sorted'), findsOneWidget); // Not decisions.
-
-    // Once the rest are sorted, they come back in the order they went.
-    await swipeRight(tester);
-    await tester.pumpAndSettle();
-    expect(showing('IMG_1.jpg'), findsOneWidget);
-    expect(countChip('Later 1'), findsOneWidget);
-    await swipeLeft(tester);
-    await tester.pumpAndSettle();
-    expect(showing('IMG_2.jpg'), findsOneWidget);
-    await swipeRight(tester);
-    await tester.pumpAndSettle();
-    expect(find.text('All sorted'), findsOneWidget);
-  });
-
-  testWidgets('putting off the last photo brings it straight back', (
-    tester,
-  ) async {
-    await startApp(tester, FakePhotoRepository(photoCounts: {'Camera': 1}));
-    await tester.tap(find.text('Camera'));
-    await tester.pumpAndSettle();
-    final middle = tester.getCenter(find.byType(PhotoCard));
-
-    await swipeUp(tester);
-    await tester.pumpAndSettle();
-
-    // Nothing else to sort, so it's next again, back in the middle.
-    expect(showing('IMG_1.jpg'), findsOneWidget);
-    expect(tester.getCenter(find.byType(PhotoCard)), middle);
   });
 
   testWidgets('sorts one month at a time, picked from the title', (

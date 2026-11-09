@@ -17,10 +17,8 @@ class SwipeHint extends StatelessWidget {
     required this.keepSide,
     required this.onUndo,
     required this.onLeft,
-    required this.onUp,
     required this.onRight,
     this.dragProgress,
-    this.upProgress,
     this.onDown,
     this.downProgress,
   });
@@ -33,15 +31,11 @@ class SwipeHint extends StatelessWidget {
   /// Tapping a cue does what swiping that way does. They are screen
   /// directions: which one keeps and which deletes is [keepSide]'s business.
   final VoidCallback onLeft;
-  final VoidCallback onUp;
   final VoidCallback onRight;
 
   /// How far the photo is dragged sideways, from -1 (left) to 1 (right),
   /// where 1 or -1 means letting go counts as a swipe.
   final ValueListenable<double>? dragProgress;
-
-  /// How far the photo is dragged up, from 0 to 1.
-  final ValueListenable<double>? upProgress;
 
   /// Files the photo into the chosen folder. Null hides the cue, where
   /// filing isn't possible (the Windows build).
@@ -53,27 +47,20 @@ class SwipeHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sideways = dragProgress;
-    final up = upProgress;
     final down = downProgress;
-    if (sideways == null && up == null && down == null) {
-      return _row(context, 0, 0, 0);
+    if (sideways == null && down == null) {
+      return _row(context, 0, 0);
     }
     // Only this row rebuilds as the drag moves, not the whole screen.
     return ListenableBuilder(
-      listenable: Listenable.merge([sideways, up, down]),
+      listenable: Listenable.merge([sideways, down]),
       builder: (context, _) =>
-          _row(context, sideways?.value ?? 0, up?.value ?? 0, down?.value ?? 0),
+          _row(context, sideways?.value ?? 0, down?.value ?? 0),
     );
   }
 
-  Widget _row(
-    BuildContext context,
-    double progress,
-    double upPull,
-    double downPull,
-  ) {
+  Widget _row(BuildContext context, double progress, double downPull) {
     final colors = SortColors.of(context);
-    final scheme = Theme.of(context).colorScheme;
 
     final keep = (label: 'Keep', color: colors.keep);
     final delete = (label: 'Delete', color: colors.delete);
@@ -102,15 +89,6 @@ class SwipeHint extends StatelessWidget {
                   iconFirst: true,
                   hint: 'swipe left',
                   onTap: onLeft,
-                ),
-                _Cue(
-                  icon: Icons.arrow_upward_rounded,
-                  label: 'Later',
-                  color: scheme.onSurfaceVariant,
-                  pull: upPull.clamp(0.0, 1.0),
-                  iconFirst: true,
-                  hint: 'swipe up',
-                  onTap: onUp,
                 ),
                 if (onDown case final onDown?)
                   _Cue(

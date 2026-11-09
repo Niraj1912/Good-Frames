@@ -109,18 +109,19 @@ void main() {
     expect(swipes, [SwipeDirection.left]);
   });
 
-  testWidgets('a drag up swipes up; a crooked sideways one goes sideways', (
+  testWidgets('a drag up springs back; a crooked sideways one goes sideways', (
     tester,
   ) async {
     await showCard(tester);
+    final start = cardCorner(tester);
     await tester.drag(find.byType(SwipeCard), const Offset(30, -250));
     await tester.pumpAndSettle();
-    expect(swipes, [SwipeDirection.up]);
+    expect(swipes, isEmpty);
+    expect(cardCorner(tester), start);
 
-    await showCard(tester, cardId: 'b');
     await tester.drag(find.byType(SwipeCard), const Offset(250, -100));
     await tester.pumpAndSettle();
-    expect(swipes, [SwipeDirection.up, SwipeDirection.right]);
+    expect(swipes, [SwipeDirection.right]);
   });
 
   testWidgets('a drag down springs back', (tester) async {
@@ -134,73 +135,28 @@ void main() {
     expect(cardCorner(tester), start);
   });
 
-  testWidgets('going up shows only the LATER stamp', (tester) async {
+  testWidgets('going up shows no stamp, as it does nothing', (tester) async {
     await showCard(tester);
 
     final gesture = await tester.startGesture(
       tester.getCenter(find.byType(SwipeCard)),
     );
     await gesture.moveBy(const Offset(0, -40));
-    await gesture.moveBy(const Offset(20, -200));
+    await gesture.moveBy(const Offset(0, -200));
     await tester.pump();
 
-    expect(stampOpacity(tester, 'LATER'), 1);
     expect(stampOpacity(tester, 'KEEP'), 0);
     expect(stampOpacity(tester, 'DELETE'), 0);
     await gesture.up();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('the stamp for the drag direction fades in', (tester) async {
-    await showCard(tester);
-    expect(stampOpacity(tester, 'KEEP'), 0);
-
-    final gesture = await tester.startGesture(
-      tester.getCenter(find.byType(SwipeCard)),
-    );
-    await gesture.moveBy(const Offset(40, 0));
-    await gesture.moveBy(const Offset(200, 0));
-    await tester.pump();
-
-    expect(stampOpacity(tester, 'KEEP'), 1);
-    expect(stampOpacity(tester, 'DELETE'), 0);
-    await gesture.up();
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('code can swipe it, and a new photo resets it', (tester) async {
+  testWidgets('a photo filed and undone comes back from below', (tester) async {
     await showCard(tester);
     final start = cardCorner(tester);
 
-    cardKey.currentState!.swipe(SwipeDirection.right);
-    await tester.pumpAndSettle();
-    expect(swipes, [SwipeDirection.right]);
-    expect(cardCorner(tester).dx, greaterThan(400)); // Off to the right.
-
-    await showCard(tester, cardId: 'b');
-    expect(cardCorner(tester), start);
-  });
-
-  testWidgets('an undone photo slides back in from its side', (tester) async {
-    await showCard(tester);
-    final start = cardCorner(tester);
-
-    // Undo after a delete: the photo comes back from the left.
-    await showCard(tester, cardId: 'b', enterFrom: SwipeDirection.left);
-    expect(cardCorner(tester).dx, lessThan(0)); // Starts off to the left.
-
-    await tester.pumpAndSettle();
-    expect(cardCorner(tester), start);
-  });
-
-  testWidgets('a photo put off and undone comes back from the top', (
-    tester,
-  ) async {
-    await showCard(tester);
-    final start = cardCorner(tester);
-
-    await showCard(tester, cardId: 'b', enterFrom: SwipeDirection.up);
-    expect(cardCorner(tester).dy, lessThan(0)); // Starts above.
+    await showCard(tester, cardId: 'b', enterFrom: SwipeDirection.down);
+    expect(cardCorner(tester).dy, greaterThan(start.dy)); // Starts below.
 
     await tester.pumpAndSettle();
     expect(cardCorner(tester), start);

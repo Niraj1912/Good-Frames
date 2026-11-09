@@ -46,10 +46,7 @@ class SortController extends ChangeNotifier {
   // Each is also a Keep in [_decisions]. Saved, so a swipe survives the app
   // being closed before the move.
   final _filing = <String, String>{};
-  // Photos put off for later, in the order they were put off (a map keeps
-  // the order things were added). Not saved: only for this visit.
-  final _later = <String, Photo>{};
-  // What undo can take back, newest last: decisions, and photos put off.
+  // What undo can take back, newest last: decisions.
   // Undo takes the newest one that belongs to this album.
   final _history = <_Step>[];
   // After an undo, the photo to show next, even if it isn't first in line.
@@ -107,14 +104,6 @@ class SortController extends ChangeNotifier {
   String? folderFor(Photo photo) => _filing[photo.id];
 
   bool get canUndo => _history.any((step) => _isShown(step.photoId));
-
-  /// Photos put off for later that are still waiting to come back.
-  int get laterCount {
-    final currentId = current?.id;
-    return _later.values
-        .where((photo) => photo.id != currentId && _inMonth(photo))
-        .length;
-  }
 
   /// Each month the album's photos (loaded so far) were taken in, with how
   /// many photos it has and how many are sorted. In the order photos come
@@ -198,8 +187,8 @@ class SortController extends ChangeNotifier {
       for (final photo in shown.sublist(max(0, at - before), at)) frame(photo),
       if (now != null) frame(now, isCurrent: true),
     ];
-    // Photos put off for later can come up again from earlier in the album,
-    // so skip any the strip already shows.
+    // An undone photo can come up again from earlier in the album, so skip
+    // any the strip already shows.
     final shownIds = {for (final f in frames) f.photo.id};
     return [
       ...frames,
@@ -218,17 +207,9 @@ class SortController extends ChangeNotifier {
       yield undone;
     }
     for (final photo in _shown) {
-      if (photo.id != undone?.id &&
-          !_decisions.containsKey(photo.id) &&
-          !_later.containsKey(photo.id)) {
+      if (photo.id != undone?.id && !_decisions.containsKey(photo.id)) {
         yield photo;
       }
-    }
-    // Then the photos put off for later. Not while pages are still loading,
-    // or they'd come back ahead of photos that haven't arrived yet.
-    if (!isFullyLoaded) return;
-    for (final photo in _later.values) {
-      if (photo.id != undone?.id && _inMonth(photo)) yield photo;
     }
   }
 
@@ -248,7 +229,7 @@ class SortController extends ChangeNotifier {
       // Decisions first, so each photo shows as sorted the moment it loads.
       for (final record in await store.loadAll()) {
         _decisions[record.photoId] = record.decision;
-        _history.add((photoId: record.photoId, later: false, group: 0));
+        _history.add((photoId: record.photoId, group: 0));
       }
       _filing.addAll(await store.loadPendingMoves());
       await for (final page in repository.photosIn(album, order: order)) {
@@ -279,8 +260,7 @@ class SortController extends ChangeNotifier {
 
     // Update the screen first so fast sorting feels instant, then save. If
     // saving fails, put everything back and let the caller show an error.
-    final step = (photoId: photo.id, later: false, group: 0);
-    final wasLater = _later.remove(photo.id) != null;
+    final step = (photoId: photo.id, group: 0);
     _decisions[photo.id] = decision;
     if (filing != null) _filing[photo.id] = filing;
     _history.add(step);
@@ -295,7 +275,6 @@ class SortController extends ChangeNotifier {
       _decisions.remove(photo.id);
       _filing.remove(photo.id);
       _history.remove(step);
-      if (wasLater) _later[photo.id] = photo;
       _undone = photo;
       _notify();
       rethrow;
@@ -320,12 +299,8 @@ class SortController extends ChangeNotifier {
     // As in decide(): update the screen first, then save, and put it all
     // back if saving fails.
     final group = ++_lastGroup;
-    final steps = [
-      for (final id in todo.keys) (photoId: id, later: false, group: group),
-    ];
-    final wasLater = {for (final id in todo.keys) id: ?_later[id]};
+    final steps = [for (final id in todo.keys) (photoId: id, group: group)];
     final previous = _undone;
-    wasLater.keys.forEach(_later.remove);
     _decisions.addAll(todo);
     _history.addAll(steps);
     if (_undone case final photo? when todo.containsKey(photo.id)) {
@@ -337,44 +312,24 @@ class SortController extends ChangeNotifier {
     } catch (_) {
       todo.keys.forEach(_decisions.remove);
       _history.removeWhere(steps.contains);
-      _later.addAll(wasLater);
       _undone = previous;
       _notify();
       rethrow;
     }
   }
 
-  /// Puts the current photo off: it comes back once every other photo being
-  /// sorted is done. Nothing is saved, so if the album is closed it's
-  /// simply unsorted, in its usual place, next time.
-  void putOff() {
-    final photo = current;
-    if (photo == null) return;
-
-    if (_undone?.id == photo.id) _undone = null;
-    // Put off again: it goes to the back of the line.
-    _later.remove(photo.id);
-    _later[photo.id] = photo;
-    _history.add((photoId: photo.id, later: true, group: 0));
-    _notify();
-  }
-
-  /// The decision [undo] would take back, or null if there's none or it
-  /// would take back putting a photo off ([lastWasPutOff]).
+  /// The decision [undo] would take back, or null if there's none.
   Decision? get lastDecision => switch (_lastStep) {
-    (:final photoId, later: false, group: 0) => _decisions[photoId],
+    (:final photoId, group: 0) => _decisions[photoId],
     _ => null,
   };
 
   /// Whether [undo] would take back a photo swiped down into a folder, so
   /// it can come back from below.
   bool get lastWasFiled => switch (_lastStep) {
-    (:final photoId, later: false, group: 0) => _filing.containsKey(photoId),
+    (:final photoId, group: 0) => _filing.containsKey(photoId),
     _ => false,
   };
-
-  /// Whether [undo] would bring back a photo that was put off for later.
-  bool get lastWasPutOff => _lastStep?.later ?? false;
 
   _Step? get _lastStep {
     final index = _lastStepIndex;
@@ -384,8 +339,8 @@ class SortController extends ChangeNotifier {
   int get _lastStepIndex =>
       _history.lastIndexWhere((step) => _isShown(step.photoId));
 
-  /// Takes back the most recent decision among the photos being sorted, or
-  /// putting one off, and shows that photo again.
+  /// Takes back the most recent decision among the photos being sorted, and
+  /// shows that photo again.
   Future<void> undo() async {
     final index = _lastStepIndex;
     if (index == -1) return;
@@ -398,15 +353,6 @@ class SortController extends ChangeNotifier {
     final photo = _byId[step.photoId]!;
     final previous = _undone;
     _undone = photo;
-
-    if (step.later) {
-      // Out of the later line, unless it was put off before this too.
-      if (!_history.any((other) => other.photoId == photo.id && other.later)) {
-        _later.remove(photo.id);
-      }
-      _notify();
-      return;
-    }
 
     final decision = _decisions.remove(photo.id)!;
     final folder = _filing.remove(photo.id);
@@ -614,13 +560,11 @@ class SortController extends ChangeNotifier {
     _notify();
   }
 
-  // Stops tracking anything about these photos: decisions, undo steps and
-  // putting off.
+  // Stops tracking anything about these photos: decisions and undo steps.
   void _forget(Set<String> ids) {
     _decisions.removeWhere((id, _) => ids.contains(id));
     _filing.removeWhere((id, _) => ids.contains(id));
     _history.removeWhere((step) => ids.contains(step.photoId));
-    _later.removeWhere((id, _) => ids.contains(id));
   }
 
   // Stops tracking photos that have left the album: moved to the trash, or
@@ -685,10 +629,10 @@ class SortController extends ChangeNotifier {
   }
 }
 
-/// One thing undo can take back: a decision about a photo, or putting it
-/// off for later. Decisions made together, such as for a group of
-/// look-alikes, share a nonzero [group] and are taken back together.
-typedef _Step = ({String photoId, bool later, int group});
+/// One thing undo can take back: a decision about a photo. Decisions made
+/// together, such as for a group, share a nonzero [group] and are taken back
+/// together.
+typedef _Step = ({String photoId, int group});
 
 /// A month of an album, for choosing which month to sort: its first day,
 /// how many photos were taken in it, and how many of those are sorted.

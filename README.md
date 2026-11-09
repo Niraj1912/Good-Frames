@@ -18,13 +18,6 @@ phone gives a small vibration when letting go would count. A short drag
 springs back; a quick flick counts even if it's short. Buttons and keys
 animate the card the same way. Undo and a progress bar are always there.
 
-Not sure about a photo? Swipe it up (or tap the clock button) to decide
-later. It goes to the back of the line and comes back once everything else
-in the album is sorted; a blue "Later" count shows how many are waiting.
-Undo brings it straight back. Putting off is only for that visit: it isn't
-saved, so if you leave the album, the photo is simply unsorted in its usual
-place next time.
-
 A big album can be sorted a month at a time. Under the album's name, tap
 "All months" to pick a month: each one shows how much of it is sorted, with
 a tick once it's done. The counts, Review and Start over then cover only
@@ -223,7 +216,7 @@ All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
   separators ("10,020").
 - Motion explains something: a flicked card leaves at the flick's speed, a
   short drag springs back with a real spring, and an undone photo slides back
-  in from the side it left on (from the top if it was put off for later). A
+  in from the side it left on (from below if it was swiped down into a folder). A
   drag counts in whichever direction it moved furthest, and the stamp and
   buttons only ever show that one, so they always say what letting go will
   do. Nothing moves just to decorate.
@@ -233,7 +226,7 @@ All of it lives in `lib/theme/` (design tokens: colours, type, shapes, in
 
 See the roadmap below.
 
-On Windows: drag with the mouse, or `←` Delete, `→` Keep, `↑` Later, `Z` (or
+On Windows: drag with the mouse, or `←` Delete, `→` Keep, `↓` Move to folder, `Z` (or
 `Ctrl+Z`, `Backspace`) Undo. Click the photo to zoom; in the viewer the arrows still
 decide and `Esc` closes.
 
@@ -472,7 +465,6 @@ interface, which has one implementation per environment:
 - [x] Folder mode: share chosen folders instead of every photo
 - [x] Settings: swipe directions, order, vibration, theme, what Good Frames
       sees, version and licences
-- [x] Decide later: swipe up to put a photo off until the rest are sorted
 - [x] One month at a time: pick a month of a big album to sort
 - [x] Glass look: frosted panels over a still background of soft colour
 - [x] Similar photos (added in 1.2.0, removed in 1.2.2)
