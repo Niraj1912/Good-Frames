@@ -392,6 +392,7 @@ class SwipeCardState extends State<SwipeCard>
                       child: SwipeWash(
                         label: 'LATER',
                         color: later,
+                        icon: Icons.schedule_rounded,
                         from: Alignment.topCenter,
                         strength: up,
                       ),
