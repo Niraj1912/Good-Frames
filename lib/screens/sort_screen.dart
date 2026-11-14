@@ -57,6 +57,7 @@ class _SortScreenState extends State<SortScreen> {
   // Lets the buttons and keys swipe the card, so they animate like a drag.
   final _cardKey = GlobalKey<SwipeCardState>();
   final _dragProgress = ValueNotifier(0.0);
+  final _upProgress = ValueNotifier(0.0);
   final _downProgress = ValueNotifier(0.0);
   // After an undo, the side the photo comes back from: the side it left on.
   SwipeDirection? _enterFrom;
@@ -65,6 +66,7 @@ class _SortScreenState extends State<SortScreen> {
   void dispose() {
     _controller.dispose();
     _dragProgress.dispose();
+    _upProgress.dispose();
     _downProgress.dispose();
     super.dispose();
   }
@@ -86,6 +88,7 @@ class _SortScreenState extends State<SortScreen> {
 
   void _swipe(SwipeDirection direction) =>
       _cardKey.currentState?.swipe(direction);
+  void _later() => _swipe(SwipeDirection.up);
 
   // Swiping down files the photo into the chosen folder, where that's
   // possible.
@@ -98,7 +101,9 @@ class _SortScreenState extends State<SortScreen> {
       showFolderPicker(context, widget.settings, widget.repository);
 
   void _undo() {
-    _enterFrom = _controller.lastWasFiled
+    _enterFrom = _controller.lastWasPutOff
+        ? SwipeDirection.up
+        : _controller.lastWasFiled
         ? SwipeDirection.down
         : switch (_controller.lastDecision) {
             final decision? => _directionFor(decision),
@@ -150,6 +155,15 @@ class _SortScreenState extends State<SortScreen> {
         () => _controller.decide(Decision.keep, folder: chosen),
       );
       if (!saved) _cardKey.currentState?.comeBack();
+      return;
+    }
+    if (direction == SwipeDirection.up) {
+      // With nothing else left to sort, the same photo is next again, so
+      // bring the card straight back.
+      final onlyOneLeft =
+          _controller.isFullyLoaded && _controller.upcoming(1).isEmpty;
+      _controller.putOff();
+      if (onlyOneLeft) _cardKey.currentState?.comeBack();
       return;
     }
     final saved = await _run(() => _controller.decide(_decisionFor(direction)));
@@ -314,6 +328,7 @@ class _SortScreenState extends State<SortScreen> {
               _swipe(SwipeDirection.left),
           const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
               _swipe(SwipeDirection.right),
+          const SingleActivator(LogicalKeyboardKey.arrowUp): _later,
           const SingleActivator(LogicalKeyboardKey.arrowDown): _fileDown,
           const SingleActivator(LogicalKeyboardKey.keyZ): _undo,
           const SingleActivator(LogicalKeyboardKey.keyZ, control: true): _undo,
@@ -411,14 +426,11 @@ class _SortScreenState extends State<SortScreen> {
                 // never shows round the edges of a smaller one.
                 if (upcoming.isNotEmpty)
                   ListenableBuilder(
-                    listenable: Listenable.merge([
-                      _dragProgress,
-                      _downProgress,
-                    ]),
+                    listenable: Listenable.merge([_dragProgress, _upProgress]),
                     builder: (context, child) {
                       final shown = math.max(
                         _dragProgress.value.abs(),
-                        _downProgress.value,
+                        _upProgress.value,
                       );
                       return Opacity(
                         opacity: shown,
@@ -443,6 +455,7 @@ class _SortScreenState extends State<SortScreen> {
                   key: _cardKey,
                   cardId: photo.id,
                   dragProgress: _dragProgress,
+                  upProgress: _upProgress,
                   downProgress: _downProgress,
                   canSwipeDown: _canFile,
                   downLabel: _stampLabel(widget.settings.targetFolder),
@@ -491,8 +504,10 @@ class _SortScreenState extends State<SortScreen> {
                   keepSide: _keepSide,
                   onUndo: _controller.canUndo ? _undo : null,
                   onLeft: () => _swipe(SwipeDirection.left),
+                  onUp: _later,
                   onRight: () => _swipe(SwipeDirection.right),
                   dragProgress: _dragProgress,
+                  upProgress: _upProgress,
                   onDown: _canFile ? _fileDown : null,
                   downProgress: _downProgress,
                 ),
@@ -503,10 +518,10 @@ class _SortScreenState extends State<SortScreen> {
                   Text(
                     switch (_keepSide) {
                       KeepSide.right =>
-                        '←  Delete    →  Keep    '
+                        '←  Delete    ↑  Later    →  Keep    '
                             'Z  Undo    Click to zoom',
                       KeepSide.left =>
-                        '←  Keep    →  Delete    '
+                        '←  Keep    ↑  Later    →  Delete    '
                             'Z  Undo    Click to zoom',
                     },
                     style: theme.textTheme.bodySmall,
@@ -632,6 +647,13 @@ class _ProgressLine extends StatelessWidget {
         ),
         tally('Keep', controller.keepCount, Icons.check, colours.keep),
         tally('Delete', controller.deleteCount, Icons.close, colours.delete),
+        if (controller.laterCount > 0)
+          tally(
+            'Later',
+            controller.laterCount,
+            Icons.schedule,
+            theme.colorScheme.onSurfaceVariant,
+          ),
       ],
     );
   }

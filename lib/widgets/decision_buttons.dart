@@ -15,9 +15,11 @@ class DecisionButtons extends StatelessWidget {
     required this.onDelete,
     required this.onKeep,
     required this.onUndo,
+    this.onLater,
     this.showUndo = true,
     this.keepSide = KeepSide.right,
     this.dragProgress,
+    this.upProgress,
   });
 
   final KeepSide keepSide;
@@ -28,6 +30,10 @@ class DecisionButtons extends StatelessWidget {
   /// Null when there's nothing to undo, which greys the button out.
   final VoidCallback? onUndo;
 
+  /// Puts the photo off for later. Null hides the button, as in the zoomed
+  /// photo viewer.
+  final VoidCallback? onLater;
+
   /// False where undo makes no sense, such as the zoomed photo viewer.
   final bool showUndo;
 
@@ -35,22 +41,27 @@ class DecisionButtons extends StatelessWidget {
   /// -1 means letting go counts as a swipe. Null where nothing is dragged.
   final ValueListenable<double>? dragProgress;
 
+  /// How far the photo is dragged up, from 0 to 1 (letting go puts it off).
+  final ValueListenable<double>? upProgress;
+
   // Even, and a little tighter than Material's icon-button default, so the
-  // labels fit beside Undo on a 360-wide phone.
+  // labels fit beside Undo and Later on a 360-wide phone.
   static const _padding = EdgeInsets.symmetric(horizontal: 12);
 
   @override
   Widget build(BuildContext context) {
     final sideways = dragProgress;
-    if (sideways == null) return _buttons(context, 0);
+    final up = upProgress;
+    if (sideways == null && up == null) return _buttons(context, 0, 0);
     // Only the buttons rebuild as the drag moves, not the whole screen.
     return ListenableBuilder(
-      listenable: sideways,
-      builder: (context, _) => _buttons(context, sideways.value),
+      listenable: Listenable.merge([sideways, up]),
+      builder: (context, _) =>
+          _buttons(context, sideways?.value ?? 0, up?.value ?? 0),
     );
   }
 
-  Widget _buttons(BuildContext context, double progress) {
+  Widget _buttons(BuildContext context, double progress, double upPull) {
     final colors = SortColors.of(context);
     final scheme = Theme.of(context).colorScheme;
     // Dark text on a light green, light text on a dark one: always readable.
@@ -122,6 +133,15 @@ class DecisionButtons extends StatelessWidget {
     final middle = [
       if (showUndo)
         _SquareButton(onPressed: onUndo, icon: Icons.undo, tooltip: 'Undo'),
+      if (onLater != null)
+        _Leaning(
+          pull: upPull,
+          child: _SquareButton(
+            onPressed: onLater,
+            icon: Icons.schedule,
+            tooltip: 'Decide later',
+          ),
+        ),
     ];
 
     return Row(
@@ -139,7 +159,7 @@ class DecisionButtons extends StatelessWidget {
   }
 }
 
-/// Undo: outlined, so they read as smaller choices than Keep and
+/// Undo and Later: outlined, so they read as smaller choices than Keep and
 /// Delete. A little narrower than tall, leaving Keep and Delete room for
 /// their labels on a small phone.
 class _SquareButton extends StatelessWidget {
